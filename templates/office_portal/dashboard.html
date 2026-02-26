@@ -1,0 +1,221 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Dashboard - USCIP</title>
+  <style>
+    body { font-family: sans-serif; max-width: 900px; margin: 0 auto; padding: 20px 16px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #ddd; margin-bottom: 24px; }
+    .topbar span { font-weight: bold; }
+    .topbar a { margin-left: 12px; font-size: 13px; color: #1a73e8; text-decoration: none; }
+    h2 { margin-bottom: 8px; }
+    .role-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; background: #1a73e8; color: #fff; margin-left: 8px; vertical-align: middle; }
+    .section { margin-top: 28px; }
+    .section h3 { border-bottom: 2px solid #1a73e8; padding-bottom: 6px; margin-bottom: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { background: #1a73e8; color: #fff; padding: 8px; text-align: left; }
+    td { padding: 8px; border-bottom: 1px solid #eee; }
+    tr:hover td { background: #f5f5f5; }
+    .btn { padding: 4px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 4px; }
+    .btn-approve { background: #1e8a3c; color: #fff; }
+    .btn-reject  { background: #c0392b; color: #fff; }
+    .status-pending  { color: #e67e00; font-weight: bold; }
+    .status-approved { color: #1e8a3c; font-weight: bold; }
+    .status-rejected { color: #c0392b; font-weight: bold; }
+    .notice-item { padding: 10px; border-left: 3px solid #1a73e8; margin-bottom: 10px; background: #f8f9ff; }
+    .notice-item h4 { margin: 0 0 4px 0; }
+    .notice-item p { margin: 0; font-size: 13px; color: #555; }
+    .nav-links { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+    .nav-links a { padding: 8px 16px; background: #f0f4ff; border: 1px solid #c0d0ff; border-radius: 6px; text-decoration: none; color: #1a73e8; font-size: 14px; }
+    #msg { margin-bottom: 12px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <span>USCIP Office Portal
+      <span class="role-badge">{{ role }}</span>
+    </span>
+    <div>
+      {{ request.user.username }} |
+      <a href="/office-portal/change-password/">修改密碼</a>
+      <a href="/office-portal/logout/">登出</a>
+      <a href="/admin/">後台</a>
+      <a href="/compliance/">ISMS</a>
+    </div>
+  </div>
+
+  <h2>歡迎回來，{{ request.user.username }}</h2>
+
+  <div id="msg"></div>
+
+  {% comment %} 公告區 {% endcomment %}
+  <div class="section">
+    <h3>📢 最新公告</h3>
+    {% for notice in notices %}
+    <div class="notice-item">
+      <h4>{{ notice.title }}</h4>
+      <p>{{ notice.content }}</p>
+    </div>
+    {% empty %}
+    <p style="color:#888;">目前沒有公告。</p>
+    {% endfor %}
+  </div>
+
+  {% comment %} 主管/CIO 才看得到的簽核區 {% endcomment %}
+  {% if role == "supervisor" or role == "cio" or role == "admin" %}
+
+  <div class="section">
+    <h3>👤 待審帳號申請</h3>
+    <table>
+      <thead>
+        <tr><th>帳號</th><th>姓名</th><th>部門</th><th>申請角色</th><th>狀態</th><th>操作</th></tr>
+      </thead>
+      <tbody>
+        {% for req in pending_accounts %}
+        <tr id="acc-{{ req.id }}">
+          <td>{{ req.username }}</td>
+          <td>{{ req.full_name }}</td>
+          <td>{{ req.department }}</td>
+          <td>{{ req.requested_role }}</td>
+          <td><span class="status-pending">{{ req.status }}</span></td>
+          <td>
+            <button class="btn btn-approve" onclick="approveAccount({{ req.id }}, this)">批准</button>
+            <button class="btn btn-reject"  onclick="rejectAccount({{ req.id }}, this)">拒絕</button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;color:#888;">目前無待審申請</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h3>📋 待審服務申請</h3>
+    <table>
+      <thead>
+        <tr><th>申請單號</th><th>申請人</th><th>類型</th><th>服務系統</th><th>狀態</th><th>操作</th></tr>
+      </thead>
+      <tbody>
+        {% for app in pending_apps %}
+        <tr id="app-{{ app.id }}">
+          <td>{{ app.f_no }}</td>
+          <td>{{ app.a_name }}</td>
+          <td>{{ app.a_type }}</td>
+          <td>{{ app.service_system|default:"-" }}</td>
+          <td><span class="status-pending">{{ app.status }}</span></td>
+          <td>
+            <button class="btn btn-approve" onclick="approveApp({{ app.id }}, this)">批准</button>
+            <button class="btn btn-reject"  onclick="rejectApp({{ app.id }}, this)">拒絕</button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;color:#888;">目前無待審申請</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% endif %}
+
+  <div class="nav-links">
+    <a href="/office-portal/apply/">＋ 服務申請</a>
+    <a href="/office-portal/applications/">📋 申請單列表</a>
+    <a href="/office-portal/register/">👤 帳號申請</a>
+    <a href="/compliance/">🔒 ISMS 儀表板</a>
+  </div>
+
+  {% comment %} 我的申請紀錄 {% endcomment %}
+  <div class="section">
+    <h3>📁 我的帳號申請紀錄</h3>
+    <table>
+      <thead>
+        <tr><th>申請帳號</th><th>角色</th><th>部門</th><th>申請時間</th><th>狀態</th><th>拒絕原因</th></tr>
+      </thead>
+      <tbody>
+        {% for req in my_account_requests %}
+        <tr>
+          <td>{{ req.username }}</td>
+          <td>{{ req.requested_role }}</td>
+          <td>{{ req.department|default:"-" }}</td>
+          <td>{{ req.created_at|date:"Y-m-d H:i" }}</td>
+          <td>
+            {% if req.status == "Approved" %}
+              <span class="status-approved">✅ {{ req.status }}</span>
+            {% elif req.status == "Rejected" %}
+              <span class="status-rejected">❌ {{ req.status }}</span>
+            {% else %}
+              <span class="status-pending">⏳ {{ req.status }}</span>
+            {% endif %}
+          </td>
+          <td>{{ req.comment|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;color:#888;">尚無帳號申請紀錄</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h3>📁 我的服務申請紀錄</h3>
+    <table>
+      <thead>
+        <tr><th>申請單號</th><th>類型</th><th>服務系統</th><th>申請時間</th><th>狀態</th></tr>
+      </thead>
+      <tbody>
+        {% for app in my_applications %}
+        <tr>
+          <td>{{ app.f_no }}</td>
+          <td>{{ app.a_type }}</td>
+          <td>{{ app.service_system|default:"-" }}</td>
+          <td>{{ app.created_at|date:"Y-m-d H:i" }}</td>
+          <td>
+            {% if app.status == "Approved" %}
+              <span class="status-approved">✅ {{ app.status }}</span>
+            {% elif app.status == "Rejected" %}
+              <span class="status-rejected">❌ {{ app.status }}</span>
+            {% else %}
+              <span class="status-pending">⏳ {{ app.status }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center;color:#888;">尚無服務申請紀錄</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    function getCookie(name) {
+      const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+      return v ? v[2] : '';
+    }
+
+    async function postAction(url, btn, rowId) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+      });
+      const data = await res.json();
+      const msg = document.getElementById('msg');
+      if (res.ok) {
+        msg.style.color = 'green';
+        msg.textContent = `✅ 操作成功，新狀態：${data.new_status}`;
+        const row = document.getElementById(rowId);
+        if (row) row.style.opacity = '0.4';
+        btn.closest('td').innerHTML = data.new_status;
+      } else {
+        msg.style.color = 'red';
+        msg.textContent = `❌ ${data.detail}`;
+      }
+    }
+
+    function approveAccount(id, btn) { postAction(`/office-portal/approve-account/${id}/`, btn, `acc-${id}`); }
+    function rejectAccount(id, btn)  { postAction(`/office-portal/reject-account/${id}/`,  btn, `acc-${id}`); }
+    function approveApp(id, btn)     { postAction(`/office-portal/approve-application/${id}/`, btn, `app-${id}`); }
+    function rejectApp(id, btn)      { postAction(`/office-portal/reject-application/${id}/`,  btn, `app-${id}`); }
+  </script>
+</body>
+</html>

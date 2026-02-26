@@ -1,0 +1,106 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>申請單列表 - USCIP</title>
+  <style>
+    body { font-family: sans-serif; max-width: 960px; margin: 40px auto; padding: 0 16px; }
+    h2 { margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { background: #1a73e8; color: #fff; padding: 10px 8px; text-align: left; }
+    td { padding: 9px 8px; border-bottom: 1px solid #eee; }
+    tr:hover td { background: #f5f5f5; }
+    .status-pending  { color: #e67e00; font-weight: bold; }
+    .status-approved { color: #1e8a3c; font-weight: bold; }
+    .status-rejected { color: #c0392b; font-weight: bold; }
+    .btn { padding: 4px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; margin-right: 4px; }
+    .btn-approve { background: #1e8a3c; color: #fff; }
+    .btn-reject  { background: #c0392b; color: #fff; }
+    a { font-size: 13px; }
+    #msg { margin-bottom: 12px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h2>服務申請單列表</h2>
+  <div id="msg"></div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>申請單號</th>
+        <th>申請人</th>
+        <th>部門</th>
+        <th>類型</th>
+        <th>服務系統</th>
+        <th>狀態</th>
+        <th>申請時間</th>
+        {% if role in "supervisor,cio,admin" %}<th>操作</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for app in applications %}
+      <tr>
+        <td>{{ app.f_no }}</td>
+        <td>{{ app.a_name }}</td>
+        <td>{{ app.department }}</td>
+        <td>{{ app.a_type }}</td>
+        <td>{{ app.service_system|default:"-" }}</td>
+        <td>
+          <span class="
+            {% if app.status == 'Approved' %}status-approved
+            {% elif app.status == 'Rejected' %}status-rejected
+            {% else %}status-pending{% endif %}">
+            {{ app.status }}
+          </span>
+        </td>
+        <td>{{ app.created_at|date:"Y-m-d H:i" }}</td>
+        {% if role in "supervisor,cio,admin" %}
+        <td>
+          {% if app.status == 'Pending Supervisor' or app.status == 'Pending CIO' %}
+          <button class="btn btn-approve" onclick="doAction('approve', {{ app.id }}, this)">批准</button>
+          <button class="btn btn-reject"  onclick="doAction('reject',  {{ app.id }}, this)">拒絕</button>
+          {% else %}
+          -
+          {% endif %}
+        </td>
+        {% endif %}
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" style="text-align:center;color:#888;padding:20px;">目前沒有申請單</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p style="margin-top:20px;">
+    <a href="/office-portal/apply/">＋ 新增申請</a>
+    &nbsp;|&nbsp;
+    <a href="/office-portal/dashboard/">← 回到儀表板</a>
+  </p>
+
+  <script>
+    async function doAction(action, appId, btn) {
+      const url = `/office-portal/${action}-application/${appId}/`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+      });
+      const data = await res.json();
+      const msg = document.getElementById('msg');
+      if (res.ok) {
+        msg.style.color = 'green';
+        msg.textContent = `✅ 操作成功，新狀態：${data.new_status}`;
+        btn.closest('tr').querySelector('td:nth-last-child(1)').innerHTML = '-';
+        btn.closest('tr').querySelector('.status-pending, .status-approved, .status-rejected').textContent = data.new_status;
+      } else {
+        msg.style.color = 'red';
+        msg.textContent = `❌ ${data.detail}`;
+      }
+    }
+
+    function getCookie(name) {
+      const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+      return v ? v[2] : '';
+    }
+  </script>
+</body>
+</html>

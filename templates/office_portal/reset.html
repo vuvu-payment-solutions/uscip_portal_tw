@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+  <body>
+    <h2>Reset password</h2>
+
+    {% if messages %}
+      <ul>
+        {% for m in messages %}<li>{{ m }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <input type="password" name="password" placeholder="New password (>=8 chars)" />
+      <button type="submit">Reset</button>
+    </form>
+  </body>
+</html>

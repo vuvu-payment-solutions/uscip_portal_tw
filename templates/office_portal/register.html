@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>帳號申請 - USCIP</title>
+  <style>
+    body { font-family: sans-serif; max-width: 480px; margin: 60px auto; padding: 0 16px; }
+    h2 { margin-bottom: 24px; }
+    label { display: block; margin-top: 12px; font-size: 14px; color: #555; }
+    input, select { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+    button { margin-top: 20px; width: 100%; padding: 10px; background: #1a73e8; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 15px; }
+    #msg { margin-top: 12px; font-size: 14px; }
+    a { font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h2>帳號申請</h2>
+
+  <label>帳號名稱 *</label>
+  <input id="username" placeholder="3~20 英數字或底線" />
+
+  <label>姓名 *</label>
+  <input id="full_name" placeholder="真實姓名" />
+
+  <label>電子信箱 *</label>
+  <input id="email" type="email" placeholder="email@example.com" />
+
+  <label>部門</label>
+  <input id="department" placeholder="所屬部門" />
+
+  <label>申請角色</label>
+  <select id="requested_role">
+    <option value="user">User（一般使用者）</option>
+    <option value="supervisor">Supervisor（主管）</option>
+  </select>
+
+  <button onclick="submitRegister()">送出申請</button>
+  <div id="msg"></div>
+
+  <p><a href="/office-portal/">← 回到登入頁</a></p>
+
+  <script>
+    async function submitRegister() {
+      const msg = document.getElementById('msg');
+      const payload = {
+        username:       document.getElementById('username').value.trim(),
+        full_name:      document.getElementById('full_name').value.trim(),
+        email:          document.getElementById('email').value.trim(),
+        department:     document.getElementById('department').value.trim(),
+        requested_role: document.getElementById('requested_role').value,
+      };
+      if (!payload.username || !payload.full_name || !payload.email) {
+        msg.style.color = 'red';
+        msg.textContent = '請填寫所有必填欄位（*）';
+        return;
+      }
+      const res = await fetch('/office-portal/register/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      msg.style.color = res.ok ? 'green' : 'red';
+      msg.textContent = data.detail;
+    }
+
+    function getCookie(name) {
+      const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+      return v ? v[2] : '';
+    }
+  </script>
+</body>
+</html>

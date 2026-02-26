@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>服務申請 - USCIP</title>
+  <style>
+    body { font-family: sans-serif; max-width: 540px; margin: 60px auto; padding: 0 16px; }
+    h2 { margin-bottom: 24px; }
+    label { display: block; margin-top: 12px; font-size: 14px; color: #555; }
+    input, select, textarea { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+    textarea { height: 80px; resize: vertical; }
+    button { margin-top: 20px; width: 100%; padding: 10px; background: #1a73e8; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 15px; }
+    .msg { margin-top: 12px; font-size: 14px; }
+    a { font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h2>服務 / API 申請</h2>
+
+  <form method="post" action="/office-portal/apply/" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <label>申請人 *</label>
+    <input name="a_name" value="{{ request.user.username }}" required />
+
+    <label>部門 *</label>
+    <input name="department" placeholder="所屬部門" required />
+
+    <label>申請類型 *</label>
+    <select name="a_type">
+      <option value="API Access">API 存取申請</option>
+      <option value="System Access">系統存取申請</option>
+      <option value="Data Access">資料存取申請</option>
+      <option value="Other">其他</option>
+    </select>
+
+    <label>申請目的 *</label>
+    <textarea name="a_purpose" placeholder="請說明申請目的與業務需求" required></textarea>
+
+    <label>服務系統名稱</label>
+    <input name="service_system" placeholder="例如：AWS S3、內部 ERP、ISMS 平台" />
+
+    <label>附件（選填）</label>
+    <input type="file" name="file" />
+
+    {% if messages %}
+      {% for m in messages %}
+        <div class="msg" style="color:red;">{{ m }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <button type="submit">送出申請</button>
+  </form>
+
+  <p><a href="/office-portal/dashboard/">← 回到儀表板</a></p>
+</body>
+</html>
