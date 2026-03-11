@@ -17,6 +17,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.views.decorators.http import require_POST, require_GET
 
+from django.views.decorators.csrf import ensure_csrf_cookie
+
 from .models import AccountRequest, Application, Notice, UserProfile
 from .services.notify import (
     teams_new_account_request,
@@ -34,6 +36,10 @@ from .services.notify import (
 # ─────────────────────────────────────────────
 # 1. 入口 / 認證
 # ─────────────────────────────────────────────
+
+@ensure_csrf_cookie  # 加上這個裝飾器
+def index(request):
+    return render(request, 'index.html')
 
 def portal_home(request):
     """首頁（登入頁）"""
