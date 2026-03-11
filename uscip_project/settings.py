@@ -22,6 +22,12 @@ SECRET_KEY = os.environ.get(
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = ['office.quilter.net','13.230.190.23','127.0.0.1']
 
+CSRF_TRUSTED_ORIGINS = [
+    'http://office.quilter.net',
+    'https://office.quilter.net',
+    'http://13.230.190.23',
+]
+
 # ── 前端重設密碼連結用（views.py 的 portal_forgot 需要）─────────────────────
 APP_BASE_URL = os.environ.get('APP_BASE_URL', 'http://localhost:8000')
 
