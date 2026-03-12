@@ -136,4 +136,4 @@ LOGIN_REDIRECT_URL = '/office-portal/dashboard/'
 PA_TEAMS_WEBHOOK = 'https://defaultb09d388534804b4d9bf9386663232c.47.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/6e47eb3dce7f446c8a3ec5ea6c3eeabe/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Nk6om5pGviasUjfeXkGAFgrG_WVEaTMFxG_8IHZFrx8' # Teams 通知流程
 PA_EMAIL_WEBHOOK = 'https://defaultb09d388534804b4d9bf9386663232c.47.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/66149d96ddab44709e8987afe56b917e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=kIm6qAN97PRxbJDDje_BYPgoLZaEx7UpyFuYBGN_Sao'  # 寄信流程
 import os
-STATIC_ROOT = os.path.join(BASE_DIR, 'static/')  # collectstatic 的輸出目錄
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # collectstatic 的輸出目錄
