@@ -1,57 +1,125 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>服務申請 - USCIP</title>
-  <style>
-    body { font-family: sans-serif; max-width: 540px; margin: 60px auto; padding: 0 16px; }
-    h2 { margin-bottom: 24px; }
-    label { display: block; margin-top: 12px; font-size: 14px; color: #555; }
-    input, select, textarea { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-    textarea { height: 80px; resize: vertical; }
-    button { margin-top: 20px; width: 100%; padding: 10px; background: #1a73e8; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 15px; }
-    .msg { margin-top: 12px; font-size: 14px; }
-    a { font-size: 13px; }
-  </style>
-</head>
-<body>
-  <h2>服務 / API 申請</h2>
+{% extends "base.html" %}
 
-  <form method="post" action="/office-portal/apply/" enctype="multipart/form-data">
-    {% csrf_token %}
+{% block title %}Service Application — USCIP Office Portal{% endblock %}
+{% block nav_applications %}active{% endblock %}
+{% block breadcrumb %}<span class="text-gray-400">Home</span> <span class="mx-1.5 text-gray-300">/</span> <a href="/office-portal/applications/" class="text-gray-400 hover:text-[#c9a84c] transition-colors">Applications</a> <span class="mx-1.5 text-gray-300">/</span> <span class="text-gray-700 font-medium">New</span>{% endblock %}
 
-    <label>申請人 *</label>
-    <input name="a_name" value="{{ request.user.username }}" required />
+{% block content %}
 
-    <label>部門 *</label>
-    <input name="department" placeholder="所屬部門" required />
+<div class="max-w-2xl mx-auto">
 
-    <label>申請類型 *</label>
-    <select name="a_type">
-      <option value="API Access">API 存取申請</option>
-      <option value="System Access">系統存取申請</option>
-      <option value="Data Access">資料存取申請</option>
-      <option value="Other">其他</option>
-    </select>
+    <!-- Page Header -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-[#0c1a2e]">Service / API Application</h1>
+        <p class="text-sm text-gray-400 mt-1">Fill out the form below to submit your service access request</p>
+    </div>
 
-    <label>申請目的 *</label>
-    <textarea name="a_purpose" placeholder="請說明申請目的與業務需求" required></textarea>
+    <!-- Form Card -->
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
 
-    <label>服務系統名稱</label>
-    <input name="service_system" placeholder="例如：AWS S3、內部 ERP、ISMS 平台" />
+        <!-- Card Header -->
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#1a2d4a] to-[#2a4270] flex items-center justify-center flex-shrink-0">
+                <svg class="w-4.5 h-4.5 text-[#e8d48b]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+            </div>
+            <div>
+                <h2 class="font-bold text-[#0c1a2e]">Application Form</h2>
+                <p class="text-xs text-gray-400">Fields marked with * are required</p>
+            </div>
+        </div>
 
-    <label>附件（選填）</label>
-    <input type="file" name="file" />
+        <!-- Form Body -->
+        <form method="post" action="/office-portal/apply/" enctype="multipart/form-data" class="px-6 py-5">
+            {% csrf_token %}
 
-    {% if messages %}
-      {% for m in messages %}
-        <div class="msg" style="color:red;">{{ m }}</div>
-      {% endfor %}
-    {% endif %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-    <button type="submit">送出申請</button>
-  </form>
+                <!-- 申請人 -->
+                <div>
+                    <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Applicant *</label>
+                    <input type="text" name="a_name" value="{{ request.user.username }}" required
+                           class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                                  focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20" readonly>
+                </div>
 
-  <p><a href="/office-portal/dashboard/">← 回到儀表板</a></p>
-</body>
-</html>
+                <!-- 部門 -->
+                <div>
+                    <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Department *</label>
+                    <input type="text" name="department" placeholder="所屬部門" required
+                           class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                                  focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                </div>
+
+            </div>
+
+            <!-- 申請類型 -->
+            <div class="mt-4">
+                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Application Type *</label>
+                <select name="a_type"
+                        class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                               focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                    <option value="API Access">API 存取申請</option>
+                    <option value="System Access">系統存取申請</option>
+                    <option value="Data Access">資料存取申請</option>
+                    <option value="Other">其他</option>
+                </select>
+            </div>
+
+            <!-- 申請目的 -->
+            <div class="mt-4">
+                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Purpose *</label>
+                <textarea name="a_purpose" placeholder="Please explain the purpose and business requirements of your application" required rows="3"
+                          class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all resize-y
+                                 focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20"></textarea>
+            </div>
+
+            <!-- 服務系統 -->
+            <div class="mt-4">
+                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Service System Name</label>
+                <input type="text" name="service_system" placeholder="e.g., AWS S3, Internal ERP, ISMS Platform"
+                       class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                              focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+            </div>
+
+            <!-- 附件 -->
+            <div class="mt-4">
+                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Attachments (Optional)</label>
+                <div class="relative">
+                    <input type="file" name="file"
+                           class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
+                                  file:text-xs file:font-semibold file:bg-[#0c1a2e]/5 file:text-[#1a2d4a]
+                                  hover:file:bg-[#c9a84c]/10 file:transition-colors file:cursor-pointer">
+                </div>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+            <div class="mt-4">
+                {% for m in messages %}
+                <div class="px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{{ m }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Actions -->
+            <div class="flex items-center gap-3 mt-6 pt-5 border-t border-gray-100">
+                <button type="submit"
+                        class="flex-1 py-3 text-white text-sm font-bold uppercase tracking-wider
+                               bg-gradient-to-r from-[#1a2d4a] to-[#2a4270] rounded-lg shadow-md
+                               hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer">
+                    Submit
+                </button>
+                <a href="/office-portal/dashboard/"
+                   class="px-5 py-3 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-center">
+                    Cancel
+                </a>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+
+{% endblock %}

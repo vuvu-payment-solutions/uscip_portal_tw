@@ -7,6 +7,7 @@ portal/views.py
 import json
 import secrets
 
+from compliance.models import ControlDomain
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -31,6 +32,7 @@ from .services.notify import (
     teams_service_rejected,
     email_password_reset,
 )
+
 
 
 # ─────────────────────────────────────────────
@@ -116,9 +118,41 @@ def change_password(request):
     from django.contrib.auth import update_session_auth_hash
     update_session_auth_hash(request, request.user)
 
+    # Clear first-login flag
+    profile = getattr(request.user, 'profile', None)
+    if profile and profile.must_change_pw:
+        profile.must_change_pw = False
+        profile.save()
+
     messages.success(request, "✅ 密碼已成功修改！")
     return render(request, "office_portal/change_password.html")
 
+@login_required
+def edit_profile(request):
+    """編輯個人資料"""
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+
+    if request.method == "GET":
+        return render(request, "office_portal/edit_profile.html", {"profile": profile})
+
+    full_name  = request.POST.get("full_name", "").strip()
+    department = request.POST.get("department", "").strip()
+    email      = request.POST.get("email", "").strip()
+
+    if not full_name or not email:
+        messages.error(request, "Name and email are required.")
+        return render(request, "office_portal/edit_profile.html", {"profile": profile})
+
+    profile.full_name = full_name
+    profile.department = department
+    profile.save()
+
+    request.user.email = email
+    request.user.first_name = full_name
+    request.user.save()
+
+    messages.success(request, "✅ Profile updated successfully!")
+    return render(request, "office_portal/edit_profile.html", {"profile": profile})
 
 @login_required
 def portal_dashboard(request):
@@ -126,8 +160,25 @@ def portal_dashboard(request):
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else "user"
 
+    # ISMS domain stats
+    domains = ControlDomain.objects.prefetch_related('items__evidences').all()
+    domain_stats = []
+    for domain in domains:
+        items = list(domain.items.all())
+        total = len(items)
+        compliant = sum(1 for item in items if (ev := item.evidences.first()) and ev.status)
+        domain_stats.append({
+            "domain": domain, "total": total, "compliant": compliant,
+            "rate": round(compliant / total * 100, 1) if total else 0,
+        })
+    # Force password change on first login
+    if profile and profile.must_change_pw:
+        messages.warning(request, "Please change your password before continuing.")
+        return redirect("portal_change_password")
+
     context = {
         "role": role,
+        "domain_stats": domain_stats, 
         "notices": Notice.objects.filter(is_active=True)[:5],
         # 所有人都能看到自己的帳號申請紀錄
         "my_account_requests": AccountRequest.objects.filter(
@@ -439,3 +490,49 @@ def create_notice(request):
 
     Notice.objects.create(title=title, content=content, author=request.user)
     return JsonResponse({"success": True, "detail": "公告已發布"})
+
+# ─────────────────────────────────────────────
+# 6. 帳號設定
+# ─────────────────────────────────────────────
+
+@login_required
+def settings_home(request):
+    """
+    帳號設定首頁：顯示個人資訊與安全選項入口
+    """
+    profile = getattr(request.user, 'profile', None)
+    role = profile.role if profile else "user"
+    
+    context = {
+        "role": role,
+        "profile": profile,
+        # 這裡可以視需求傳入更多資料，例如最近登入紀錄等
+    }
+    return render(request, 'office_portal/settings.html', context)
+
+# ─────────────────────────────────────────────
+# 7. ISMS 合規管理
+# ─────────────────────────────────────────────
+
+@login_required
+def control_list(request):
+    """
+    顯示 ISO 27001:2022 控制項清單
+    """
+    # 假設您已經有對應的 Model (如 Domain)
+    # 這裡先抓取所有網域資料傳入模板
+    from .models import Domain # 請確認您的 Model 名稱
+    domains = Domain.objects.prefetch_related('items').all()
+    
+    return render(request, 'compliance/control_list.html', {
+        'domains': domains,
+    })
+
+
+@login_required
+def compliance_dashboard(request):
+    """
+    渲染 ISMS Compliance Dashboard (即您截圖中的頁面)
+    """
+    # 這裡未來可以加入計算合規率的邏輯
+    return render(request, 'compliance/dashboard.html')

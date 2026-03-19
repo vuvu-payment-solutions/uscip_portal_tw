@@ -1,73 +1,165 @@
-<!doctype html>
-<html>
+{% load static tailwind_tags %}
+<!DOCTYPE html>
+<html lang="zh-TW">
 <head>
-  <meta charset="utf-8">
-  <title>帳號申請 - USCIP</title>
-  <style>
-    body { font-family: sans-serif; max-width: 480px; margin: 60px auto; padding: 0 16px; }
-    h2 { margin-bottom: 24px; }
-    label { display: block; margin-top: 12px; font-size: 14px; color: #555; }
-    input, select { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-    button { margin-top: 20px; width: 100%; padding: 10px; background: #1a73e8; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 15px; }
-    #msg { margin-top: 12px; font-size: 14px; }
-    a { font-size: 13px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Registration — USCIP Office Portal</title>
+    {% tailwind_css %}
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif; }
+        .gold-accent { background: linear-gradient(90deg, #a88a2e, #c9a84c, #e8d48b, #c9a84c, #a88a2e); background-size: 200% 100%; animation: shimmer 4s ease infinite; }
+        @keyframes shimmer { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .card-border { background: linear-gradient(135deg, #a88a2e, #c9a84c, #e8d48b, #c9a84c); background-size: 300% 300%; animation: shimmer 8s ease infinite; }
+        .font-display { font-family: 'Playfair Display', Georgia, serif; }
+    </style>
 </head>
-<body>
-  <h2>帳號申請</h2>
+<body class="min-h-screen flex flex-col bg-gray-50">
+{% csrf_token %}
 
-  <label>帳號名稱 *</label>
-  <input id="username" placeholder="3~20 英數字或底線" />
+    <!-- Top Header -->
+    <header class="w-full flex items-center gap-3 px-6 py-4 bg-white border-b border-gray-100 shadow-sm relative z-10">
+        <img src="{% static 'images/quilter_logo.png' %}" alt="Quilter" class="w-11 h-11 object-contain" onerror="this.style.display='none'">
+        <div>
+            <div class="font-display font-bold text-lg text-[#0c1a2e] leading-tight">Office Portal</div>
+            <div class="text-[10.5px] font-semibold text-[#a88a2e] tracking-[2.5px] uppercase">Quilter International</div>
+        </div>
+    </header>
+    <div class="gold-accent h-[3px]"></div>
 
-  <label>姓名 *</label>
-  <input id="full_name" placeholder="真實姓名" />
+    <!-- Main -->
+    <main class="flex-1 flex items-center justify-center px-5 py-10">
+        <div class="w-full max-w-[460px]">
 
-  <label>電子信箱 *</label>
-  <input id="email" type="email" placeholder="email@example.com" />
+            <div class="text-center mb-7">
+                <h1 class="font-display font-bold text-2xl text-[#0c1a2e] mb-1">Account Registration</h1>
+                <p class="text-sm text-gray-400">Fill in the following information to apply for a Portal account</p>
+            </div>
 
-  <label>部門</label>
-  <input id="department" placeholder="所屬部門" />
+            <div class="card-border p-[2px] rounded-[18px] shadow-lg">
+                <div class="bg-white rounded-2xl px-8 py-8">
 
-  <label>申請角色</label>
-  <select id="requested_role">
-    <option value="user">User（一般使用者）</option>
-    <option value="supervisor">Supervisor（主管）</option>
-  </select>
+                    <!-- Username -->
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Username *</label>
+                        <input type="text" id="username" placeholder="3~20 letters, numbers, or underscores"
+                               class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                                      focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                    </div>
 
-  <button onclick="submitRegister()">送出申請</button>
-  <div id="msg"></div>
+                    <!-- Full Name -->
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Full Name *</label>
+                        <input type="text" id="full_name" placeholder="Real Name"
+                               class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                                      focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                    </div>
 
-  <p><a href="/office-portal/">← 回到登入頁</a></p>
+                    <!-- Email -->
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Email *</label>
+                        <input type="email" id="email" placeholder="email@example.com"
+                               class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                                      focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                    </div>
 
-  <script>
-    async function submitRegister() {
-      const msg = document.getElementById('msg');
-      const payload = {
+                    <!-- Department -->
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Department</label>
+                        <input type="text" id="department" placeholder="Department"
+                               class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                                      focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                    </div>
+
+                    <!-- Role -->
+                    <div class="mb-5">
+                        <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Requested Role</label>
+                        <select id="requested_role"
+                                class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                                       focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                            <option value="user">User（一般使用者）</option>
+                            <option value="supervisor">Supervisor（主管）</option>
+                        </select>
+                    </div>
+
+                    <!-- Message -->
+                    <div id="msg" class="hidden mb-4 px-3 py-2 rounded-lg text-sm font-medium"></div>
+
+                    <!-- Submit -->
+                    <button onclick="submitRegister()" id="btn-register"
+                            class="w-full py-3 text-white text-sm font-bold uppercase tracking-wider
+                                   bg-gradient-to-r from-[#1a2d4a] to-[#2a4270] rounded-lg shadow-md cursor-pointer
+                                   hover:-translate-y-0.5 hover:shadow-lg transition-all">
+                        Submit
+                    </button>
+
+                    <p class="text-center text-sm text-gray-500 mt-4">
+                        <a href="/office-portal/" class="text-[#2a4270] font-semibold hover:text-[#a88a2e] transition-colors">← Back to Login Page</a>
+                    </p>
+
+                </div>
+            </div>
+
+            <p class="text-center text-xs text-gray-400 mt-6">
+                &copy; 2026 <span class="text-[#a88a2e] font-semibold">Quilter International Corp.</span> All rights reserved.
+            </p>
+        </div>
+    </main>
+
+<script>
+function getCookie(name) {
+    const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+    return v ? v[2] : '';
+}
+
+async function submitRegister() {
+    const msg = document.getElementById('msg');
+    const btn = document.getElementById('btn-register');
+    const payload = {
         username:       document.getElementById('username').value.trim(),
         full_name:      document.getElementById('full_name').value.trim(),
         email:          document.getElementById('email').value.trim(),
         department:     document.getElementById('department').value.trim(),
         requested_role: document.getElementById('requested_role').value,
-      };
-      if (!payload.username || !payload.full_name || !payload.email) {
-        msg.style.color = 'red';
+    };
+
+    if (!payload.username || !payload.full_name || !payload.email) {
+        msg.className = 'mb-4 px-3 py-2 rounded-lg text-sm font-medium bg-red-50 text-red-600 border border-red-200';
         msg.textContent = '請填寫所有必填欄位（*）';
+        msg.classList.remove('hidden');
         return;
-      }
-      const res = await fetch('/office-portal/register/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      msg.style.color = res.ok ? 'green' : 'red';
-      msg.textContent = data.detail;
     }
 
-    function getCookie(name) {
-      const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
-      return v ? v[2] : '';
+    btn.textContent = '送出中...';
+    btn.style.opacity = '0.7';
+    btn.style.pointerEvents = 'none';
+
+    try {
+        const res = await fetch('/office-portal/register/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+
+        msg.classList.remove('hidden');
+        if (res.ok) {
+            msg.className = 'mb-4 px-3 py-2 rounded-lg text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200';
+        } else {
+            msg.className = 'mb-4 px-3 py-2 rounded-lg text-sm font-medium bg-red-50 text-red-600 border border-red-200';
+        }
+        msg.textContent = data.detail;
+    } catch (err) {
+        msg.classList.remove('hidden');
+        msg.className = 'mb-4 px-3 py-2 rounded-lg text-sm font-medium bg-red-50 text-red-600 border border-red-200';
+        msg.textContent = '連線錯誤，請稍後再試';
     }
-  </script>
+
+    btn.textContent = '送出申請';
+    btn.style.opacity = '1';
+    btn.style.pointerEvents = 'auto';
+}
+</script>
 </body>
 </html>

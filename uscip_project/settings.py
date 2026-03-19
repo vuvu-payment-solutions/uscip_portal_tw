@@ -47,7 +47,11 @@ INSTALLED_APPS = [
     # 本專案 Apps
     'compliance',   # ISMS：ISO 27001 控制項 / 合規證據 / 稽核報告
     'portal',       # Office Portal：帳號申請、服務申請、公告
+    'tailwind',
+    'theme',        # Tailwind CSS 主題（必須在 tailwind app 之後）
 ]
+
+TAILWIND_APP_NAME = 'theme' 
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

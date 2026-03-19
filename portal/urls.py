@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include  # 修正：補上 include
 from . import views
 
 urlpatterns = [
@@ -9,9 +9,13 @@ urlpatterns = [
     path("dashboard/",    views.portal_dashboard, name="portal_dashboard"),
     path("forgot/",       views.portal_forgot,   name="portal_forgot"),
     path("reset/<str:token>/", views.portal_reset, name="portal_reset"),
+    
+    # 帳號設定的核心
+    path('settings/', views.settings_home, name='portal_settings'),
     path("change-password/", views.change_password, name="portal_change_password"),
-
-    # ── 帳號申請 ────────────────────────────────────
+    path('edit-profile/', views.edit_profile, name='portal_edit_profile'),
+    
+    # ── 帳號申請及審核 ────────────────────────────────────
     path("register/",                             views.portal_register,   name="portal_register"),
     path("approve-account/<int:req_id>/",         views.approve_account,   name="portal_approve_account"),
     path("reject-account/<int:req_id>/",          views.reject_account,    name="portal_reject_account"),

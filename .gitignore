@@ -21,6 +21,7 @@ __pycache__/
 venv/
 env/
 .venv/
+EC2_DB_deployment.txt
 
 # ── VS Code ───────────────────────────────────────────────────────────────────
 .vscode/
@@ -42,3 +43,15 @@ desktop.ini
 # ── 測試覆蓋率 ─────────────────────────────────────────────────────────────────
 .coverage
 htmlcov/
+
+# Backups
+*_backup.html
+
+# Sensitive
+create_users.py
+
+# Media uploads
+media/
+
+# Tailwind build cache
+theme/static_src/node_modules/
