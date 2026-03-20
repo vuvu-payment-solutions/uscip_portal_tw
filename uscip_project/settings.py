@@ -141,3 +141,7 @@ PA_TEAMS_WEBHOOK = 'https://defaultb09d388534804b4d9bf9386663232c.47.environment
 PA_EMAIL_WEBHOOK = 'https://defaultb09d388534804b4d9bf9386663232c.47.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/66149d96ddab44709e8987afe56b917e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=kIm6qAN97PRxbJDDje_BYPgoLZaEx7UpyFuYBGN_Sao'  # 寄信流程
 import os
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # collectstatic 的輸出目錄
+
+# File upload limit: 5MB，指定在 views.py 的 portal_upload_attachment 也要一併修改
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
