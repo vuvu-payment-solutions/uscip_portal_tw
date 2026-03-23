@@ -47,7 +47,7 @@
                 <!-- 部門 -->
                 <div>
                     <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Department *</label>
-                    <input type="text" name="department" placeholder="所屬部門" required
+                    <input type="text" name="department" placeholder="Your department" required
                            class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
                                   focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
                 </div>
@@ -60,10 +60,10 @@
                 <select name="a_type"
                         class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
                                focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
-                    <option value="API Access">API 存取申請</option>
-                    <option value="System Access">系統存取申請</option>
-                    <option value="Data Access">資料存取申請</option>
-                    <option value="Other">其他</option>
+                    <option value="API Access">API Access</option>
+                    <option value="System Access">System Access</option>
+                    <option value="Data Access">Data Access</option>
+                    <option value="Other">Other</option>
                 </select>
             </div>
 
@@ -78,9 +78,24 @@
             <!-- 服務系統 -->
             <div class="mt-4">
                 <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Service System Name</label>
-                <input type="text" name="service_system" placeholder="e.g., AWS S3, Internal ERP, ISMS Platform"
-                       class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
-                              focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="flex items-center gap-2 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:border-[#c9a84c] transition-all">
+                        <input type="checkbox" name="service_system" value="QBox" class="accent-[#1a2d4a]">
+                        <span class="text-sm text-[#1a2d4a]">QBox</span>
+                    </label>
+                    <label class="flex items-center gap-2 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:border-[#c9a84c] transition-all">
+                        <input type="checkbox" name="service_system" value="QCare" class="accent-[#1a2d4a]">
+                        <span class="text-sm text-[#1a2d4a]">QCare</span>
+                    </label>
+                    <label class="flex items-center gap-2 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:border-[#c9a84c] transition-all">
+                        <input type="checkbox" name="service_system" value="QCash" class="accent-[#1a2d4a]">
+                        <span class="text-sm text-[#1a2d4a]">QCash</span>
+                    </label>
+                    <label class="flex items-center gap-2 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:border-[#c9a84c] transition-all">
+                        <input type="checkbox" name="service_system" value="QHelp" class="accent-[#1a2d4a]">
+                        <span class="text-sm text-[#1a2d4a]">QHelp</span>
+                    </label>
+                </div>
             </div>
 
             <!-- 附件 -->

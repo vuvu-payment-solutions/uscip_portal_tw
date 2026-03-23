@@ -9,6 +9,7 @@ class UserProfile(models.Model):
     """
     ROLE_CHOICES = [
         ('user',       'User'),
+        ('team_leader', 'Team Leader'),
         ('supervisor', 'Supervisor'),
         ('cio',        'CIO'),
         ('admin',      'Admin'),

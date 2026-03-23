@@ -55,3 +55,8 @@ media/
 
 # Tailwind build cache
 theme/static_src/node_modules/
+
+# old files
+templates/base-old.html
+uscip.txt
+docs/

@@ -7,6 +7,8 @@ portal/views.py
 import json
 import secrets
 
+from urllib3 import request
+
 from compliance.models import ControlDomain
 from django.conf import settings
 from django.contrib import messages
@@ -341,7 +343,6 @@ def approve_account(request, req_id: int):
 
     return JsonResponse({"success": False, "detail": f"目前狀態 {req.status} 不允許此操作"}, status=400)
 
-
 @login_required
 def reject_account(request, req_id: int):
     profile = getattr(request.user, 'profile', None)
@@ -378,7 +379,7 @@ def submit_application(request):
     department     = request.POST.get("department", "").strip()
     a_purpose      = request.POST.get("a_purpose", "").strip()
     a_type         = request.POST.get("a_type", "").strip()
-    service_system = request.POST.get("service_system", "").strip()
+    service_system = ", ".join(request.POST.getlist("service_system"))
     attachment     = request.FILES.get("file")
 
     if not all([a_name, department, a_purpose, a_type]):
