@@ -10,6 +10,8 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.shortcuts import redirect
+
 
 # ── Admin 介面品牌化 ──────────────────────────────────────────────────────────
 admin.site.site_header  = "USCIP Compliance Management System"
@@ -17,6 +19,9 @@ admin.site.site_title   = "USCIP Admin Portal"
 admin.site.index_title  = "ISMS Operations Control Center"
 
 urlpatterns = [
+    # 根路由：已登入→dashboard，未登入→登入頁
+    path('', lambda request: redirect('/office-portal/dashboard/' if request.user.is_authenticated else '/office-portal/')),    
+    
     # Django 後台
     path('admin/', admin.site.urls),
 

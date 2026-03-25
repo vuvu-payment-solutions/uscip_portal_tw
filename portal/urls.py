@@ -1,7 +1,6 @@
 from django.urls import path, include  # 修正：補上 include
 from . import views
-from django.shortcuts import redirect
-from django.contrib import admin
+
 
 urlpatterns = [
     
@@ -32,9 +31,4 @@ urlpatterns = [
     # ── 公告 ────────────────────────────────────────
     path("notices/",   views.notice_list,   name="portal_notices"),
     path("notices/create/", views.create_notice, name="portal_create_notice"),
-    
-    # ── 後端重新導向至前端 ───────────────────────────────────────
-    path('', lambda request: redirect('/office-portal/dashboard/' if request.user.is_authenticated else '/office-portal/')),
-    path('admin/', admin.site.urls),
-    path('office-portal/', include('portal.urls')),
 ]
