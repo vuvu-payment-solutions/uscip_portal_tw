@@ -107,7 +107,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # ── 國際化 ────────────────────────────────────────────────────────────────────
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE     = 'Asia/Taipei'
-USE_I18N      = True
+USE_I18N      = False
 USE_TZ        = True
 
 # ── 靜態 / 媒體檔案 ───────────────────────────────────────────────────────────
