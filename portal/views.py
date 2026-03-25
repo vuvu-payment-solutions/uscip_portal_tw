@@ -192,12 +192,16 @@ def portal_dashboard(request):
         ).order_by("-created_at"),
     }
 
-    if role in ("supervisor", "admin"):
+    if role in ("cio", "admin"):
+        context["pending_accounts"] = AccountRequest.objects.filter(
+            status__in=["Pending Supervisor", "Pending CIO"]
+        )
+        context["pending_apps"] = Application.objects.filter(
+            status__in=["Pending Supervisor", "Pending CIO"]
+        )
+    elif role == "supervisor":
         context["pending_accounts"] = AccountRequest.objects.filter(status="Pending Supervisor")
         context["pending_apps"]     = Application.objects.filter(status="Pending Supervisor")
-    elif role == "cio":
-        context["pending_accounts"] = AccountRequest.objects.filter(status="Pending CIO")
-        context["pending_apps"]     = Application.objects.filter(status="Pending CIO")
 
     return render(request, "office_portal/dashboard.html", context)
 
