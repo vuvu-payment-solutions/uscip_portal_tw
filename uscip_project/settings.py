@@ -105,7 +105,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # ── 國際化 ────────────────────────────────────────────────────────────────────
-LANGUAGE_CODE = 'zh-hant'
+LANGUAGE_CODE = 'en-us'
 TIME_ZONE     = 'Asia/Taipei'
 USE_I18N      = True
 USE_TZ        = True
