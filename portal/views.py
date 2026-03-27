@@ -22,7 +22,7 @@ from django.views.decorators.http import require_POST, require_GET
 
 from django.views.decorators.csrf import ensure_csrf_cookie
 
-from .models import AccountRequest, Application, Notice, UserProfile
+from .models import AccountRequest, Application, Notice, UserProfile, PasswordResetToken
 from .services.notify import (
     teams_new_account_request,
     teams_account_pending_cio,
@@ -34,8 +34,6 @@ from .services.notify import (
     teams_service_rejected,
     email_password_reset,
 )
-
-
 
 # ─────────────────────────────────────────────
 # 1. 入口 / 認證
@@ -209,58 +207,61 @@ def portal_dashboard(request):
 # ─────────────────────────────────────────────
 # 2. 忘記密碼 / 重設密碼
 # ─────────────────────────────────────────────
-
 def portal_forgot(request):
     if request.method == "GET":
         return render(request, "office_portal/forgot.html")
-
+ 
     email = (request.POST.get("email") or "").strip().lower()
     if not email:
         messages.error(request, "請輸入電子信箱。")
         return redirect("portal_forgot")
-
-    token = secrets.token_urlsafe(32)
-    request.session["pw_reset_token"] = token
-    request.session["pw_reset_email"] = email
-    request.session["pw_reset_time"]  = timezone.now().isoformat()
-
-    reset_link = f"{settings.APP_BASE_URL}/office-portal/reset/{token}/"
-    email_password_reset(email, reset_link)
-
+ 
+    # 不論 email 是否存在都顯示相同訊息（防列舉攻擊）
+    try:
+        user = User.objects.get(email__iexact=email)
+    except User.DoesNotExist:
+        user = None
+ 
+    if user:
+        # 產生 token 存入 DB
+        token = secrets.token_urlsafe(32)
+        PasswordResetToken.objects.create(user=user, token=token)
+ 
+        reset_link = f"{settings.APP_BASE_URL}/office-portal/reset/{token}/"
+        email_password_reset(email, reset_link)
+ 
     messages.success(request, "若此信箱存在，重設連結已送出。")
     return redirect("portal_home")
 
-
 def portal_reset(request, token: str):
-    if request.session.get("pw_reset_token") != token:
+    """重設密碼頁面 — 從 DB 驗證 token"""
+    try:
+        reset_obj = PasswordResetToken.objects.get(token=token)
+    except PasswordResetToken.DoesNotExist:
         return render(request, "office_portal/reset_invalid.html")
-
+ 
+    if not reset_obj.is_valid():
+        return render(request, "office_portal/reset_invalid.html")
+ 
     if request.method == "GET":
         return render(request, "office_portal/reset.html", {"token": token})
-
+ 
     new_password = request.POST.get("password") or ""
     if len(new_password) < 8:
         messages.error(request, "密碼至少需要 8 個字元。")
         return redirect("portal_reset", token=token)
-
-    email = request.session.get("pw_reset_email")
-    if not email:
-        return render(request, "office_portal/reset_invalid.html")
-
-    try:
-        user = User.objects.get(email__iexact=email)
-    except User.DoesNotExist:
-        return render(request, "office_portal/reset_invalid.html")
-
+ 
+    # 重設密碼
+    user = reset_obj.user
     user.set_password(new_password)
     user.save()
-
-    for key in ("pw_reset_token", "pw_reset_email", "pw_reset_time"):
-        request.session.pop(key, None)
-
-    messages.success(request, "密碼重設成功，請重新登入。")
+ 
+    # 標記 token 已使用
+    reset_obj.used = True
+    reset_obj.save()
+ 
+    messages.success(request, "✅ 密碼已重設成功，請用新密碼登入。")
     return redirect("portal_home")
-
 
 # ─────────────────────────────────────────────
 # 3. 帳號申請（自助註冊 → 兩階簽核 → 建立 Django User）

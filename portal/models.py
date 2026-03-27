@@ -116,3 +116,25 @@ class Notice(models.Model):
 
     def __str__(self):
         return self.title
+    
+class PasswordResetToken(models.Model):
+    """密碼重設 Token（存 DB，不存 session）"""
+    user    = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reset_tokens')
+    token   = models.CharField(max_length=128, unique=True, db_index=True)
+    created = models.DateTimeField(auto_now_add=True)
+    used    = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-created']
+
+    def is_valid(self):
+        """30 分鐘內且未使用"""
+        from django.utils import timezone
+        import datetime
+        return (
+            not self.used
+            and (timezone.now() - self.created) < datetime.timedelta(minutes=30)
+        )
+
+    def __str__(self):
+        return f"Reset for {self.user.username} ({'used' if self.used else 'active'})"
