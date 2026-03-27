@@ -12,7 +12,6 @@ class UserProfile(models.Model):
         ('team_leader', 'Team Leader'),
         ('supervisor', 'Supervisor'),
         ('cio',        'CIO'),
-        ('admin',      'Admin'),
     ]
     user       = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     role       = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
@@ -59,35 +58,48 @@ class AccountRequest(models.Model):
     def __str__(self):
         return f"{self.username} [{self.status}]"
 
-
 class Application(models.Model):
     """
-    服務/API 申請單（含檔案上傳），兩階簽核流程
+    服務/API 申請單（含檔案上傳），多階簽核流程
     """
     STATUS_CHOICES = [
-        ('Pending Supervisor', 'Pending Supervisor'),
-        ('Pending CIO',        'Pending CIO'),
-        ('Approved',           'Approved'),
-        ('Rejected',           'Rejected'),
+        ('Under-preview',      'Under-preview'),
+        ('Pending Supervisor',  'Pending Supervisor'),
+        ('Pending CIO',         'Pending CIO'),
+        ('Work-in-progress',    'Work-in-progress'),
+        ('Request Completed',   'Request Completed'),
+        ('Rejected',            'Rejected'),
     ]
-
+ 
+    TYPE_CHOICES = [
+        ('API access',    'API Access'),
+        ('System access', 'System Access'),
+        ('Data access',   'Data Access'),
+        ('Other',         'Other (System Function / Process Change)'),
+    ]
+ 
     f_no           = models.CharField(max_length=50, unique=True, blank=True)
     a_name         = models.CharField(max_length=50, verbose_name='申請人')
     department     = models.CharField(max_length=50, verbose_name='部門')
     a_purpose      = models.TextField(verbose_name='申請目的')
-    a_type         = models.CharField(max_length=50, verbose_name='申請類型')
+    a_type         = models.CharField(max_length=50, choices=TYPE_CHOICES, verbose_name='申請類型')
     service_system = models.CharField(max_length=100, blank=True, verbose_name='服務系統')
     status         = models.CharField(max_length=30, choices=STATUS_CHOICES, default='Pending Supervisor')
     attachment     = models.FileField(upload_to='applications/', blank=True, null=True, verbose_name='附件')
-
+ 
+    # ── 新增欄位 ──────────────────────────────────────────────────────────────
+    bookmark       = models.TextField(blank=True, default='', verbose_name='Bookmark (審核備註)')
+    preview_by     = models.CharField(max_length=30, blank=True, default='',
+                                      verbose_name='Under-preview 設定者角色')
+ 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+ 
     class Meta:
         ordering = ['-created_at']
         verbose_name = '服務申請'
         verbose_name_plural = '服務申請列表'
-
+ 
     def save(self, *args, **kwargs):
         """自動產生 f_no，格式：APP-0001"""
         if not self.f_no:
@@ -95,10 +107,37 @@ class Application(models.Model):
             next_id = (last.id + 1) if last else 1
             self.f_no = f"APP-{str(next_id).zfill(4)}"
         super().save(*args, **kwargs)
-
+ 
+    @property
+    def progress(self):
+        """回傳進度百分比，供 Dashboard Progress Bar 使用"""
+        mapping = {
+            'Under-preview':      15,
+            'Pending Supervisor':  25,
+            'Pending CIO':         50,
+            'Work-in-progress':    75,
+            'Request Completed':  100,
+            'Rejected':             0,
+            'Approved':           100,
+        }
+        return mapping.get(self.status, 0)
+ 
+    @property
+    def progress_color(self):
+        """Progress bar 顏色"""
+        mapping = {
+            'Under-preview':     'bg-yellow-400',
+            'Pending Supervisor': 'bg-blue-400',
+            'Pending CIO':        'bg-blue-500',
+            'Work-in-progress':   'bg-indigo-500',
+            'Request Completed':  'bg-emerald-500',
+            'Rejected':           'bg-red-500',
+            'Approved':           'bg-emerald-500', 
+        }
+        return mapping.get(self.status, 'bg-gray-400')
+ 
     def __str__(self):
         return f"{self.f_no} - {self.a_name} [{self.status}]"
-
 
 class Notice(models.Model):
     """公告（對應 FastAPI notice model）"""

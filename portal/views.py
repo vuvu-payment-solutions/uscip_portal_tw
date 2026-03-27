@@ -1,25 +1,31 @@
 """
 portal/views.py
 ================
-從 FastAPI office_portal 移植至 Django 的完整視圖集合。
+USCIP Office Portal — 完整視圖集合
 涵蓋：登入/登出/忘記密碼/重設密碼、帳號申請簽核、服務申請簽核、公告管理、Dashboard。
+
+權限矩陣（SOD 職責分離）：
+  Pending Supervisor        → Supervisor only
+  Under-Preview (Supervisor)→ Supervisor only (Resume)
+  Pending CIO               → CIO only
+  Under-Preview (CIO)       → CIO only (Resume)
+  Work-in-progress          → CIO only (Complete)
+  Admin 角色已移除，不參與簽核流程
 """
 import json
 import secrets
-
-from urllib3 import request
 
 from compliance.models import ControlDomain
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.views.decorators.http import require_POST, require_GET
-
 from django.views.decorators.csrf import ensure_csrf_cookie
 
 from .models import AccountRequest, Application, Notice, UserProfile, PasswordResetToken
@@ -35,13 +41,15 @@ from .services.notify import (
     email_password_reset,
 )
 
+
 # ─────────────────────────────────────────────
 # 1. 入口 / 認證
 # ─────────────────────────────────────────────
 
-@ensure_csrf_cookie  # 加上這個裝飾器
+@ensure_csrf_cookie
 def index(request):
     return render(request, 'index.html')
+
 
 def portal_home(request):
     """首頁（登入頁）"""
@@ -89,7 +97,6 @@ def change_password(request):
     new_password1 = request.POST.get("new_password1", "").strip()
     new_password2 = request.POST.get("new_password2", "").strip()
 
-    # 驗證
     if not old_password or not new_password1 or not new_password2:
         messages.error(request, "所有欄位均為必填。")
         return render(request, "office_portal/change_password.html")
@@ -110,15 +117,12 @@ def change_password(request):
         messages.error(request, "新密碼不能與帳號名稱相同。")
         return render(request, "office_portal/change_password.html")
 
-    # 修改密碼
     request.user.set_password(new_password1)
     request.user.save()
 
-    # 更新 session，避免登出
     from django.contrib.auth import update_session_auth_hash
     update_session_auth_hash(request, request.user)
 
-    # Clear first-login flag
     profile = getattr(request.user, 'profile', None)
     if profile and profile.must_change_pw:
         profile.must_change_pw = False
@@ -126,6 +130,7 @@ def change_password(request):
 
     messages.success(request, "✅ 密碼已成功修改！")
     return render(request, "office_portal/change_password.html")
+
 
 @login_required
 def edit_profile(request):
@@ -154,6 +159,7 @@ def edit_profile(request):
     messages.success(request, "✅ Profile updated successfully!")
     return render(request, "office_portal/edit_profile.html", {"profile": profile})
 
+
 @login_required
 def portal_dashboard(request):
     """儀表板：依角色顯示不同資料"""
@@ -171,6 +177,7 @@ def portal_dashboard(request):
             "domain": domain, "total": total, "compliant": compliant,
             "rate": round(compliant / total * 100, 1) if total else 0,
         })
+
     # Force password change on first login
     if profile and profile.must_change_pw:
         messages.warning(request, "Please change your password before continuing.")
@@ -178,28 +185,31 @@ def portal_dashboard(request):
 
     context = {
         "role": role,
-        "domain_stats": domain_stats, 
+        "domain_stats": domain_stats,
         "notices": Notice.objects.filter(is_active=True)[:5],
-        # 所有人都能看到自己的帳號申請紀錄
         "my_account_requests": AccountRequest.objects.filter(
             username=request.user.username
         ).order_by("-created_at"),
-        # 所有人都能看到自己的服務申請紀錄
         "my_applications": Application.objects.filter(
             a_name=request.user.username
         ).order_by("-created_at"),
     }
 
-    if role in ("cio", "admin"):
-        context["pending_accounts"] = AccountRequest.objects.filter(
-            status__in=["Pending Supervisor", "Pending CIO"]
-        )
+    # ── SOD：每個角色只看到自己負責的申請 ──
+    if role == "cio":
+        context["pending_accounts"] = AccountRequest.objects.filter(status="Pending CIO")
         context["pending_apps"] = Application.objects.filter(
-            status__in=["Pending Supervisor", "Pending CIO"]
+            Q(status="Pending CIO") |
+            Q(status="Work-in-progress") |
+            Q(status="Under-preview", preview_by="Pending CIO")
         )
     elif role == "supervisor":
         context["pending_accounts"] = AccountRequest.objects.filter(status="Pending Supervisor")
-        context["pending_apps"]     = Application.objects.filter(status="Pending Supervisor")
+        context["pending_apps"] = Application.objects.filter(
+            Q(status="Pending Supervisor") |
+            Q(status="Under-preview", preview_by="Pending Supervisor")
+        )
+    # user / team_leader 不參與簽核，不顯示 pending 區塊
 
     return render(request, "office_portal/dashboard.html", context)
 
@@ -207,31 +217,31 @@ def portal_dashboard(request):
 # ─────────────────────────────────────────────
 # 2. 忘記密碼 / 重設密碼
 # ─────────────────────────────────────────────
+
 def portal_forgot(request):
     if request.method == "GET":
         return render(request, "office_portal/forgot.html")
- 
+
     email = (request.POST.get("email") or "").strip().lower()
     if not email:
         messages.error(request, "請輸入電子信箱。")
         return redirect("portal_forgot")
- 
+
     # 不論 email 是否存在都顯示相同訊息（防列舉攻擊）
     try:
         user = User.objects.get(email__iexact=email)
     except User.DoesNotExist:
         user = None
- 
+
     if user:
-        # 產生 token 存入 DB
         token = secrets.token_urlsafe(32)
         PasswordResetToken.objects.create(user=user, token=token)
- 
         reset_link = f"{settings.APP_BASE_URL}/office-portal/reset/{token}/"
         email_password_reset(email, reset_link)
- 
+
     messages.success(request, "若此信箱存在，重設連結已送出。")
     return redirect("portal_home")
+
 
 def portal_reset(request, token: str):
     """重設密碼頁面 — 從 DB 驗證 token"""
@@ -239,29 +249,28 @@ def portal_reset(request, token: str):
         reset_obj = PasswordResetToken.objects.get(token=token)
     except PasswordResetToken.DoesNotExist:
         return render(request, "office_portal/reset_invalid.html")
- 
+
     if not reset_obj.is_valid():
         return render(request, "office_portal/reset_invalid.html")
- 
+
     if request.method == "GET":
         return render(request, "office_portal/reset.html", {"token": token})
- 
+
     new_password = request.POST.get("password") or ""
     if len(new_password) < 8:
         messages.error(request, "密碼至少需要 8 個字元。")
         return redirect("portal_reset", token=token)
- 
-    # 重設密碼
+
     user = reset_obj.user
     user.set_password(new_password)
     user.save()
- 
-    # 標記 token 已使用
+
     reset_obj.used = True
     reset_obj.save()
- 
+
     messages.success(request, "✅ 密碼已重設成功，請用新密碼登入。")
     return redirect("portal_home")
+
 
 # ─────────────────────────────────────────────
 # 3. 帳號申請（自助註冊 → 兩階簽核 → 建立 Django User）
@@ -304,26 +313,24 @@ def portal_register(request):
 
 @login_required
 def approve_account(request, req_id: int):
-    """
-    兩階簽核帳號申請：
-      - Supervisor → Pending CIO
-      - CIO        → Approved（自動建立 Django User）
-    """
+    """帳號申請簽核（SOD）"""
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else "user"
 
-    if role not in ("supervisor", "cio", "admin"):
+    if role not in ("supervisor", "cio"):
         return JsonResponse({"success": False, "detail": "權限不足"}, status=403)
 
     req = get_object_or_404(AccountRequest, pk=req_id)
 
-    if role in ("supervisor", "admin") and req.status == "Pending Supervisor":
+    # Supervisor 只能操作 Pending Supervisor
+    if role == "supervisor" and req.status == "Pending Supervisor":
         req.status = "Pending CIO"
         req.save()
         teams_account_pending_cio(req.username, req.full_name)
         return JsonResponse({"success": True, "new_status": req.status})
 
-    elif role in ("cio", "admin") and req.status == "Pending CIO":
+    # CIO 只能操作 Pending CIO
+    elif role == "cio" and req.status == "Pending CIO":
         req.status = "Approved"
         req.save()
 
@@ -340,22 +347,32 @@ def approve_account(request, req_id: int):
                 role=req.requested_role,
                 full_name=req.full_name,
                 department=req.department,
+                must_change_pw=True,
             )
             print(f"[ACCOUNT CREATED] {req.username} / 初始密碼: {initial_password}")
 
         teams_account_approved(req.username, req.full_name)
         return JsonResponse({"success": True, "new_status": req.status})
 
-    return JsonResponse({"success": False, "detail": f"目前狀態 {req.status} 不允許此操作"}, status=400)
+    return JsonResponse({"success": False, "detail": f"權限不足或狀態 {req.status} 不允許此操作"}, status=403)
+
 
 @login_required
 def reject_account(request, req_id: int):
+    """帳號申請退件（SOD）"""
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else "user"
-    if role not in ("supervisor", "cio", "admin"):
+
+    if role not in ("supervisor", "cio"):
         return JsonResponse({"success": False, "detail": "權限不足"}, status=403)
 
     req = get_object_or_404(AccountRequest, pk=req_id)
+
+    if role == "supervisor" and req.status != "Pending Supervisor":
+        return JsonResponse({"success": False, "detail": "Supervisor 只能退件 Pending Supervisor 狀態"}, status=403)
+    elif role == "cio" and req.status != "Pending CIO":
+        return JsonResponse({"success": False, "detail": "CIO 只能退件 Pending CIO 狀態"}, status=403)
+
     comment = ""
     try:
         payload = json.loads(request.body.decode("utf-8"))
@@ -371,7 +388,7 @@ def reject_account(request, req_id: int):
 
 
 # ─────────────────────────────────────────────
-# 4. 服務 / API 申請（含檔案上傳，兩階簽核）
+# 4. 服務 / API 申請（含檔案上傳，多階簽核）
 # ─────────────────────────────────────────────
 
 @login_required
@@ -407,53 +424,196 @@ def submit_application(request):
 
 @login_required
 def approve_application(request, app_id: int):
-    """兩階簽核服務申請"""
+    """
+    SOD 簽核：
+      Supervisor → Pending Supervisor → Pending CIO
+      CIO       → Pending CIO       → Work-in-progress
+    """
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else "user"
 
-    if role not in ("supervisor", "cio", "admin"):
-        return JsonResponse({"success": False, "detail": "權限不足"}, status=403)
-
     item = get_object_or_404(Application, pk=app_id)
 
-    if role in ("supervisor", "admin") and item.status == "Pending Supervisor":
+    if role == "supervisor" and item.status == "Pending Supervisor":
         item.status = "Pending CIO"
         item.save()
         teams_service_pending_cio(item.f_no, item.a_name, item.a_type, item.service_system)
-        return JsonResponse({"success": True, "new_status": item.status})
-    elif role in ("cio", "admin") and item.status == "Pending CIO":
-        item.status = "Approved"
+        return JsonResponse({"success": True, "new_status": item.status, "progress": item.progress})
+
+    elif role == "cio" and item.status == "Pending CIO":
+        item.status = "Work-in-progress"
         item.save()
         teams_service_approved(item.f_no, item.a_name, item.a_type, item.service_system)
-        return JsonResponse({"success": True, "new_status": item.status})
+        return JsonResponse({"success": True, "new_status": item.status, "progress": item.progress})
+
     else:
-        return JsonResponse({"success": False, "detail": f"目前狀態 {item.status} 不允許此操作"}, status=400)
+        return JsonResponse({"success": False, "detail": f"權限不足或狀態 {item.status} 不允許此操作"}, status=403)
 
 
 @login_required
 def reject_application(request, app_id: int):
+    """
+    SOD 退件：
+      Supervisor 只能退 Pending Supervisor
+      CIO 只能退 Pending CIO
+    """
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else "user"
-    if role not in ("supervisor", "cio", "admin"):
+
+    item = get_object_or_404(Application, pk=app_id)
+
+    if role == "supervisor" and item.status != "Pending Supervisor":
+        return JsonResponse({"success": False, "detail": "Supervisor 只能退件 Pending Supervisor 狀態的申請"}, status=403)
+    elif role == "cio" and item.status != "Pending CIO":
+        return JsonResponse({"success": False, "detail": "CIO 只能退件 Pending CIO 狀態的申請"}, status=403)
+    elif role not in ("supervisor", "cio"):
+        return JsonResponse({"success": False, "detail": "權限不足"}, status=403)
+
+    comment = ""
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+        comment = payload.get("comment", "")
+    except Exception:
+        pass
+
+    item.status = "Rejected"
+    if comment:
+        timestamp = timezone.now().strftime("%Y-%m-%d %H:%M")
+        item.bookmark = f"[{timestamp} Rejected by {role}] {comment}\n" + item.bookmark
+    item.save()
+    teams_service_rejected(item.f_no, item.a_name)
+    return JsonResponse({"success": True, "new_status": item.status, "progress": item.progress})
+
+
+@login_required
+def preview_application(request, app_id: int):
+    """
+    Under-Preview：暫停審核，進入討論
+    SOD：Supervisor 只能操作 Pending Supervisor，CIO 只能操作 Pending CIO
+    """
+    profile = getattr(request.user, 'profile', None)
+    role = profile.role if profile else "user"
+
+    item = get_object_or_404(Application, pk=app_id)
+
+    if role == "supervisor" and item.status == "Pending Supervisor":
+        item.preview_by = "Pending Supervisor"
+    elif role == "cio" and item.status == "Pending CIO":
+        item.preview_by = "Pending CIO"
+    else:
+        return JsonResponse({"success": False, "detail": "權限不足或目前狀態無法設為 Under-Preview"}, status=403)
+
+    item.status = "Under-preview"
+
+    comment = ""
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+        comment = payload.get("comment", "")
+    except Exception:
+        pass
+
+    if comment:
+        timestamp = timezone.now().strftime("%Y-%m-%d %H:%M")
+        item.bookmark = f"[{timestamp} {request.user.username}/{role}] {comment}\n" + item.bookmark
+
+    item.save()
+    return JsonResponse({
+        "success": True,
+        "new_status": f"Under-Preview ({role.title()})",
+        "progress": item.progress,
+    })
+
+
+@login_required
+def resume_application(request, app_id: int):
+    """
+    從 Under-Preview 恢復到原本的 Pending 狀態
+    只有原本設定 Under-Preview 的角色可以 Resume
+    """
+    profile = getattr(request.user, 'profile', None)
+    role = profile.role if profile else "user"
+
+    item = get_object_or_404(Application, pk=app_id)
+
+    if item.status != "Under-preview":
+        return JsonResponse({"success": False, "detail": "只有 Under-Preview 狀態才能 Resume"}, status=400)
+
+    if item.preview_by == "Pending Supervisor" and role != "supervisor":
+        return JsonResponse({"success": False, "detail": "此申請由 Supervisor 設為 Under-Preview，只有 Supervisor 可以 Resume"}, status=403)
+    elif item.preview_by == "Pending CIO" and role != "cio":
+        return JsonResponse({"success": False, "detail": "此申請由 CIO 設為 Under-Preview，只有 CIO 可以 Resume"}, status=403)
+
+    item.status = item.preview_by if item.preview_by else "Pending Supervisor"
+    item.preview_by = ""
+    item.save()
+    return JsonResponse({
+        "success": True,
+        "new_status": item.status,
+        "progress": item.progress,
+    })
+
+
+@login_required
+def complete_application(request, app_id: int):
+    """CIO 確認外部系統帳號已開通，標記為 Request Completed"""
+    profile = getattr(request.user, 'profile', None)
+    role = profile.role if profile else "user"
+
+    if role != "cio":
+        return JsonResponse({"success": False, "detail": "僅 CIO 可標記完成"}, status=403)
+
+    item = get_object_or_404(Application, pk=app_id)
+
+    if item.status != "Work-in-progress":
+        return JsonResponse({"success": False, "detail": f"目前狀態 {item.status} 無法標記完成"}, status=400)
+
+    item.status = "Request Completed"
+    item.save()
+    return JsonResponse({
+        "success": True,
+        "new_status": item.status,
+        "progress": item.progress,
+    })
+
+
+@login_required
+def add_bookmark(request, app_id: int):
+    """為申請單新增備註（Supervisor / CIO 可用）"""
+    profile = getattr(request.user, 'profile', None)
+    role = profile.role if profile else "user"
+
+    if role not in ("supervisor", "cio"):
         return JsonResponse({"success": False, "detail": "權限不足"}, status=403)
 
     item = get_object_or_404(Application, pk=app_id)
-    item.status = "Rejected"
+
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+        comment = payload.get("comment", "").strip()
+    except Exception:
+        return JsonResponse({"success": False, "detail": "Bad request"}, status=400)
+
+    if not comment:
+        return JsonResponse({"success": False, "detail": "備註不可空白"}, status=400)
+
+    timestamp = timezone.now().strftime("%Y-%m-%d %H:%M")
+    new_entry = f"[{timestamp} {request.user.username}/{role}] {comment}"
+
+    item.bookmark = new_entry + "\n" + item.bookmark if item.bookmark else new_entry
     item.save()
-    teams_service_rejected(item.f_no, item.a_name)
-    return JsonResponse({"success": True, "new_status": item.status})
+
+    return JsonResponse({"success": True, "bookmark": item.bookmark})
 
 
 @login_required
 def application_list(request):
-    """列出所有申請單（管理員/主管用）"""
+    """列出所有申請單"""
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else "user"
 
-    if role in ("supervisor", "cio", "admin"):
+    if role in ("supervisor", "cio"):
         apps = Application.objects.all()
     else:
-        # 一般使用者只看自己的（以 a_name 比對，實務上應改為 ForeignKey）
         apps = Application.objects.filter(a_name=request.user.username)
 
     return render(request, "office_portal/application_list.html", {
@@ -477,11 +637,11 @@ def notice_list(request):
 
 @login_required
 def create_notice(request):
-    """發布公告（CIO / Admin 限定）"""
+    """發布公告（僅 CIO）"""
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else "user"
-    if role not in ("cio", "admin"):
-        return JsonResponse({"success": False, "detail": "僅 CIO / Admin 可發布公告"}, status=403)
+    if role != "cio":
+        return JsonResponse({"success": False, "detail": "僅 CIO 可發布公告"}, status=403)
 
     try:
         payload = json.loads(request.body.decode("utf-8"))
@@ -497,24 +657,23 @@ def create_notice(request):
     Notice.objects.create(title=title, content=content, author=request.user)
     return JsonResponse({"success": True, "detail": "公告已發布"})
 
+
 # ─────────────────────────────────────────────
 # 6. 帳號設定
 # ─────────────────────────────────────────────
 
 @login_required
 def settings_home(request):
-    """
-    帳號設定首頁：顯示個人資訊與安全選項入口
-    """
+    """帳號設定首頁"""
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else "user"
-    
+
     context = {
         "role": role,
         "profile": profile,
-        # 這裡可以視需求傳入更多資料，例如最近登入紀錄等
     }
     return render(request, 'office_portal/settings.html', context)
+
 
 # ─────────────────────────────────────────────
 # 7. ISMS 合規管理
@@ -522,14 +681,10 @@ def settings_home(request):
 
 @login_required
 def control_list(request):
-    """
-    顯示 ISO 27001:2022 控制項清單
-    """
-    # 假設您已經有對應的 Model (如 Domain)
-    # 這裡先抓取所有網域資料傳入模板
-    from .models import Domain # 請確認您的 Model 名稱
+    """顯示 ISO 27001:2022 控制項清單"""
+    from .models import Domain
     domains = Domain.objects.prefetch_related('items').all()
-    
+
     return render(request, 'compliance/control_list.html', {
         'domains': domains,
     })
@@ -537,8 +692,5 @@ def control_list(request):
 
 @login_required
 def compliance_dashboard(request):
-    """
-    渲染 ISMS Compliance Dashboard (即您截圖中的頁面)
-    """
-    # 這裡未來可以加入計算合規率的邏輯
+    """渲染 ISMS Compliance Dashboard"""
     return render(request, 'compliance/dashboard.html')

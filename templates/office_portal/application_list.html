@@ -37,17 +37,18 @@
                     <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Department</th>
                     <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Type</th>
                     <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Service</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center:""">Attachment</th>
+                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Attachment</th>
                     <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Status</th>
+                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Progress</th>
                     <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
-                    {% if role in "supervisor,cio,admin" %}
+                    {% if role in "supervisor,cio" %}
                     <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Actions</th>
                     {% endif %}
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
                 {% for app in applications %}
-                <tr class="hover:bg-gray-50/50 transition-colors">
+                <tr class="hover:bg-gray-50/50 transition-colors" id="list-row-{{ app.id }}">
                     <td class="px-4 py-3 font-mono text-xs font-semibold text-[#1a2d4a]">{{ app.f_no }}</td>
                     <td class="px-4 py-3 text-gray-700">{{ app.a_name }}</td>
                     <td class="px-4 py-3 text-gray-600">{{ app.department }}</td>
@@ -56,7 +57,7 @@
                     <td class="px-4 py-3 text-center">
                         {% if app.attachment %}
                         <a href="{{ app.attachment.url }}" target="_blank"
-                        class="inline-flex items-center gap-1 text-xs font-semibold text-[#2a4270] hover:text-[#c9a84c] transition-colors">
+                           class="inline-flex items-center gap-1 text-xs font-semibold text-[#2a4270] hover:text-[#c9a84c] transition-colors">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
                             </svg>
@@ -65,28 +66,58 @@
                         {% else %}
                         <span class="text-gray-300">—</span>
                         {% endif %}
+                    </td>
                     <td class="px-4 py-3 text-center">
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold
-                            {% if app.status == 'Approved' %}bg-emerald-50 text-emerald-700
+                            {% if app.status == 'Request Completed' %}bg-emerald-50 text-emerald-700
                             {% elif app.status == 'Rejected' %}bg-red-50 text-red-700
+                            {% elif app.status == 'Work-in-progress' %}bg-indigo-50 text-indigo-700
+                            {% elif app.status == 'Under-preview' %}bg-yellow-50 text-yellow-700
                             {% else %}bg-amber-50 text-amber-700{% endif %}">
-                            {{ app.status }}
+                            {% if app.status == 'Under-preview' %}
+                                Under-Preview ({% if app.preview_by == 'Pending Supervisor' %}Supervisor{% else %}CIO{% endif %})
+                            {% else %}
+                                {{ app.status }}
+                            {% endif %}
                         </span>
                     </td>
+                    <!-- Progress Bar -->
+                    <td class="px-4 py-3">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div style="width:80px;height:6px;background:#e5e7eb;border-radius:9999px;overflow:hidden;">
+                                <div style="height:100%;border-radius:9999px;width:{{ app.progress }}%;background:{% if app.status == 'Request Completed' or app.status == 'Approved' %}#10b981{% elif app.status == 'Work-in-progress' %}#6366f1{% elif app.status == 'Pending CIO' %}#3b82f6{% elif app.status == 'Pending Supervisor' %}#60a5fa{% elif app.status == 'Under-preview' %}#facc15{% elif app.status == 'Rejected' %}#ef4444{% else %}#9ca3af{% endif %};"></div>
+                            </div>
+                            <span class="text-xs text-gray-500">{{ app.progress }}%</span>
+                        </div>
+                    </td>
                     <td class="px-4 py-3 text-gray-500 text-xs">{{ app.created_at|date:"Y-m-d H:i" }}</td>
-                    {% if role in "supervisor,cio,admin" %}
+                    {% if role in "supervisor,cio" %}
                     <td class="px-4 py-3 text-center">
-                        {% if app.status == 'Pending Supervisor' or app.status == 'Pending CIO' %}
-                        <div class="flex items-center justify-center gap-1.5">
+                        {% if app.status == 'Pending Supervisor' and role == 'supervisor' or app.status == 'Pending CIO' and role == 'cio' %}
+                        <div class="flex items-center justify-center gap-1">
                             <button onclick="doAction('approve', {{ app.id }}, this)"
-                                    class="px-2.5 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md transition-colors">
+                                    class="px-2 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md transition-colors">
                                 Approve
                             </button>
+                            <button onclick="doAction('preview', {{ app.id }}, this)"
+                                    class="px-2 py-1 text-xs font-semibold text-white bg-yellow-500 hover:bg-yellow-600 rounded-md transition-colors">
+                                Review
+                            </button>
                             <button onclick="doAction('reject', {{ app.id }}, this)"
-                                    class="px-2.5 py-1 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-md transition-colors">
+                                    class="px-2 py-1 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-md transition-colors">
                                 Reject
                             </button>
                         </div>
+                        {% elif app.status == 'Under-preview' and app.preview_by == 'Pending Supervisor' and role == 'supervisor' or app.status == 'Under-preview' and app.preview_by == 'Pending CIO' and role == 'cio' %}
+                        <button onclick="doAction('resume', {{ app.id }}, this)"
+                                class="px-2 py-1 text-xs font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-md transition-colors">
+                            Resume
+                        </button>
+                        {% elif app.status == 'Work-in-progress' and role == 'cio' %}
+                        <button onclick="doAction('complete', {{ app.id }}, this)"
+                                class="px-2 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md transition-colors">
+                            Complete
+                        </button>
                         {% else %}
                         <span class="text-gray-300">—</span>
                         {% endif %}
@@ -95,7 +126,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="9" class="px-4 py-12 text-center text-gray-400">
+                    <td colspan="10" class="px-4 py-12 text-center text-gray-400">
                         <svg class="w-10 h-10 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                             <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 5h6"/>
                         </svg>
@@ -112,6 +143,11 @@
 
 {% block extra_js %}
 <script>
+function getCookie(name) {
+    const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+    return v ? v[2] : '';
+}
+
 async function doAction(action, appId, btn) {
     const url = `/office-portal/${action}-application/${appId}/`;
     const msgDiv = document.getElementById('msg');
@@ -119,7 +155,11 @@ async function doAction(action, appId, btn) {
     try {
         const res = await fetch(url, {
             method: 'POST',
-            headers: { 'X-CSRFToken': getCookie('csrftoken') },
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({}),
         });
         const data = await res.json();
 
@@ -127,22 +167,9 @@ async function doAction(action, appId, btn) {
 
         if (res.ok) {
             msgDiv.className = 'mb-4 px-4 py-2.5 rounded-lg text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200';
-            msgDiv.textContent = `✅ 操作成功，新狀態：${data.new_status}`;
-
-            // Update status badge
-            const row = btn.closest('tr');
-            const statusCell = row.querySelector('td:nth-child(6) span');
-            if (statusCell) {
-                statusCell.textContent = data.new_status;
-                statusCell.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ' +
-                    (data.new_status === 'Approved' ? 'bg-emerald-50 text-emerald-700' :
-                     data.new_status === 'Rejected' ? 'bg-red-50 text-red-700' :
-                     'bg-amber-50 text-amber-700');
-            }
-
-            // Hide action buttons
-            const actionCell = row.querySelector('td:last-child');
-            if (actionCell) actionCell.innerHTML = '<span class="text-gray-300">—</span>';
+            msgDiv.textContent = `✅ Success — new status: ${data.new_status}`;
+            // Reload to reflect new buttons and status
+            setTimeout(() => location.reload(), 800);
         } else {
             msgDiv.className = 'mb-4 px-4 py-2.5 rounded-lg text-sm font-medium bg-red-50 text-red-700 border border-red-200';
             msgDiv.textContent = `❌ ${data.detail}`;
@@ -150,13 +177,8 @@ async function doAction(action, appId, btn) {
     } catch (err) {
         msgDiv.classList.remove('hidden');
         msgDiv.className = 'mb-4 px-4 py-2.5 rounded-lg text-sm font-medium bg-red-50 text-red-700 border border-red-200';
-        msgDiv.textContent = '❌ 連線錯誤，請稍後再試';
+        msgDiv.textContent = '❌ Connection error';
     }
-}
-
-function getCookie(name) {
-    const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
-    return v ? v[2] : '';
 }
 </script>
 {% endblock %}

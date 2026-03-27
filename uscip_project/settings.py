@@ -143,5 +143,5 @@ import os
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # collectstatic 的輸出目錄
 
 # File upload limit: 5MB，指定在 views.py 的 portal_upload_attachment 也要一併修改
-DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
-FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024
