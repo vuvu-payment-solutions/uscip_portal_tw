@@ -139,6 +139,43 @@ class Application(models.Model):
     def __str__(self):
         return f"{self.f_no} - {self.a_name} [{self.status}]"
 
+
+class ApprovalHistory(models.Model):
+    """
+    審核歷程紀錄：每次狀態變更自動寫入一筆
+    """
+    ACTION_CHOICES = [
+        ('submit',   'Submit'),
+        ('approve',  'Approve'),
+        ('reject',   'Reject'),
+        ('preview',  'Under-Preview'),
+        ('resume',   'Resume'),
+        ('complete', 'Complete'),
+        ('bookmark', 'Bookmark'),
+    ]
+
+    application = models.ForeignKey(
+        Application, on_delete=models.CASCADE, related_name='approval_history'
+    )
+    action      = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    from_status = models.CharField(max_length=30, blank=True, default='')
+    to_status   = models.CharField(max_length=30, blank=True, default='')
+    actor       = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    actor_role  = models.CharField(max_length=20, blank=True, default='')
+    comment     = models.TextField(blank=True, default='')
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = '審核歷程'
+        verbose_name_plural = '審核歷程列表'
+
+    def __str__(self):
+        return f"{self.application.f_no} | {self.action} by {self.actor} ({self.from_status} → {self.to_status})"
+
+
 class Notice(models.Model):
     """公告（對應 FastAPI notice model）"""
     title      = models.CharField(max_length=200, verbose_name='標題')

@@ -28,7 +28,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import ensure_csrf_cookie
 
-from .models import AccountRequest, Application, Notice, UserProfile, PasswordResetToken
+from .models import AccountRequest, Application, Notice, UserProfile, PasswordResetToken, ApprovalHistory
 from .services.notify import (
     teams_new_account_request,
     teams_account_pending_cio,
@@ -40,6 +40,23 @@ from .services.notify import (
     teams_service_rejected,
     email_password_reset,
 )
+
+
+# ─────────────────────────────────────────────
+# Helper：審核歷程紀錄
+# ─────────────────────────────────────────────
+
+def _log_history(application, action, from_status, to_status, user, role, comment=""):
+    """寫入一筆 ApprovalHistory"""
+    ApprovalHistory.objects.create(
+        application=application,
+        action=action,
+        from_status=from_status,
+        to_status=to_status,
+        actor=user,
+        actor_role=role,
+        comment=comment,
+    )
 
 
 # ─────────────────────────────────────────────
@@ -435,14 +452,18 @@ def approve_application(request, app_id: int):
     item = get_object_or_404(Application, pk=app_id)
 
     if role == "supervisor" and item.status == "Pending Supervisor":
+        old_status = item.status
         item.status = "Pending CIO"
         item.save()
+        _log_history(item, 'approve', old_status, item.status, request.user, role)
         teams_service_pending_cio(item.f_no, item.a_name, item.a_type, item.service_system)
         return JsonResponse({"success": True, "new_status": item.status, "progress": item.progress})
 
     elif role == "cio" and item.status == "Pending CIO":
+        old_status = item.status
         item.status = "Work-in-progress"
         item.save()
+        _log_history(item, 'approve', old_status, item.status, request.user, role)
         teams_service_approved(item.f_no, item.a_name, item.a_type, item.service_system)
         return JsonResponse({"success": True, "new_status": item.status, "progress": item.progress})
 
@@ -476,11 +497,13 @@ def reject_application(request, app_id: int):
     except Exception:
         pass
 
+    old_status = item.status
     item.status = "Rejected"
     if comment:
         timestamp = timezone.now().strftime("%Y-%m-%d %H:%M")
         item.bookmark = f"[{timestamp} Rejected by {role}] {comment}\n" + item.bookmark
     item.save()
+    _log_history(item, 'reject', old_status, item.status, request.user, role, comment)
     teams_service_rejected(item.f_no, item.a_name)
     return JsonResponse({"success": True, "new_status": item.status, "progress": item.progress})
 
@@ -503,6 +526,7 @@ def preview_application(request, app_id: int):
     else:
         return JsonResponse({"success": False, "detail": "權限不足或目前狀態無法設為 Under-Preview"}, status=403)
 
+    old_status = item.status
     item.status = "Under-preview"
 
     comment = ""
@@ -517,6 +541,7 @@ def preview_application(request, app_id: int):
         item.bookmark = f"[{timestamp} {request.user.username}/{role}] {comment}\n" + item.bookmark
 
     item.save()
+    _log_history(item, 'preview', old_status, item.status, request.user, role, comment)
     return JsonResponse({
         "success": True,
         "new_status": f"Under-Preview ({role.title()})",
@@ -543,9 +568,11 @@ def resume_application(request, app_id: int):
     elif item.preview_by == "Pending CIO" and role != "cio":
         return JsonResponse({"success": False, "detail": "此申請由 CIO 設為 Under-Preview，只有 CIO 可以 Resume"}, status=403)
 
+    old_status = item.status
     item.status = item.preview_by if item.preview_by else "Pending Supervisor"
     item.preview_by = ""
     item.save()
+    _log_history(item, 'resume', old_status, item.status, request.user, role)
     return JsonResponse({
         "success": True,
         "new_status": item.status,
@@ -567,8 +594,10 @@ def complete_application(request, app_id: int):
     if item.status != "Work-in-progress":
         return JsonResponse({"success": False, "detail": f"目前狀態 {item.status} 無法標記完成"}, status=400)
 
+    old_status = item.status
     item.status = "Request Completed"
     item.save()
+    _log_history(item, 'complete', old_status, item.status, request.user, role)
     return JsonResponse({
         "success": True,
         "new_status": item.status,
@@ -699,7 +728,7 @@ from django.http import JsonResponse
 
 @login_required
 def application_detail_api(request, app_id):
-    """回傳單筆申請的完整資料（JSON）供 modal 顯示"""
+    """回傳單筆申請的完整資料 + 審核歷程（JSON）供 modal 顯示"""
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else "user"
 
@@ -707,6 +736,20 @@ def application_detail_api(request, app_id):
         return JsonResponse({"error": "Permission denied"}, status=403)
 
     app = get_object_or_404(Application, pk=app_id)
+
+    # 審核歷程
+    history = []
+    for h in app.approval_history.order_by('created_at'):
+        history.append({
+            "action": h.get_action_display(),
+            "from_status": h.from_status,
+            "to_status": h.to_status,
+            "actor": h.actor.username if h.actor else "—",
+            "actor_role": h.actor_role.title() if h.actor_role else "",
+            "comment": h.comment,
+            "created_at": h.created_at.strftime("%Y/%m/%d %H:%M"),
+        })
+
     return JsonResponse({
         "f_no": app.f_no,
         "a_name": app.a_name,
@@ -717,5 +760,5 @@ def application_detail_api(request, app_id):
         "attachment": app.attachment.url if app.attachment else None,
         "status": app.status,
         "created_at": app.created_at.strftime("%Y/%m/%d %H:%M") if app.created_at else "",
+        "history": history,
     })
-    

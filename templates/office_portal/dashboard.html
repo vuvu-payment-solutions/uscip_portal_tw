@@ -498,15 +498,60 @@ async function showAppDetail(appId) {
             row('Department', d.department) +
             row('Type',       d.a_type) +
             row('Service',    d.service_system) +
-            row('Purpose',    `<div class="whitespace-pre-wrap">${d.a_purpose}</div>`) +
+            row('Purpose',    `<div style="white-space:pre-wrap;">${d.a_purpose}</div>`) +
             row('Attachment',  d.attachment
-                ? `<a href="${d.attachment}" target="_blank" class="text-[#2a4270] hover:text-[#c9a84c] underline">📎 View File</a>`
+                ? `<a href="${d.attachment}" target="_blank" style="color:#2a4270; text-decoration:underline;">📎 View File</a>`
                 : '—') +
             row('Status',     d.status) +
-            row('Submitted',  d.created_at);
+            row('Submitted',  d.created_at) +
+            buildHistoryTimeline(d.history || []);
     } catch (err) {
-        body.innerHTML = '<p class="text-sm text-red-500">Failed to load details.</p>';
+        body.innerHTML = '<p style="font-size:13px; color:#ef4444;">Failed to load details.</p>';
     }
+}
+
+function buildHistoryTimeline(history) {
+    if (!history.length) return '';
+
+    const actionColors = {
+        'Approve':       { bg: '#ecfdf5', text: '#059669', dot: '#10b981' },
+        'Reject':        { bg: '#fef2f2', text: '#dc2626', dot: '#ef4444' },
+        'Under-Preview': { bg: '#fefce8', text: '#ca8a04', dot: '#eab308' },
+        'Resume':        { bg: '#eff6ff', text: '#2563eb', dot: '#3b82f6' },
+        'Complete':      { bg: '#ecfdf5', text: '#059669', dot: '#10b981' },
+        'Submit':        { bg: '#f5f3ff', text: '#7c3aed', dot: '#8b5cf6' },
+        'Bookmark':      { bg: '#f9fafb', text: '#6b7280', dot: '#9ca3af' },
+    };
+
+    let html = `<div style="margin-top:16px; padding-top:16px; border-top:1px solid #e5e7eb;">
+        <div style="font-size:12px; font-weight:700; color:#0c1a2e; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px;">
+            📜 Approval History
+        </div>`;
+
+    history.forEach((h, i) => {
+        const c = actionColors[h.action] || { bg: '#f9fafb', text: '#6b7280', dot: '#9ca3af' };
+        const isLast = i === history.length - 1;
+        html += `
+        <div style="display:flex; gap:12px; position:relative;">
+            <div style="display:flex; flex-direction:column; align-items:center; width:16px;">
+                <div style="width:10px; height:10px; border-radius:50%; background:${c.dot}; margin-top:4px; flex-shrink:0;"></div>
+                ${!isLast ? '<div style="width:2px; flex:1; background:#e5e7eb; margin:4px 0;"></div>' : ''}
+            </div>
+            <div style="flex:1; padding-bottom:${isLast ? '0' : '12px'};">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:9999px; background:${c.bg}; color:${c.text};">${h.action}</span>
+                    <span style="font-size:11px; color:#9ca3af;">${h.created_at}</span>
+                </div>
+                <div style="font-size:12px; color:#4b5563; margin-top:2px;">
+                    <strong>${h.actor}</strong>: ${h.from_status} → ${h.to_status}
+                </div>
+                ${h.comment ? `<div style="font-size:11px; color:#6b7280; margin-top:4px; padding:6px 10px; background:#f9fafb; border-radius:6px; white-space:pre-wrap;">${h.comment}</div>` : ''}
+            </div>
+        </div>`;
+    });
+
+    html += '</div>';
+    return html;
 }
 
 function closeAppDetail() {
