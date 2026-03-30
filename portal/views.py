@@ -694,3 +694,28 @@ def control_list(request):
 def compliance_dashboard(request):
     """渲染 ISMS Compliance Dashboard"""
     return render(request, 'compliance/dashboard.html')
+
+from django.http import JsonResponse
+
+@login_required
+def application_detail_api(request, app_id):
+    """回傳單筆申請的完整資料（JSON）供 modal 顯示"""
+    profile = getattr(request.user, 'profile', None)
+    role = profile.role if profile else "user"
+
+    if role not in ("supervisor", "cio", "admin"):
+        return JsonResponse({"error": "Permission denied"}, status=403)
+
+    app = get_object_or_404(Application, pk=app_id)
+    return JsonResponse({
+        "f_no": app.f_no,
+        "a_name": app.a_name,
+        "department": app.department,
+        "a_type": app.a_type,
+        "service_system": app.service_system or "",
+        "a_purpose": app.a_purpose or "",
+        "attachment": app.attachment.url if app.attachment else None,
+        "status": app.status,
+        "created_at": app.created_at.strftime("%Y/%m/%d %H:%M") if app.created_at else "",
+    })
+    

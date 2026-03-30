@@ -24,6 +24,7 @@ urlpatterns = [
     # ── 服務申請 ───────────────────────────────────
     path("apply/",                                views.submit_application,    name="portal_apply"),
     path("applications/",                         views.application_list,      name="portal_application_list"),
+    path('api/application/<int:app_id>/',         views.application_detail_api, name='application_detail_api'),
     path("approve-application/<int:app_id>/",     views.approve_application,   name="portal_approve_application"),
     path("reject-application/<int:app_id>/",      views.reject_application,    name="portal_reject_application"),
     path("preview-application/<int:app_id>/",     views.preview_application,   name="preview_application"),

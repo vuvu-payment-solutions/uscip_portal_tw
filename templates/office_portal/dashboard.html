@@ -101,7 +101,12 @@
             <tbody class="divide-y divide-gray-100">
                 {% for app in pending_apps %}
                 <tr class="hover:bg-gray-50/50 transition-colors" id="app-row-{{ app.id }}">
-                    <td class="px-4 py-3 font-mono text-xs font-semibold text-[#1a2d4a]">{{ app.f_no }}</td>
+                    <td class="px-4 py-3 font-mono text-xs font-semibold">
+                        <a href="#" onclick="showAppDetail({{ app.id }}); return false;"
+                           class="text-[#2a4270] hover:text-[#c9a84c] underline decoration-dotted underline-offset-2 transition-colors">
+                            {{ app.f_no }}
+                        </a>
+                    </td>
                     <td class="px-4 py-3 text-gray-700">{{ app.a_name }}</td>
                     <td class="px-4 py-3 text-gray-600">{{ app.a_type }}</td>
                     <td class="px-4 py-3 text-gray-600">{{ app.service_system|default:"-" }}</td>
@@ -174,9 +179,27 @@
         </table>
     </div>
 </div>
-{% endif %}
 
-<!-- My Account Request Status (for all users) -->
+<!-- Application Detail Modal -->
+<div id="appDetailModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50" onclick="closeAppDetail()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg relative">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <h3 class="text-base font-bold text-[#0c1a2e]">📋 Application Details</h3>
+                <button onclick="closeAppDetail()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+            </div>
+            <div id="appDetailBody" class="px-6 py-5 max-h-[70vh] overflow-y-auto">
+                <p class="text-sm text-gray-400">Loading…</p>
+            </div>
+            <div class="px-6 py-3 border-t border-gray-100 text-right">
+                <button onclick="closeAppDetail()" class="px-4 py-1.5 text-xs font-semibold bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endif %}
 {% if my_account_requests %}
 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
     <div class="px-5 py-4 border-b border-gray-100">
@@ -450,6 +473,44 @@ async function appAction(action, appId, btn) {
             alert(data.detail);
         }
     } catch (err) { alert('Connection error'); }
+}
+
+async function showAppDetail(appId) {
+    const modal = document.getElementById('appDetailModal');
+    const body  = document.getElementById('appDetailBody');
+    body.innerHTML = '<p class="text-sm text-gray-400">Loading…</p>';
+    modal.classList.remove('hidden');
+
+    try {
+        const res = await fetch(`/office-portal/api/application/${appId}/`);
+        if (!res.ok) throw new Error('Failed');
+        const d = await res.json();
+
+        const row = (label, val) =>
+            `<div class="grid grid-cols-3 gap-x-4 py-2.5 border-b border-gray-50">
+                <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider">${label}</div>
+                <div class="col-span-2 text-sm text-gray-800">${val || '—'}</div>
+            </div>`;
+
+        body.innerHTML =
+            row('App No.',    d.f_no) +
+            row('Applicant',  d.a_name) +
+            row('Department', d.department) +
+            row('Type',       d.a_type) +
+            row('Service',    d.service_system) +
+            row('Purpose',    `<div class="whitespace-pre-wrap">${d.a_purpose}</div>`) +
+            row('Attachment',  d.attachment
+                ? `<a href="${d.attachment}" target="_blank" class="text-[#2a4270] hover:text-[#c9a84c] underline">📎 View File</a>`
+                : '—') +
+            row('Status',     d.status) +
+            row('Submitted',  d.created_at);
+    } catch (err) {
+        body.innerHTML = '<p class="text-sm text-red-500">Failed to load details.</p>';
+    }
+}
+
+function closeAppDetail() {
+    document.getElementById('appDetailModal').classList.add('hidden');
 }
 </script>
 
