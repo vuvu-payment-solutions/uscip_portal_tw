@@ -59,6 +59,14 @@ def _log_history(application, action, from_status, to_status, user, role, commen
     )
 
 
+def _get_applicant_email(username: str) -> str:
+    """從 username 查出 email，查不到回傳空字串"""
+    try:
+        return User.objects.get(username=username).email or ""
+    except User.DoesNotExist:
+        return ""
+
+
 # ─────────────────────────────────────────────
 # 1. 入口 / 認證
 # ─────────────────────────────────────────────
@@ -368,7 +376,7 @@ def approve_account(request, req_id: int):
             )
             print(f"[ACCOUNT CREATED] {req.username} / 初始密碼: {initial_password}")
 
-        teams_account_approved(req.username, req.full_name)
+        teams_account_approved(req.username, req.full_name, applicant_email=req.email)
         return JsonResponse({"success": True, "new_status": req.status})
 
     return JsonResponse({"success": False, "detail": f"權限不足或狀態 {req.status} 不允許此操作"}, status=403)
@@ -400,7 +408,7 @@ def reject_account(request, req_id: int):
     req.status  = "Rejected"
     req.comment = comment
     req.save()
-    teams_account_rejected(req.username, req.full_name, comment)
+    teams_account_rejected(req.username, req.full_name, comment, applicant_email=req.email)
     return JsonResponse({"success": True, "new_status": req.status})
 
 
@@ -434,7 +442,7 @@ def submit_application(request):
         attachment=attachment,
         status="Pending Supervisor",
     )
-    teams_new_service_application(app.f_no, a_name, a_type, service_system)
+    teams_new_service_application(app.f_no, a_name, a_type, service_system, department=department)
     messages.success(request, "申請已送出，等待主管審核。")
     return redirect("portal_dashboard")
 
@@ -464,7 +472,8 @@ def approve_application(request, app_id: int):
         item.status = "Work-in-progress"
         item.save()
         _log_history(item, 'approve', old_status, item.status, request.user, role)
-        teams_service_approved(item.f_no, item.a_name, item.a_type, item.service_system)
+        teams_service_approved(item.f_no, item.a_name, item.a_type, item.service_system,
+                               applicant_email=_get_applicant_email(item.a_name))
         return JsonResponse({"success": True, "new_status": item.status, "progress": item.progress})
 
     else:
@@ -504,7 +513,7 @@ def reject_application(request, app_id: int):
         item.bookmark = f"[{timestamp} Rejected by {role}] {comment}\n" + item.bookmark
     item.save()
     _log_history(item, 'reject', old_status, item.status, request.user, role, comment)
-    teams_service_rejected(item.f_no, item.a_name)
+    teams_service_rejected(item.f_no, item.a_name, applicant_email=_get_applicant_email(item.a_name))
     return JsonResponse({"success": True, "new_status": item.status, "progress": item.progress})
 
 

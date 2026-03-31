@@ -145,3 +145,11 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # collectstatic 的輸出�
 # File upload limit: 5MB，指定在 views.py 的 portal_upload_attachment 也要一併修改
 DATA_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024
+
+DEPT_SUPERVISOR_MAP = {
+    "IT":      "kelvin.huang@quilter.net",
+    "CS":      "jocelyn.ang@quilter.net",
+    "Finance": "arthur.cheng@quilter.net",
+    "Regularory Compliance":  "arthur.tsai@quilter.net",
+}
+DEFAULT_SUPERVISOR_EMAIL = "stanford.lee@quilter.net"
