@@ -2,22 +2,39 @@
 
 {% block title %}Service Application — USCIP Office Portal{% endblock %}
 {% block nav_applications %}active{% endblock %}
-{% block breadcrumb %}<span class="text-gray-400">Home</span> <span class="mx-1.5 text-gray-300">/</span> <a href="/office-portal/applications/" class="text-gray-400 hover:text-[#c9a84c] transition-colors">Applications</a> <span class="mx-1.5 text-gray-300">/</span> <span class="text-gray-700 font-medium">New</span>{% endblock %}
+{% block breadcrumb %}
+<span class="text-gray-400">Home</span>
+<span class="mx-1.5 text-gray-300">/</span>
+<a href="/office-portal/applications/" class="text-gray-400 hover:text-[#c9a84c] transition-colors">Applications</a>
+<span class="mx-1.5 text-gray-300">/</span>
+<span class="text-gray-700 font-medium">{% if resubmit_app %}Resubmit{% else %}New{% endif %}</span>
+{% endblock %}
 
 {% block content %}
-
 <div class="max-w-2xl mx-auto">
 
-    <!-- Page Header -->
     <div class="mb-6">
-        <h1 class="text-2xl font-bold text-[#0c1a2e]">Service / API Application</h1>
+        <h1 class="text-2xl font-bold text-[#0c1a2e]">
+            {% if resubmit_app %}Resubmit Application — {{ resubmit_app.f_no }}{% else %}Service / API Application{% endif %}
+        </h1>
         <p class="text-sm text-gray-400 mt-1">Fill out the form below to submit your service access request</p>
     </div>
 
-    <!-- Form Card -->
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    {% if resubmit_app and resubmit_app.return_reason %}
+    <div class="mb-5 px-5 py-4 bg-orange-50 border border-orange-200 rounded-xl">
+        <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+            </svg>
+            <div>
+                <p class="text-sm font-bold text-orange-700 mb-1">This application was returned for revision</p>
+                <p class="text-sm text-orange-600 whitespace-pre-wrap">{{ resubmit_app.return_reason }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
-        <!-- Card Header -->
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
             <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#1a2d4a] to-[#2a4270] flex items-center justify-center flex-shrink-0">
                 <svg class="w-4.5 h-4.5 text-[#e8d48b]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -30,91 +47,106 @@
             </div>
         </div>
 
-        <!-- Form Body -->
-        <form method="post" action="/office-portal/apply/" enctype="multipart/form-data" class="px-6 py-5">
+        <form method="post"
+              action="{% if resubmit_app %}/office-portal/resubmit-application/{{ resubmit_app.id }}/{% else %}/office-portal/apply/{% endif %}"
+              enctype="multipart/form-data"
+              class="px-6 py-5">
             {% csrf_token %}
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-                <!-- 申請人 -->
                 <div>
                     <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Applicant *</label>
-                    <input type="text" name="a_name" value="{{ request.user.username }}" required
-                           class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
-                                  focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20" readonly>
-                </div>
-
-                <!-- 部門 -->
-                <div>
-                    <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Department *</label>
-                    <input type="text" name="department" placeholder="Your department" required
+                    <input type="text" name="a_name"
+                           value="{% if resubmit_app %}{{ resubmit_app.a_name }}{% else %}{{ request.user.username }}{% endif %}"
+                           required readonly
                            class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
                                   focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
                 </div>
-
+                <div>
+                    <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Department *</label>
+                    <input type="text" name="department"
+                           value="{% if resubmit_app %}{{ resubmit_app.department }}{% endif %}"
+                           placeholder="Your department" required
+                           class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                                  focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                </div>
             </div>
 
-            <!-- 申請類型 -->
             <div class="mt-4">
                 <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Application Type *</label>
-                <select name="a_type" id="a_type"
-                        onchange="toggleOtherHint()"
+                <select name="a_type" id="a_type" onchange="toggleOtherHint()"
                         class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
                                focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
-                    <option value="API Access">API Access</option>
-                    <option value="System Access">System Access</option>
-                    <option value="Data Access">Data Access</option>
-                    <option value="Other">Other (System Function / Process Change)</option>
+                    <option value="API access"    {% if resubmit_app.a_type == 'API access' %}selected{% endif %}>API Access</option>
+                    <option value="System access" {% if resubmit_app.a_type == 'System access' %}selected{% endif %}>System Access</option>
+                    <option value="Data access"   {% if resubmit_app.a_type == 'Data access' %}selected{% endif %}>Data Access</option>
+                    <option value="Other"         {% if resubmit_app.a_type == 'Other' %}selected{% endif %}>Other (System Function / Process Change)</option>
                 </select>
                 <p id="otherHint" class="text-xs text-amber-600 mt-1 hidden">
                     Please describe the change in Purpose and upload detailed explanation in Attachments.
                 </p>
             </div>
 
-            <!-- 申請目的 -->
             <div class="mt-4">
                 <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Purpose *</label>
-                <textarea name="a_purpose" placeholder="Please explain the purpose and business requirements of your application" required rows="3"
+                <textarea name="a_purpose" placeholder="Please explain the purpose and business requirements" required rows="3"
                           class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all resize-y
-                                 focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20"></textarea>
+                                 focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">{% if resubmit_app %}{{ resubmit_app.a_purpose }}{% endif %}</textarea>
             </div>
 
-            <!-- 服務系統 -->
+            <div class="mt-4">
+                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Description</label>
+                <textarea name="description" placeholder="Additional details, technical requirements, or background information (optional)" rows="3"
+                          class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all resize-y
+                                 focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">{% if resubmit_app %}{{ resubmit_app.description }}{% endif %}</textarea>
+            </div>
+
             <div class="mt-4">
                 <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Service System Name</label>
                 <div class="grid grid-cols-2 gap-3">
                     <label class="flex items-center gap-2 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:border-[#c9a84c] transition-all">
-                        <input type="checkbox" name="service_system" value="QBox" class="accent-[#1a2d4a]">
+                        <input type="checkbox" name="service_system" value="QBox" class="accent-[#1a2d4a]"
+                               {% if resubmit_app and 'QBox' in resubmit_app.service_system %}checked{% endif %}>
                         <span class="text-sm text-[#1a2d4a]">QBox</span>
                     </label>
                     <label class="flex items-center gap-2 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:border-[#c9a84c] transition-all">
-                        <input type="checkbox" name="service_system" value="QCare" class="accent-[#1a2d4a]">
+                        <input type="checkbox" name="service_system" value="QCare" class="accent-[#1a2d4a]"
+                               {% if resubmit_app and 'QCare' in resubmit_app.service_system %}checked{% endif %}>
                         <span class="text-sm text-[#1a2d4a]">QCare</span>
                     </label>
                     <label class="flex items-center gap-2 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:border-[#c9a84c] transition-all">
-                        <input type="checkbox" name="service_system" value="QCash" class="accent-[#1a2d4a]">
+                        <input type="checkbox" name="service_system" value="QCash" class="accent-[#1a2d4a]"
+                               {% if resubmit_app and 'QCash' in resubmit_app.service_system %}checked{% endif %}>
                         <span class="text-sm text-[#1a2d4a]">QCash</span>
                     </label>
                     <label class="flex items-center gap-2 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:border-[#c9a84c] transition-all">
-                        <input type="checkbox" name="service_system" value="QHelp" class="accent-[#1a2d4a]">
+                        <input type="checkbox" name="service_system" value="QHelp" class="accent-[#1a2d4a]"
+                               {% if resubmit_app and 'QHelp' in resubmit_app.service_system %}checked{% endif %}>
                         <span class="text-sm text-[#1a2d4a]">QHelp</span>
                     </label>
                 </div>
             </div>
 
-            <!-- 附件 -->
             <div class="mt-4">
                 <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Attachments (Optional)</label>
+                {% if resubmit_app and resubmit_app.attachment %}
+                <div class="mb-2 flex items-center gap-2 text-xs text-gray-500">
+                    <svg class="w-3.5 h-3.5 text-[#2a4270]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                    </svg>
+                    Current: <a href="{{ resubmit_app.attachment.url }}" target="_blank" class="text-[#2a4270] underline">View existing attachment</a>
+                    — upload a new file to replace it
+                </div>
+                {% endif %}
                 <div class="relative">
                     <input type="file" name="file"
                            class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
                                   file:text-xs file:font-semibold file:bg-[#0c1a2e]/5 file:text-[#1a2d4a]
                                   hover:file:bg-[#c9a84c]/10 file:transition-colors file:cursor-pointer">
                 </div>
-                <p class="text-xs text-gray-400 mt-1">Max 100 MB. Recommend compressing files into .zip format.</p>
+                <p class="text-xs text-gray-400 mt-1">Max 100 MB.</p>
             </div>
 
-            <!-- Messages -->
             {% if messages %}
             <div class="mt-4">
                 {% for m in messages %}
@@ -123,15 +155,14 @@
             </div>
             {% endif %}
 
-            <!-- Actions -->
             <div class="flex items-center gap-3 mt-6 pt-5 border-t border-gray-100">
                 <button type="submit"
                         class="flex-1 py-3 text-white text-sm font-bold uppercase tracking-wider
                                bg-gradient-to-r from-[#1a2d4a] to-[#2a4270] rounded-lg shadow-md
                                hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer">
-                    Submit
+                    {% if resubmit_app %}Resubmit{% else %}Submit{% endif %}
                 </button>
-                <a href="/office-portal/dashboard/"
+                <a href="/office-portal/applications/"
                    class="px-5 py-3 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-center">
                     Cancel
                 </a>
@@ -141,7 +172,6 @@
     </div>
 
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
@@ -151,5 +181,6 @@ function toggleOtherHint() {
     const hint = document.getElementById('otherHint');
     hint.classList.toggle('hidden', sel.value !== 'Other');
 }
+toggleOtherHint();
 </script>
 {% endblock %}

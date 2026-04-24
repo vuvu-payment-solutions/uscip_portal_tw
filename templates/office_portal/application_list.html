@@ -29,32 +29,51 @@
 <!-- Table Card -->
 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
     <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="bg-gray-50 text-left">
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">App No.</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Applicant</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Department</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Type</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Service</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Attachment</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Status</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Progress</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
-                    {% if role in "supervisor,cio" %}
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Actions</th>
-                    {% endif %}
-                </tr>
+        <table class="text-sm" style="width:100%; table-layout:fixed;">
+            <colgroup>
+                <col style="width:80px;">   <!-- App No. -->
+                <col style="width:80px;">   <!-- Applicant -->
+                <col style="width:70px;">   <!-- Department -->
+                <col style="width:90px;">   <!-- Type -->
+                <col style="width:120px;">  <!-- Service -->
+                <col style="width:110px;">  <!-- Description -->
+                <col style="width:70px;">   <!-- Attachment -->
+                <col style="width:120px;">  <!-- Status -->
+                <col style="width:100px;">  <!-- Progress -->
+                <col style="width:90px;">   <!-- Date -->
+                <col style="width:160px;">  <!-- Actions -->
+            </colgroup>
+            <thead class="bg-gray-50">
+            <tr>
+                <th class="px-2 py-3 text-xs font-bold text-gray-500 uppercase">App No.</th>
+                <th class="px-2 py-3 text-xs font-bold text-gray-500 uppercase">Applicant</th>
+                <th class="px-2 py-3 text-xs font-bold text-gray-500 uppercase">Dept.</th>
+                <th class="px-2 py-3 text-xs font-bold text-gray-500 uppercase">Type</th>
+                <th class="px-2 py-3 text-xs font-bold text-gray-500 uppercase">Service</th>
+                <th class="px-2 py-3 text-xs font-bold text-gray-500 uppercase">Description</th>
+                <th class="px-2 py-3 text-xs font-bold text-gray-500 uppercase text-center">File</th>
+                <th class="px-2 py-3 text-xs font-bold text-gray-500 uppercase text-center">Status</th>
+                <th class="px-2 py-3 text-xs font-bold text-gray-500 uppercase">Progress</th>
+                <th class="px-2 py-3 text-xs font-bold text-gray-500 uppercase text-center">Date</th>
+                <th class="px-2 py-3 text-xs font-bold text-gray-500 uppercase text-center">Actions</th>
+            </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
                 {% for app in applications %}
                 <tr class="hover:bg-gray-50/50 transition-colors" id="list-row-{{ app.id }}">
-                    <td class="px-4 py-3 font-mono text-xs font-semibold text-[#1a2d4a]">{{ app.f_no }}</td>
-                    <td class="px-4 py-3 text-gray-700">{{ app.a_name }}</td>
-                    <td class="px-4 py-3 text-gray-600">{{ app.department }}</td>
-                    <td class="px-4 py-3 text-gray-600">{{ app.a_type }}</td>
-                    <td class="px-4 py-3 text-gray-600">{{ app.service_system|default:"-" }}</td>
-                    <td class="px-4 py-3 text-center">
+                    <td class="px-2 py-3 font-mono text-xs font-semibold text-[#1a2d4a]" style="max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ app.f_no }}</td>
+                    <td class="px-2 py-3 text-gray-700 text-xs" style="max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ app.a_name }}</td>
+                    <td class="px-2 py-3 text-gray-600 text-xs" style="max-width:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ app.department }}</td>
+                    <td class="px-2 py-3 text-gray-600 text-xs" style="max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ app.a_type }}</td>
+                    <td class="px-2 py-3 text-gray-600 text-xs" style="max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ app.service_system|default:"-" }}</td>
+                    <td class="px-2 py-3 text-gray-500 text-xs" style="max-width:110px; overflow:hidden;">
+                        {% if app.description %}
+                        <span style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word; cursor:pointer;"
+                              onclick="showDesc('{{ app.description|escapejs }}')"
+                              title="Click to expand">{{ app.description|truncatechars:50 }}</span>
+                        {% else %}-{% endif %}
+                    </td>
+                    <td class="px-2 py-3 text-center">
                         {% if app.attachment %}
                         <a href="{{ app.attachment.url }}" target="_blank"
                            class="inline-flex items-center gap-1 text-xs font-semibold text-[#2a4270] hover:text-[#c9a84c] transition-colors">
@@ -67,55 +86,79 @@
                         <span class="text-gray-300">—</span>
                         {% endif %}
                     </td>
-                    <td class="px-4 py-3 text-center">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold
+                    <td class="px-2 py-3 text-center">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold
                             {% if app.status == 'Request Completed' %}bg-emerald-50 text-emerald-700
                             {% elif app.status == 'Rejected' %}bg-red-50 text-red-700
+                            {% elif app.status == 'Returned' %}bg-orange-50 text-orange-700
                             {% elif app.status == 'Work-in-progress' %}bg-indigo-50 text-indigo-700
                             {% elif app.status == 'Under-preview' %}bg-yellow-50 text-yellow-700
                             {% else %}bg-amber-50 text-amber-700{% endif %}">
                             {% if app.status == 'Under-preview' %}
-                                Under-Preview ({% if app.preview_by == 'Pending Supervisor' %}Supervisor{% else %}CIO{% endif %})
+                                Under-Preview
                             {% else %}
                                 {{ app.status }}
                             {% endif %}
                         </span>
+                        {% if app.status == 'Returned' and app.return_reason %}
+                        <div style="margin-top:6px; padding:6px 8px; background:#fff7ed; border:1px solid #fed7aa; border-radius:6px; text-align:left;">
+                            <div style="font-size:10px; font-weight:700; color:#ea580c; margin-bottom:2px;">↩ Return Reason</div>
+                            <div style="font-size:11px; color:#9a3412; white-space:pre-wrap; cursor:pointer;"
+                                 onclick="showDesc('{{ app.return_reason|escapejs }}')"
+                                 title="Click to expand">{{ app.return_reason|truncatechars:60 }}</div>
+                        </div>
+                        {% endif %}
+                        {% if app.status == 'Returned' and app.a_name == request.user.username %}
+                        <div style="margin-top:6px;">
+                            <a href="/office-portal/resubmit-application/{{ app.id }}/"
+                               style="display:inline-block; padding:3px 10px; font-size:11px; font-weight:600; color:#fff; background:#ea580c; border-radius:5px; text-decoration:none;">
+                                Resubmit
+                            </a>
+                        </div>
+                        {% endif %}
                     </td>
-                    <!-- Progress Bar -->
-                    <td class="px-4 py-3">
-                        <div style="display:flex;align-items:center;gap:8px;">
-                            <div style="width:80px;height:6px;background:#e5e7eb;border-radius:9999px;overflow:hidden;">
-                                <div style="height:100%;border-radius:9999px;width:{{ app.progress }}%;background:{% if app.status == 'Request Completed' or app.status == 'Approved' %}#10b981{% elif app.status == 'Work-in-progress' %}#6366f1{% elif app.status == 'Pending CIO' %}#3b82f6{% elif app.status == 'Pending Supervisor' %}#60a5fa{% elif app.status == 'Under-preview' %}#facc15{% elif app.status == 'Rejected' %}#ef4444{% else %}#9ca3af{% endif %};"></div>
+                    <td class="px-2 py-3">
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <div style="width:60px;height:6px;background:#e5e7eb;border-radius:9999px;overflow:hidden;">
+                                <div style="height:100%;border-radius:9999px;width:{{ app.progress }}%;background:{% if app.status == 'Request Completed' or app.status == 'Approved' %}#10b981{% elif app.status == 'Work-in-progress' %}#6366f1{% elif app.status == 'Pending CIO' %}#3b82f6{% elif app.status == 'Pending Supervisor' %}#60a5fa{% elif app.status == 'Under-preview' %}#facc15{% elif app.status == 'Rejected' %}#ef4444{% elif app.status == 'Returned' %}#f97316{% else %}#9ca3af{% endif %};"></div>
                             </div>
                             <span class="text-xs text-gray-500">{{ app.progress }}%</span>
                         </div>
                     </td>
-                    <td class="px-4 py-3 text-gray-500 text-xs">{{ app.created_at|date:"Y-m-d H:i" }}</td>
+                    <td class="px-2 py-3 text-gray-500 text-xs">{{ app.created_at|date:"Y-m-d H:i" }}</td>
                     {% if role in "supervisor,cio" %}
-                    <td class="px-4 py-3 text-center">
+                    <td class="px-2 py-3 text-center">
                         {% if app.status == 'Pending Supervisor' and role == 'supervisor' or app.status == 'Pending CIO' and role == 'cio' %}
-                        <div class="flex items-center justify-center gap-1">
-                            <button onclick="doAction('approve', {{ app.id }}, this)"
-                                    class="px-2 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md transition-colors">
-                                Approve
-                            </button>
-                            <button onclick="doAction('preview', {{ app.id }}, this)"
-                                    class="px-2 py-1 text-xs font-semibold text-white bg-yellow-500 hover:bg-yellow-600 rounded-md transition-colors">
-                                Review
-                            </button>
-                            <button onclick="doAction('reject', {{ app.id }}, this)"
-                                    class="px-2 py-1 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-md transition-colors">
-                                Reject
-                            </button>
+                        <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+                            <div style="display:flex; gap:3px;">
+                                <button onclick="doAction('approve', {{ app.id }}, this)"
+                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#059669; border:none; border-radius:5px; cursor:pointer;">
+                                    Approve
+                                </button>
+                                <button onclick="doAction('preview', {{ app.id }}, this)"
+                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#d97706; border:none; border-radius:5px; cursor:pointer;">
+                                    Review
+                                </button>
+                            </div>
+                            <div style="display:flex; gap:3px;">
+                                <button onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}')"
+                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#ea580c; border:none; border-radius:5px; cursor:pointer;">
+                                    Return
+                                </button>
+                                <button onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}', true)"
+                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#dc2626; border:none; border-radius:5px; cursor:pointer;">
+                                    Reject
+                                </button>
+                            </div>
                         </div>
                         {% elif app.status == 'Under-preview' and app.preview_by == 'Pending Supervisor' and role == 'supervisor' or app.status == 'Under-preview' and app.preview_by == 'Pending CIO' and role == 'cio' %}
                         <button onclick="doAction('resume', {{ app.id }}, this)"
-                                class="px-2 py-1 text-xs font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-md transition-colors">
+                                style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#3b82f6; border:none; border-radius:5px; cursor:pointer;">
                             Resume
                         </button>
                         {% elif app.status == 'Work-in-progress' and role == 'cio' %}
                         <button onclick="doAction('complete', {{ app.id }}, this)"
-                                class="px-2 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md transition-colors">
+                                style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#059669; border:none; border-radius:5px; cursor:pointer;">
                             Complete
                         </button>
                         {% else %}
@@ -142,10 +185,35 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Description Modal -->
+<div id="descModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:10000;">
+    <div onclick="closeDesc()" style="position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.45);"></div>
+    <div style="position:absolute; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; padding:1rem;">
+        <div style="background:#fff; border-radius:14px; box-shadow:0 25px 50px rgba(0,0,0,0.2); width:100%; max-width:480px; position:relative;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid #f3f4f6;">
+                <h3 style="font-size:14px; font-weight:700; color:#0c1a2e; margin:0;">📝 Description</h3>
+                <button onclick="closeDesc()" style="background:none; border:none; font-size:22px; color:#9ca3af; cursor:pointer; line-height:1;">&times;</button>
+            </div>
+            <div id="descModalBody" style="padding:18px 20px; max-height:60vh; overflow-y:auto; font-size:13px; color:#374151; line-height:1.7; white-space:pre-wrap; word-break:break-word; overflow-wrap:break-word;"></div>
+            <div style="padding:10px 20px; border-top:1px solid #f3f4f6; text-align:right;">
+                <button onclick="closeDesc()" style="padding:6px 16px; font-size:12px; font-weight:600; background:#f3f4f6; border:none; border-radius:8px; cursor:pointer;">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
 function getCookie(name) {
     const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
     return v ? v[2] : '';
+}
+
+// Description Modal
+function showDesc(text) {
+    document.getElementById('descModalBody').textContent = text || '—';
+    document.getElementById('descModal').style.display = 'block';
+}
+function closeDesc() {
+    document.getElementById('descModal').style.display = 'none';
 }
 
 async function doAction(action, appId, btn) {
@@ -168,7 +236,6 @@ async function doAction(action, appId, btn) {
         if (res.ok) {
             msgDiv.className = 'mb-4 px-4 py-2.5 rounded-lg text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200';
             msgDiv.textContent = `✅ Success — new status: ${data.new_status}`;
-            // Reload to reflect new buttons and status
             setTimeout(() => location.reload(), 800);
         } else {
             msgDiv.className = 'mb-4 px-4 py-2.5 rounded-lg text-sm font-medium bg-red-50 text-red-700 border border-red-200';
@@ -180,5 +247,92 @@ async function doAction(action, appId, btn) {
         msgDiv.textContent = '❌ Connection error';
     }
 }
+
+// ── Return / Reject Modal ────────────────────────────────────
+let _rCtx = {};
+
+function openReturnModal(appId, currentStatus, role, forceReject = false) {
+    _rCtx = { appId, role, forceReject };
+    document.getElementById('rModalTitle').textContent = forceReject ? '🚫 Reject Permanently' : '↩ Return for Revision';
+    document.getElementById('rReturnToSection').style.display = (role === 'cio' && !forceReject) ? 'block' : 'none';
+    document.querySelectorAll('input[name="rReturnTo"]').forEach(r => { r.checked = (r.value === 'applicant'); });
+    document.getElementById('rReason').value = '';
+    document.getElementById('rReason').placeholder = forceReject ? 'Explain the reason for permanent rejection…' : 'Explain what needs to be corrected or clarified…';
+    document.getElementById('rError').style.display = 'none';
+    document.getElementById('returnModal').style.display = 'block';
+    setTimeout(() => document.getElementById('rReason').focus(), 100);
+}
+
+function closeReturnModal() {
+    document.getElementById('returnModal').style.display = 'none';
+}
+
+async function submitReturn() {
+    const { appId, role, forceReject } = _rCtx;
+    const comment   = document.getElementById('rReason').value.trim();
+    const errEl     = document.getElementById('rError');
+    const btn       = document.getElementById('rConfirmBtn');
+    const returnTo  = document.querySelector('input[name="rReturnTo"]:checked')?.value || 'applicant';
+    const action    = forceReject ? 'reject' : 'return';
+    const msgDiv    = document.getElementById('msg');
+
+    if (!comment) { errEl.textContent = 'Please provide a reason.'; errEl.style.display = 'block'; return; }
+    errEl.style.display = 'none';
+    btn.textContent = '送出中…'; btn.style.opacity = '0.7';
+
+    try {
+        const res = await fetch(`/office-portal/reject-application/${appId}/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ comment, action, return_to: returnTo }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+            closeReturnModal();
+            setTimeout(() => location.reload(), 400);
+        } else {
+            errEl.textContent = data.detail || 'Operation failed.';
+            errEl.style.display = 'block';
+        }
+    } catch (err) {
+        errEl.textContent = 'Connection error.';
+        errEl.style.display = 'block';
+    }
+    btn.textContent = 'Confirm'; btn.style.opacity = '1';
+}
 </script>
+
+<!-- Return / Reject Modal -->
+<div id="returnModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:10000;">
+    <div onclick="closeReturnModal()" style="position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5);"></div>
+    <div style="position:absolute; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; padding:1rem;">
+        <div style="background:#fff; border-radius:14px; box-shadow:0 25px 50px rgba(0,0,0,0.25); width:100%; max-width:460px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 24px; border-bottom:1px solid #f3f4f6;">
+                <h3 id="rModalTitle" style="font-size:15px; font-weight:700; color:#0c1a2e; margin:0;">↩ Return for Revision</h3>
+                <button onclick="closeReturnModal()" style="background:none; border:none; font-size:22px; color:#9ca3af; cursor:pointer;">&times;</button>
+            </div>
+            <div style="padding:20px 24px;">
+                <label style="display:block; font-size:11px; font-weight:700; color:#1a2d4a; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">Reason <span style="color:#ef4444;">*</span></label>
+                <textarea id="rReason" rows="4" style="width:100%; box-sizing:border-box; padding:10px 12px; font-size:13px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; outline:none; resize:vertical; font-family:inherit;" onfocus="this.style.borderColor='#c9a84c'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
+                <div id="rReturnToSection" style="display:none; margin-top:16px;">
+                    <label style="display:block; font-size:11px; font-weight:700; color:#1a2d4a; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">Return To</label>
+                    <div style="display:flex; gap:10px;">
+                        <label style="flex:1; display:flex; align-items:center; gap:8px; padding:10px 12px; background:#f9fafb; border:1.5px solid #e5e7eb; border-radius:8px; cursor:pointer; font-size:13px;">
+                            <input type="radio" name="rReturnTo" value="applicant" checked style="accent-color:#1a2d4a;"> Applicant
+                        </label>
+                        <label style="flex:1; display:flex; align-items:center; gap:8px; padding:10px 12px; background:#f9fafb; border:1.5px solid #e5e7eb; border-radius:8px; cursor:pointer; font-size:13px;">
+                            <input type="radio" name="rReturnTo" value="supervisor" style="accent-color:#1a2d4a;"> Supervisor
+                        </label>
+                    </div>
+                </div>
+                <div id="rError" style="display:none; margin-top:12px; padding:8px 12px; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; font-size:12px; color:#dc2626;"></div>
+            </div>
+            <div style="display:flex; gap:10px; padding:12px 24px; border-top:1px solid #f3f4f6;">
+                <button id="rConfirmBtn" onclick="submitReturn()" style="flex:1; padding:10px; font-size:13px; font-weight:700; color:#fff; background:linear-gradient(135deg,#1a2d4a,#2a4270); border:none; border-radius:8px; cursor:pointer;">Confirm</button>
+                <button onclick="closeReturnModal()" style="padding:10px 20px; font-size:13px; font-weight:600; color:#6b7280; background:#f3f4f6; border:none; border-radius:8px; cursor:pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

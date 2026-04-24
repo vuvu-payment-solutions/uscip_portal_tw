@@ -3,10 +3,6 @@ from django.contrib.auth.models import User
 
 
 class UserProfile(models.Model):
-    """
-    擴充 Django 內建 User，加入 role / department 欄位
-    （對應 FastAPI office_portal 的 User model）
-    """
     ROLE_CHOICES = [
         ('user',       'User'),
         ('team_leader', 'Team Leader'),
@@ -25,16 +21,19 @@ class UserProfile(models.Model):
 
 class AccountRequest(models.Model):
     """
-    帳號申請單：Pending Supervisor → Pending CIO → Approved / Rejected
+    帳號申請單：Pending Supervisor → Pending CIO → Approved / Rejected / Returned
+    Returned = 退件給申請人修改後重新上呈
     """
     STATUS_CHOICES = [
         ('Pending Supervisor', 'Pending Supervisor'),
         ('Pending CIO',        'Pending CIO'),
         ('Approved',           'Approved'),
         ('Rejected',           'Rejected'),
+        ('Returned',           'Returned'),   # ← 新增
     ]
     ROLE_CHOICES = [
         ('user',       'User'),
+        ('team_leader', 'Team Leader'),
         ('supervisor', 'Supervisor'),
         ('cio',        'CIO'),
     ]
@@ -44,11 +43,17 @@ class AccountRequest(models.Model):
     email          = models.EmailField(max_length=100)
     department     = models.CharField(max_length=50, blank=True)
     requested_role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
-    status         = models.CharField(max_length=30, choices=STATUS_CHOICES, default='Pending Supervisor')
+    # ── 新增欄位 ─────────────────────────────────────────
+    description    = models.TextField(blank=True, verbose_name='申請說明')
+    attachment     = models.FileField(upload_to='account_requests/', blank=True, null=True,
+                                      verbose_name='附件')
+    return_reason  = models.TextField(blank=True, verbose_name='退件原因')
+    # ────────────────────────────────────────────────────
+    status         = models.CharField(max_length=30, choices=STATUS_CHOICES,
+                                      default='Pending Supervisor')
     comment        = models.CharField(max_length=255, blank=True)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at     = models.DateTimeField(auto_now_add=True)
+    updated_at     = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-created_at']
@@ -58,59 +63,63 @@ class AccountRequest(models.Model):
     def __str__(self):
         return f"{self.username} [{self.status}]"
 
+
 class Application(models.Model):
     """
     服務/API 申請單（含檔案上傳），多階簽核流程
+    Returned = 退件給申請人修改後重新上呈
     """
     STATUS_CHOICES = [
-        ('Under-preview',      'Under-preview'),
-        ('Pending Supervisor',  'Pending Supervisor'),
-        ('Pending CIO',         'Pending CIO'),
-        ('Work-in-progress',    'Work-in-progress'),
-        ('Request Completed',   'Request Completed'),
-        ('Rejected',            'Rejected'),
+        ('Under-preview',     'Under-preview'),
+        ('Pending Supervisor', 'Pending Supervisor'),
+        ('Pending CIO',        'Pending CIO'),
+        ('Work-in-progress',   'Work-in-progress'),
+        ('Request Completed',  'Request Completed'),
+        ('Rejected',           'Rejected'),
+        ('Returned',           'Returned'),   # ← 新增
     ]
- 
+
     TYPE_CHOICES = [
         ('API access',    'API Access'),
         ('System access', 'System Access'),
         ('Data access',   'Data Access'),
         ('Other',         'Other (System Function / Process Change)'),
     ]
- 
+
     f_no           = models.CharField(max_length=50, unique=True, blank=True)
     a_name         = models.CharField(max_length=50, verbose_name='申請人')
     department     = models.CharField(max_length=50, verbose_name='部門')
     a_purpose      = models.TextField(verbose_name='申請目的')
     a_type         = models.CharField(max_length=50, choices=TYPE_CHOICES, verbose_name='申請類型')
     service_system = models.CharField(max_length=100, blank=True, verbose_name='服務系統')
-    status         = models.CharField(max_length=30, choices=STATUS_CHOICES, default='Pending Supervisor')
-    attachment     = models.FileField(upload_to='applications/', blank=True, null=True, verbose_name='附件')
- 
-    # ── 新增欄位 ──────────────────────────────────────────────────────────────
+    status         = models.CharField(max_length=30, choices=STATUS_CHOICES,
+                                      default='Pending Supervisor')
+    attachment     = models.FileField(upload_to='applications/', blank=True, null=True,
+                                      verbose_name='附件')
+    # ── 新增欄位 ─────────────────────────────────────────
+    description    = models.TextField(blank=True, verbose_name='申請說明')
+    return_reason  = models.TextField(blank=True, verbose_name='退件原因')
+    # ────────────────────────────────────────────────────
     bookmark       = models.TextField(blank=True, default='', verbose_name='Bookmark (審核備註)')
     preview_by     = models.CharField(max_length=30, blank=True, default='',
                                       verbose_name='Under-preview 設定者角色')
- 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
- 
+    created_at     = models.DateTimeField(auto_now_add=True)
+    updated_at     = models.DateTimeField(auto_now=True)
+
     class Meta:
         ordering = ['-created_at']
         verbose_name = '服務申請'
         verbose_name_plural = '服務申請列表'
- 
+
     def save(self, *args, **kwargs):
-        """自動產生 f_no，格式：APP-0001"""
         if not self.f_no:
             last = Application.objects.order_by('-id').first()
             next_id = (last.id + 1) if last else 1
             self.f_no = f"APP-{str(next_id).zfill(4)}"
         super().save(*args, **kwargs)
- 
+
     @property
     def progress(self):
-        """回傳進度百分比，供 Dashboard Progress Bar 使用"""
         mapping = {
             'Under-preview':      15,
             'Pending Supervisor':  25,
@@ -118,36 +127,37 @@ class Application(models.Model):
             'Work-in-progress':    75,
             'Request Completed':  100,
             'Rejected':             0,
+            'Returned':            10,   # 退件等修改中
             'Approved':           100,
         }
         return mapping.get(self.status, 0)
- 
+
     @property
     def progress_color(self):
-        """Progress bar 顏色"""
         mapping = {
-            'Under-preview':     'bg-yellow-400',
-            'Pending Supervisor': 'bg-blue-400',
-            'Pending CIO':        'bg-blue-500',
-            'Work-in-progress':   'bg-indigo-500',
-            'Request Completed':  'bg-emerald-500',
-            'Rejected':           'bg-red-500',
-            'Approved':           'bg-emerald-500', 
+            'Under-preview':      'bg-yellow-400',
+            'Pending Supervisor':  'bg-blue-400',
+            'Pending CIO':         'bg-blue-500',
+            'Work-in-progress':    'bg-indigo-500',
+            'Request Completed':   'bg-emerald-500',
+            'Rejected':            'bg-red-500',
+            'Returned':            'bg-orange-400',
+            'Approved':            'bg-emerald-500',
         }
         return mapping.get(self.status, 'bg-gray-400')
- 
+
     def __str__(self):
         return f"{self.f_no} - {self.a_name} [{self.status}]"
 
 
 class ApprovalHistory(models.Model):
-    """
-    審核歷程紀錄：每次狀態變更自動寫入一筆
-    """
+    """審核歷程紀錄：每次狀態變更自動寫入一筆"""
     ACTION_CHOICES = [
         ('submit',   'Submit'),
         ('approve',  'Approve'),
         ('reject',   'Reject'),
+        ('return',   'Return'),    # ← 新增：退件給申請人
+        ('resubmit', 'Resubmit'), # ← 新增：申請人重新送出
         ('preview',  'Under-Preview'),
         ('resume',   'Resume'),
         ('complete', 'Complete'),
@@ -160,9 +170,7 @@ class ApprovalHistory(models.Model):
     action      = models.CharField(max_length=20, choices=ACTION_CHOICES)
     from_status = models.CharField(max_length=30, blank=True, default='')
     to_status   = models.CharField(max_length=30, blank=True, default='')
-    actor       = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, blank=True
-    )
+    actor       = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     actor_role  = models.CharField(max_length=20, blank=True, default='')
     comment     = models.TextField(blank=True, default='')
     created_at  = models.DateTimeField(auto_now_add=True)
@@ -173,14 +181,17 @@ class ApprovalHistory(models.Model):
         verbose_name_plural = '審核歷程列表'
 
     def __str__(self):
-        return f"{self.application.f_no} | {self.action} by {self.actor} ({self.from_status} → {self.to_status})"
+        return (
+            f"{self.application.f_no} | {self.action} "
+            f"by {self.actor} ({self.from_status} → {self.to_status})"
+        )
 
 
 class Notice(models.Model):
-    """公告（對應 FastAPI notice model）"""
     title      = models.CharField(max_length=200, verbose_name='標題')
     content    = models.TextField(verbose_name='內容')
-    author     = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='發布人')
+    author     = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                                   verbose_name='發布人')
     is_active  = models.BooleanField(default=True, verbose_name='顯示中')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -192,9 +203,9 @@ class Notice(models.Model):
 
     def __str__(self):
         return self.title
-    
+
+
 class PasswordResetToken(models.Model):
-    """密碼重設 Token（存 DB，不存 session）"""
     user    = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reset_tokens')
     token   = models.CharField(max_length=128, unique=True, db_index=True)
     created = models.DateTimeField(auto_now_add=True)
@@ -204,7 +215,6 @@ class PasswordResetToken(models.Model):
         ordering = ['-created']
 
     def is_valid(self):
-        """30 分鐘內且未使用"""
         from django.utils import timezone
         import datetime
         return (

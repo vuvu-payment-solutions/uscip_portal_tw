@@ -26,7 +26,9 @@
 </div>
 {% endif %}
 
-<!-- Pending Account Requests (Supervisor / CIO) -->
+<!-- ════════════════════════════════════════════════════════
+     Pending Account Requests (Supervisor / CIO)
+     ════════════════════════════════════════════════════════ -->
 {% if pending_accounts %}
 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
     <div class="px-5 py-4 border-b border-gray-100">
@@ -41,6 +43,8 @@
                     <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Email</th>
                     <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Department</th>
                     <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Role</th>
+                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Description</th>
+                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Attachment</th>
                     <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Status</th>
                     <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Actions</th>
                 </tr>
@@ -53,66 +57,16 @@
                     <td class="px-4 py-3 text-gray-600">{{ req.email }}</td>
                     <td class="px-4 py-3 text-gray-600">{{ req.department|default:"-" }}</td>
                     <td class="px-4 py-3 text-gray-600">{{ req.requested_role }}</td>
-                    <td class="px-4 py-3 text-center">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700">
-                            {{ req.status }}
-                        </span>
+                    <td class="px-4 py-3 text-gray-500 text-xs max-w-[160px]">
+                        {% if req.description %}
+                        <span class="line-clamp-2 cursor-pointer hover:text-[#2a4270] hover:underline decoration-dotted underline-offset-2 transition-colors"
+                              onclick="showDesc('{{ req.description|escapejs }}')"
+                              title="Click to expand">{{ req.description|truncatechars:80 }}</span>
+                        {% else %}-{% endif %}
                     </td>
                     <td class="px-4 py-3 text-center">
-                        <div class="flex items-center justify-center gap-1.5">
-                            <button onclick="acctAction('approve', {{ req.id }}, this)"
-                                    class="px-2.5 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md transition-colors">
-                                Approve
-                            </button>
-                            <button onclick="acctAction('reject', {{ req.id }}, this)"
-                                    class="px-2.5 py-1 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-md transition-colors">
-                                Reject
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-{% endif %}
-
-<!-- Pending Service Applications (Supervisor / CIO) -->
-{% if pending_apps %}
-<div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
-    <div class="px-5 py-4 border-b border-gray-100">
-        <h2 class="font-bold text-[#0c1a2e]">📋 Pending Service Applications</h2>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="bg-gray-50 text-left">
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">App No.</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Applicant</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Type</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Service</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Attachment</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Status</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Progress</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                {% for app in pending_apps %}
-                <tr class="hover:bg-gray-50/50 transition-colors" id="app-row-{{ app.id }}">
-                    <td class="px-4 py-3 font-mono text-xs font-semibold">
-                        <a href="#" onclick="showAppDetail({{ app.id }}); return false;"
-                           class="text-[#2a4270] hover:text-[#c9a84c] underline decoration-dotted underline-offset-2 transition-colors">
-                            {{ app.f_no }}
-                        </a>
-                    </td>
-                    <td class="px-4 py-3 text-gray-700">{{ app.a_name }}</td>
-                    <td class="px-4 py-3 text-gray-600">{{ app.a_type }}</td>
-                    <td class="px-4 py-3 text-gray-600">{{ app.service_system|default:"-" }}</td>
-                    <td class="px-4 py-3 text-center">
-                        {% if app.attachment %}
-                        <a href="{{ app.attachment.url }}" target="_blank"
+                        {% if req.attachment %}
+                        <a href="{{ req.attachment.url }}" target="_blank"
                            class="inline-flex items-center gap-1 text-xs font-semibold text-[#2a4270] hover:text-[#c9a84c] transition-colors">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
@@ -124,54 +78,31 @@
                         {% endif %}
                     </td>
                     <td class="px-4 py-3 text-center">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold
-                            {% if app.status == 'Under-preview' %}bg-yellow-50 text-yellow-700
-                            {% elif app.status == 'Work-in-progress' %}bg-indigo-50 text-indigo-700
-                            {% else %}bg-amber-50 text-amber-700{% endif %}">
-                            {% if app.status == 'Under-preview' %}
-                                Under-Preview ({% if app.preview_by == 'Pending Supervisor' %}Supervisor{% else %}CIO{% endif %})
-                            {% else %}
-                                {{ app.status }}
-                            {% endif %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700">
+                            {{ req.status }}
                         </span>
-                    </td>
-                    <td class="px-4 py-3">
-                        <div style="display:flex;align-items:center;gap:8px;">
-                            <div style="width:80px;height:6px;background:#e5e7eb;border-radius:9999px;overflow:hidden;">
-                                <div style="height:100%;border-radius:9999px;width:{{ app.progress }}%;background:{% if app.status == 'Request Completed' or app.status == 'Approved' %}#10b981{% elif app.status == 'Work-in-progress' %}#6366f1{% elif app.status == 'Pending CIO' %}#3b82f6{% elif app.status == 'Pending Supervisor' %}#60a5fa{% elif app.status == 'Under-preview' %}#facc15{% elif app.status == 'Rejected' %}#ef4444{% else %}#9ca3af{% endif %};"></div>
-                            </div>
-                            <span class="text-xs text-gray-500">{{ app.progress }}%</span>
+
+                        {% if req.display_reason %}
+                        <div class="mt-1.5 text-xs text-orange-600 text-left max-w-[220px] whitespace-pre-wrap leading-relaxed border-l-2 border-orange-400 pl-2">
+                            ↩ {{ req.display_reason|truncatechars:120 }}
                         </div>
+                        {% endif %}
                     </td>
                     <td class="px-4 py-3 text-center">
-                        {% if app.status == 'Pending Supervisor' and role == 'supervisor' or app.status == 'Pending CIO' and role == 'cio' %}
-                        <div class="flex items-center justify-center gap-1">
-                            <button onclick="appAction('approve', {{ app.id }}, this)"
-                                    class="px-2 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md transition-colors">
+                        <div style="display:flex; align-items:center; justify-content:center; gap:6px;">
+                            <button onclick="acctAction('approve', {{ req.id }}, this)"
+                                    style="padding:4px 10px; font-size:11px; font-weight:600; color:#fff; background:#059669; border:none; border-radius:5px; cursor:pointer;">
                                 Approve
                             </button>
-                            <button onclick="appAction('preview', {{ app.id }}, this)"
-                                    class="px-2 py-1 text-xs font-semibold text-white bg-yellow-500 hover:bg-yellow-600 rounded-md transition-colors">
-                                Review
+                            <button onclick="openReturnModal('acct', {{ req.id }}, '{{ req.status }}', '{{ role }}')"
+                                    style="padding:4px 10px; font-size:11px; font-weight:600; color:#fff; background:#ea580c; border:none; border-radius:5px; cursor:pointer;">
+                                Return
                             </button>
-                            <button onclick="appAction('reject', {{ app.id }}, this)"
-                                    class="px-2 py-1 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-md transition-colors">
+                            <button onclick="openReturnModal('acct', {{ req.id }}, '{{ req.status }}', '{{ role }}', true)"
+                                    style="padding:4px 10px; font-size:11px; font-weight:600; color:#fff; background:#dc2626; border:none; border-radius:5px; cursor:pointer;">
                                 Reject
                             </button>
                         </div>
-                        {% elif app.status == 'Under-preview' %}
-                        <button onclick="appAction('resume', {{ app.id }}, this)"
-                                class="px-2 py-1 text-xs font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-md transition-colors">
-                            Resume
-                        </button>
-                        {% elif app.status == 'Work-in-progress' and role == 'cio' %}
-                        <button onclick="appAction('complete', {{ app.id }}, this)"
-                                class="px-2 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md transition-colors">
-                            Complete
-                        </button>
-                        {% else %}
-                        <span class="text-gray-300">—</span>
-                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
@@ -179,28 +110,11 @@
         </table>
     </div>
 </div>
-
-<!-- Application Detail Modal -->
-<div id="appDetailModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:9999;">
-    <div onclick="closeAppDetail()" style="position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5);"></div>
-    <div style="position:absolute; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; padding:1rem;">
-        <div style="background:#fff; border-radius:12px; box-shadow:0 25px 50px rgba(0,0,0,0.25); width:100%; max-width:520px; position:relative;">
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 24px; border-bottom:1px solid #f3f4f6;">
-                <h3 style="font-size:15px; font-weight:700; color:#0c1a2e; margin:0;">📋 Application Details</h3>
-                <button onclick="closeAppDetail()" style="background:none; border:none; font-size:22px; color:#9ca3af; cursor:pointer; line-height:1;">&times;</button>
-            </div>
-            <div id="appDetailBody" style="padding:20px 24px; max-height:70vh; overflow-y:auto;">
-                <p style="font-size:13px; color:#9ca3af;">Loading…</p>
-            </div>
-            <div style="padding:12px 24px; border-top:1px solid #f3f4f6; text-align:right;">
-                <button onclick="closeAppDetail()" style="padding:6px 16px; font-size:12px; font-weight:600; background:#f3f4f6; border:none; border-radius:8px; cursor:pointer;">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 {% endif %}
-{% if my_account_requests %}
+
+<!-- ════════════════════════════════════════════════════════
+     My Account Requests (all logged-in users)
+     ════════════════════════════════════════════════════════ -->
 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
     <div class="px-5 py-4 border-b border-gray-100">
         <h2 class="font-bold text-[#0c1a2e]">📄 My Account Requests</h2>
@@ -213,6 +127,8 @@
                     <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Full Name</th>
                     <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Email</th>
                     <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Department</th>
+                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Description</th>
+                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Attachment</th>
                     <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Status</th>
                     <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Applied On</th>
                 </tr>
@@ -224,87 +140,74 @@
                     <td class="px-4 py-3 text-gray-700">{{ req.full_name }}</td>
                     <td class="px-4 py-3 text-gray-600">{{ req.email }}</td>
                     <td class="px-4 py-3 text-gray-600">{{ req.department|default:"-" }}</td>
+                    <td class="px-4 py-3 text-gray-500 text-xs max-w-[160px]">
+                        {% if req.description %}
+                        <span class="line-clamp-2 cursor-pointer hover:text-[#2a4270] hover:underline decoration-dotted underline-offset-2 transition-colors"
+                              onclick="showDesc('{{ req.description|escapejs }}')"
+                              title="Click to expand">{{ req.description|truncatechars:60 }}</span>
+                        {% else %}-{% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        {% if req.attachment %}
+                        <a href="{{ req.attachment.url }}" target="_blank"
+                           class="inline-flex items-center gap-1 text-xs font-semibold text-[#2a4270] hover:text-[#c9a84c] transition-colors">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                            </svg>
+                            View
+                        </a>
+                        {% else %}
+                        <span class="text-gray-300">—</span>
+                        {% endif %}
+                    </td>
                     <td class="px-4 py-3 text-center">
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold
                             {% if req.status == 'Approved' %}bg-emerald-50 text-emerald-700
                             {% elif req.status == 'Rejected' %}bg-red-50 text-red-700
+                            {% elif req.status == 'Returned' %}bg-orange-50 text-orange-700
                             {% else %}bg-amber-50 text-amber-700{% endif %}">
                             {{ req.status }}
                         </span>
-                    </td>
-                    <td class="px-4 py-3 text-center text-gray-500 text-xs">{{ req.created_at|date:"Y-m-d H:i" }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-{% endif %}
-
-<!-- My Applications (for all users — shows progress) -->
-{% if my_applications %}
-<div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
-    <div class="px-5 py-4 border-b border-gray-100">
-        <h2 class="font-bold text-[#0c1a2e]">📄 My Applications</h2>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="bg-gray-50 text-left">
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">App No.</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Type</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Service</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Status</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Progress</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Applied On</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                {% for app in my_applications %}
-                <tr class="hover:bg-gray-50/50 transition-colors">
-                    <td class="px-4 py-3 font-mono text-xs font-semibold text-[#1a2d4a]">{{ app.f_no }}</td>
-                    <td class="px-4 py-3 text-gray-600">{{ app.a_type }}</td>
-                    <td class="px-4 py-3 text-gray-600">{{ app.service_system|default:"-" }}</td>
-                    <td class="px-4 py-3 text-center">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold
-                            {% if app.status == 'Request Completed' %}bg-emerald-50 text-emerald-700
-                            {% elif app.status == 'Rejected' %}bg-red-50 text-red-700
-                            {% elif app.status == 'Work-in-progress' %}bg-indigo-50 text-indigo-700
-                            {% elif app.status == 'Under-preview' %}bg-yellow-50 text-yellow-700
-                            {% else %}bg-amber-50 text-amber-700{% endif %}">
-                            {% if app.status == 'Under-preview' %}
-                                Under-Preview ({% if app.preview_by == 'Pending Supervisor' %}Supervisor{% else %}CIO{% endif %})
-                            {% else %}
-                                {{ app.status }}
-                            {% endif %}
-                        </span>
-                    </td>
-                    <td class="px-4 py-3">
-                        <div style="display:flex;align-items:center;gap:8px;">
-                            <div style="width:80px;height:6px;background:#e5e7eb;border-radius:9999px;overflow:hidden;">
-                                <div style="height:100%;border-radius:9999px;width:{{ app.progress }}%;background:{% if app.status == 'Request Completed' or app.status == 'Approved' %}#10b981{% elif app.status == 'Work-in-progress' %}#6366f1{% elif app.status == 'Pending CIO' %}#3b82f6{% elif app.status == 'Pending Supervisor' %}#60a5fa{% elif app.status == 'Under-preview' %}#facc15{% elif app.status == 'Rejected' %}#ef4444{% else %}#9ca3af{% endif %};"></div>
-                            </div>
-                            <span class="text-xs text-gray-500">{{ app.progress }}%</span>
+                        {% if req.display_reason %}
+                        <div class="mt-1.5 text-xs text-orange-600 text-left max-w-[220px] whitespace-pre-wrap leading-relaxed">
+                            ↩ {{ req.display_reason|truncatechars:120 }}
                         </div>
+                        {% endif %}
                     </td>
-                    <td class="px-4 py-3 text-center text-gray-500 text-xs">{{ app.created_at|date:"Y-m-d H:i" }}</td>
+                    <td class="px-4 py-3 text-center text-gray-500 text-xs">
+                        {{ req.created_at|date:"Y-m-d H:i" }}
+                        {% if req.status == 'Returned' %}
+                        <div class="mt-1">
+                            <a href="/office-portal/resubmit-account/{{ req.id }}/"
+                               class="inline-block px-2.5 py-1 text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 rounded-md transition-colors">
+                                Resubmit
+                            </a>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="px-4 py-10 text-center text-gray-400 text-sm">
+                        No account requests found.
+                        <a href="/office-portal/register/" class="text-[#2a4270] hover:text-[#c9a84c] underline ml-1">Submit a new request</a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
-{% endif %}
 
-<!-- Page Header -->
+<!-- ════════════════════════════════════════════════════════
+     ISMS Compliance Dashboard
+     ════════════════════════════════════════════════════════ -->
 <div class="mb-6">
     <h1 class="text-2xl font-bold text-[#0c1a2e]">ISMS Compliance Dashboard</h1>
     <p class="text-sm text-gray-400 mt-1">ISO 27001:2022 — Control Domain Compliance Overview</p>
 </div>
 
-<!-- Summary Cards -->
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-
     <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between">
             <div>
@@ -319,7 +222,6 @@
             </div>
         </div>
     </div>
-
     <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between">
             <div>
@@ -333,7 +235,6 @@
             </div>
         </div>
     </div>
-
     <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between">
             <div>
@@ -349,13 +250,9 @@
             </div>
         </div>
     </div>
-
 </div>
 
-<!-- Controls Table -->
 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-
-    <!-- Table Header -->
     <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
         <h2 class="font-bold text-[#0c1a2e]">Domain Details</h2>
         <a href="/compliance/export/docx/"
@@ -366,8 +263,6 @@
             Export to Word
         </a>
     </div>
-
-    <!-- Table -->
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead>
@@ -396,9 +291,7 @@
                     <td class="px-5 py-3.5">
                         <div class="w-full bg-gray-200 rounded-full h-2 min-w-[120px]">
                             <div class="h-2 rounded-full transition-all
-                                {% if d.rate >= 80 %}bg-emerald-500
-                                {% elif d.rate >= 40 %}bg-amber-500
-                                {% else %}bg-red-500{% endif %}"
+                                {% if d.rate >= 80 %}bg-emerald-500{% elif d.rate >= 40 %}bg-amber-500{% else %}bg-red-500{% endif %}"
                                  style="width: {{ d.rate }}%;"></div>
                         </div>
                     </td>
@@ -415,7 +308,6 @@
     </div>
 </div>
 
-<!-- Quick Links -->
 <div class="mt-6 flex flex-wrap gap-3">
     <a href="/compliance/controls/"
        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#1a2d4a] bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-[#c9a84c] transition-all">
@@ -429,15 +321,97 @@
     {% endif %}
 </div>
 
+<!-- ════════════════════════════════════════════════════════
+     Return / Reject Modal（Supervisor / CIO 退件用）
+     ════════════════════════════════════════════════════════ -->
+<div id="returnModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:9999;">
+    <div onclick="closeReturnModal()" style="position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5);"></div>
+    <div style="position:absolute; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; padding:1rem;">
+        <div style="background:#fff; border-radius:14px; box-shadow:0 25px 50px rgba(0,0,0,0.25); width:100%; max-width:460px; position:relative;">
+
+            <!-- Header -->
+            <div id="returnModalHeader" style="display:flex; align-items:center; justify-content:space-between; padding:16px 24px; border-bottom:1px solid #f3f4f6;">
+                <h3 style="font-size:15px; font-weight:700; color:#0c1a2e; margin:0;">↩ Return for Revision</h3>
+                <button onclick="closeReturnModal()" style="background:none; border:none; font-size:22px; color:#9ca3af; cursor:pointer; line-height:1;">&times;</button>
+            </div>
+
+            <!-- Body -->
+            <div style="padding:20px 24px;">
+
+                <!-- Reason -->
+                <label style="display:block; font-size:11px; font-weight:700; color:#1a2d4a; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">
+                    Reason <span style="color:#ef4444;">*</span>
+                </label>
+                <textarea id="returnReason" rows="4" placeholder="Explain what needs to be corrected or clarified…"
+                          style="width:100%; box-sizing:border-box; padding:10px 12px; font-size:13px; background:#f9fafb; border:1px solid #e5e7eb;
+                                 border-radius:8px; outline:none; resize:vertical; font-family:inherit;"
+                          onfocus="this.style.borderColor='#c9a84c'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
+
+                <!-- CIO-only: return destination -->
+                <div id="returnToSection" style="display:none; margin-top:16px;">
+                    <label style="display:block; font-size:11px; font-weight:700; color:#1a2d4a; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">
+                        Return To
+                    </label>
+                    <div style="display:flex; gap:10px;">
+                        <label style="flex:1; display:flex; align-items:center; gap:8px; padding:10px 12px; background:#f9fafb; border:1.5px solid #e5e7eb; border-radius:8px; cursor:pointer; font-size:13px; color:#374151;">
+                            <input type="radio" name="returnTo" value="applicant" checked style="accent-color:#1a2d4a;">
+                            Applicant
+                        </label>
+                        <label style="flex:1; display:flex; align-items:center; gap:8px; padding:10px 12px; background:#f9fafb; border:1.5px solid #e5e7eb; border-radius:8px; cursor:pointer; font-size:13px; color:#374151;">
+                            <input type="radio" name="returnTo" value="supervisor" style="accent-color:#1a2d4a;">
+                            Supervisor
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Error msg -->
+                <div id="returnModalError" style="display:none; margin-top:12px; padding:8px 12px; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; font-size:12px; color:#dc2626;"></div>
+
+            </div>
+
+            <!-- Footer -->
+            <div style="display:flex; gap:10px; padding:12px 24px; border-top:1px solid #f3f4f6;">
+                <button onclick="submitReturn()" id="returnModalConfirm"
+                        style="flex:1; padding:10px; font-size:13px; font-weight:700; color:#fff; background:linear-gradient(135deg,#1a2d4a,#2a4270); border:none; border-radius:8px; cursor:pointer;">
+                    Confirm
+                </button>
+                <button onclick="closeReturnModal()"
+                        style="padding:10px 20px; font-size:13px; font-weight:600; color:#6b7280; background:#f3f4f6; border:none; border-radius:8px; cursor:pointer;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
+<!-- Description Modal -->
+<div id="descModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:10000;">
+    <div onclick="closeDesc()" style="position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.45);"></div>
+    <div style="position:absolute; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; padding:1rem;">
+        <div style="background:#fff; border-radius:14px; box-shadow:0 25px 50px rgba(0,0,0,0.2); width:100%; max-width:480px; position:relative;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid #f3f4f6;">
+                <h3 style="font-size:14px; font-weight:700; color:#0c1a2e; margin:0;">📝 Description</h3>
+                <button onclick="closeDesc()" style="background:none; border:none; font-size:22px; color:#9ca3af; cursor:pointer; line-height:1;">&times;</button>
+            </div>
+            <div id="descModalBody" style="padding:18px 20px; max-height:60vh; overflow-y:auto; font-size:13px; color:#374151; line-height:1.7; white-space:pre-wrap;"></div>
+            <div style="padding:10px 20px; border-top:1px solid #f3f4f6; text-align:right;">
+                <button onclick="closeDesc()" style="padding:6px 16px; font-size:12px; font-weight:600; background:#f3f4f6; border:none; border-radius:8px; cursor:pointer;">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
 function getCookie(name) {
     const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
     return v ? v[2] : '';
 }
 
+// ────────────────────────────────────────────────────────────
+// Account actions（Approve only — Return/Reject 走 modal）
+// ────────────────────────────────────────────────────────────
 async function acctAction(action, reqId, btn) {
     const url = `/office-portal/${action}-account/${reqId}/`;
     try {
@@ -449,14 +423,19 @@ async function acctAction(action, reqId, btn) {
         const data = await res.json();
         if (res.ok) {
             const row = btn.closest('tr');
-            row.querySelector('td:nth-child(6) span').textContent = data.new_status;
-            row.querySelector('td:last-child').innerHTML = '<span class="text-gray-300">Done</span>';
+            // Status badge is the 8th column (index 7)
+            const statusCell = row.querySelector('td:nth-child(8) span');
+            if (statusCell) statusCell.textContent = data.new_status;
+            row.querySelector('td:last-child').innerHTML = '<span style="color:#9ca3af;">Done</span>';
         } else {
             alert(data.detail);
         }
     } catch (err) { alert('Connection error'); }
 }
 
+// ────────────────────────────────────────────────────────────
+// Service application actions（Approve / Review / Resume / Complete）
+// ────────────────────────────────────────────────────────────
 async function appAction(action, appId, btn) {
     const url = `/office-portal/${action}-application/${appId}/`;
     try {
@@ -467,7 +446,6 @@ async function appAction(action, appId, btn) {
         });
         const data = await res.json();
         if (res.ok) {
-            // Reload page to reflect new buttons and progress
             setTimeout(() => location.reload(), 500);
         } else {
             alert(data.detail);
@@ -475,6 +453,102 @@ async function appAction(action, appId, btn) {
     } catch (err) { alert('Connection error'); }
 }
 
+// ────────────────────────────────────────────────────────────
+// Return / Reject Modal
+// ────────────────────────────────────────────────────────────
+let _returnCtx = {}; // 儲存當前 modal 的上下文
+
+/**
+ * @param {string} type        'app' | 'acct'
+ * @param {number} id          Application.id or AccountRequest.id
+ * @param {string} currentStatus  e.g. 'Pending Supervisor'
+ * @param {string} role        'supervisor' | 'cio'
+ * @param {boolean} forceReject  true = 直接 Reject（永久拒絕）
+ */
+function openReturnModal(type, id, currentStatus, role, forceReject = false) {
+    _returnCtx = { type, id, role, forceReject };
+
+    // Modal title
+    const header = document.getElementById('returnModalHeader').querySelector('h3');
+    header.textContent = forceReject ? '🚫 Reject Permanently' : '↩ Return for Revision';
+
+    // Return-to 選項：只有 CIO 且不是永久拒絕時顯示
+    const returnToSection = document.getElementById('returnToSection');
+    returnToSection.style.display = (role === 'cio' && !forceReject) ? 'block' : 'none';
+
+    // 預設 radio = applicant
+    const radios = document.querySelectorAll('input[name="returnTo"]');
+    radios.forEach(r => { r.checked = (r.value === 'applicant'); });
+
+    // 清空欄位
+    document.getElementById('returnReason').value = '';
+    document.getElementById('returnModalError').style.display = 'none';
+    document.getElementById('returnReason').placeholder =
+        forceReject
+            ? 'Explain the reason for permanent rejection…'
+            : 'Explain what needs to be corrected or clarified…';
+
+    document.getElementById('returnModal').style.display = 'block';
+    setTimeout(() => document.getElementById('returnReason').focus(), 100);
+}
+
+function closeReturnModal() {
+    document.getElementById('returnModal').style.display = 'none';
+    _returnCtx = {};
+}
+
+async function submitReturn() {
+    const { type, id, role, forceReject } = _returnCtx;
+    const comment = document.getElementById('returnReason').value.trim();
+    const errEl   = document.getElementById('returnModalError');
+    const btn     = document.getElementById('returnModalConfirm');
+
+    if (!comment) {
+        errEl.textContent = 'Please provide a reason.';
+        errEl.style.display = 'block';
+        return;
+    }
+    errEl.style.display = 'none';
+
+    const returnTo = document.querySelector('input[name="returnTo"]:checked')?.value || 'applicant';
+    const action   = forceReject ? 'reject' : 'return';
+
+    const urlBase = type === 'app' ? 'reject-application' : 'reject-account';
+    const url = `/office-portal/${urlBase}/${id}/`;
+
+    btn.textContent = '送出中…';
+    btn.style.opacity = '0.7';
+
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ comment, action, return_to: returnTo }),
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            closeReturnModal();
+            setTimeout(() => location.reload(), 400);
+        } else {
+            errEl.textContent = data.detail || 'Operation failed.';
+            errEl.style.display = 'block';
+        }
+    } catch (err) {
+        errEl.textContent = 'Connection error. Please try again.';
+        errEl.style.display = 'block';
+    }
+
+    btn.textContent = 'Confirm';
+    btn.style.opacity = '1';
+}
+
+// ────────────────────────────────────────────────────────────
+// Application Detail Modal
+// ────────────────────────────────────────────────────────────
 async function showAppDetail(appId) {
     const modal = document.getElementById('appDetailModal');
     const body  = document.getElementById('appDetailBody');
@@ -492,19 +566,40 @@ async function showAppDetail(appId) {
                 <div style="font-size:13px; color:#1f2937;">${val || '—'}</div>
             </div>`;
 
-        body.innerHTML =
-            row('App No.',    d.f_no) +
-            row('Applicant',  d.a_name) +
-            row('Department', d.department) +
-            row('Type',       d.a_type) +
-            row('Service',    d.service_system) +
-            row('Purpose',    `<div style="white-space:pre-wrap;">${d.a_purpose}</div>`) +
+        let html =
+            row('App No.',     d.f_no) +
+            row('Applicant',   d.a_name) +
+            row('Department',  d.department) +
+            row('Type',        d.a_type) +
+            row('Service',     d.service_system) +
+            row('Purpose',     `<div style="white-space:pre-wrap;">${d.a_purpose}</div>`);
+
+        if (d.description) {
+            html += row('Description', `<div style="white-space:pre-wrap;">${d.description}</div>`);
+        }
+        if (d.return_reason) {
+            html += `<div style="display:grid; grid-template-columns:1fr 2fr; gap:0 16px; padding:10px 0; border-bottom:1px solid #f9fafb;">
+                <div style="font-size:11px; font-weight:600; color:#ea580c; text-transform:uppercase; letter-spacing:0.05em;">Return Reason</div>
+                <div style="font-size:13px; color:#ea580c; white-space:pre-wrap;">${d.return_reason}</div>
+            </div>`;
+        }
+
+        if (d.bookmark) {
+            html += `<div style="display:grid; grid-template-columns:1fr 2fr; gap:0 16px; padding:10px 0; border-bottom:1px solid #f9fafb;">
+                <div style="font-size:11px; font-weight:600; color:#7c3aed; text-transform:uppercase; letter-spacing:0.05em;">Review Note</div>
+                <div style="font-size:13px; color:#7c3aed; white-space:pre-wrap;">${d.bookmark}</div>
+            </div>`;
+        }
+        
+        html +=
             row('Attachment',  d.attachment
                 ? `<a href="${d.attachment}" target="_blank" style="color:#2a4270; text-decoration:underline;">📎 View File</a>`
                 : '—') +
-            row('Status',     d.status) +
-            row('Submitted',  d.created_at) +
+            row('Status',      d.status) +
+            row('Submitted',   d.created_at) +
             buildHistoryTimeline(d.history || []);
+
+        body.innerHTML = html;
     } catch (err) {
         body.innerHTML = '<p style="font-size:13px; color:#ef4444;">Failed to load details.</p>';
     }
@@ -516,6 +611,8 @@ function buildHistoryTimeline(history) {
     const actionColors = {
         'Approve':       { bg: '#ecfdf5', text: '#059669', dot: '#10b981' },
         'Reject':        { bg: '#fef2f2', text: '#dc2626', dot: '#ef4444' },
+        'Return':        { bg: '#fff7ed', text: '#ea580c', dot: '#f97316' },
+        'Resubmit':      { bg: '#f0fdf4', text: '#16a34a', dot: '#22c55e' },
         'Under-Preview': { bg: '#fefce8', text: '#ca8a04', dot: '#eab308' },
         'Resume':        { bg: '#eff6ff', text: '#2563eb', dot: '#3b82f6' },
         'Complete':      { bg: '#ecfdf5', text: '#059669', dot: '#10b981' },
@@ -557,6 +654,16 @@ function buildHistoryTimeline(history) {
 function closeAppDetail() {
     document.getElementById('appDetailModal').style.display = 'none';
 }
-</script>
 
+// ────────────────────────────────────────────────────────────
+// Description Modal
+// ────────────────────────────────────────────────────────────
+function showDesc(text) {
+    document.getElementById('descModalBody').textContent = text || '—';
+    document.getElementById('descModal').style.display = 'block';
+}
+function closeDesc() {
+    document.getElementById('descModal').style.display = 'none';
+}
+</script>
 {% endblock %}
