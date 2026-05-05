@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block nav_hardware %}active{% endblock %}
+{% block title %}Hardware Applications — USCIP Office Portal{% endblock %}
+
+{% block content %}
+
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-[#0c1a2e]">🖥 Hardware Applications</h1>
+    <a href="/office-portal/hardware/apply/" class="px-4 py-2 bg-[#1a2d4a] text-white rounded-lg">
+        New Hardware Request
+    </a>
+</div>
+
+<div class="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+    <table class="w-full text-sm">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-4 py-3 text-left">Device Type</th>
+                <th class="px-4 py-3 text-left">Device Name</th>
+                <th class="px-4 py-3 text-left">Qty</th>
+                <th class="px-4 py-3 text-left">Purpose</th>
+                <th class="px-4 py-3 text-left">Description</th>
+                <th class="px-4 py-3 text-center">Attachment</th>
+                <th class="px-4 py-3 text-center">Status</th>
+                <th class="px-4 py-3 text-center min-w-[320px]">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-4 py-3">{{ item.device_type }}</td>
+                <td class="px-4 py-3">{{ item.device_name|default:"-" }}</td>
+                <td class="px-4 py-3">{{ item.quantity }}</td>
+                <td class="px-4 py-3">{{ item.purpose|truncatechars:50 }}</td>
+                <td class="px-4 py-3 text-gray-600">
+                    {{ item.description|default:"-"|truncatechars:50 }}
+                </td>
+                <td class="px-4 py-3 text-center">
+                    {% if item.attachment %}
+                        <a href="{{ item.attachment.url }}" target="_blank"
+                        class="text-[#2a4270] hover:text-[#c9a84c] text-xs font-semibold underline">
+                            View
+                        </a>
+                    {% else %}
+                        <span class="text-gray-300">—</span>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3 text-center">{{ item.status }}</td>
+                <td class="px-4 py-3 text-center" style="min-width:260px;">
+
+                    {% if item.status == 'Pending Team Leader' and role == 'team_leader' %}
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+
+                        <div style="display:flex; gap:6px;">
+                            <button onclick="doHW('approve', {{ item.id }})"
+                                    style="padding:4px 10px; font-size:12px; color:white; background:#2563eb; border:none; border-radius:6px;">
+                                Forward
+                            </button>
+                            <button onclick="doHW('preview', {{ item.id }})"
+                                    style="padding:4px 10px; font-size:12px; color:white; background:#f59e0b; border:none; border-radius:6px;">
+                                Review
+                            </button>
+                        </div>
+
+                        <div style="display:flex; gap:6px;">
+                            <button onclick="doHW('return', {{ item.id }})"
+                                    style="padding:4px 10px; font-size:12px; color:white; background:#ea580c; border:none; border-radius:6px;">
+                                Return
+                            </button>
+                        </div>
+
+                    </div>
+
+                    {% elif item.status == 'Pending Supervisor' and role == 'supervisor' %}
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+
+                        <div style="display:flex; gap:6px;">
+                            <button onclick="doHW('approve', {{ item.id }})"
+                                    style="padding:4px 10px; font-size:12px; color:white; background:#059669; border:none; border-radius:6px;">
+                                Approve
+                            </button>
+                            <button onclick="doHW('preview', {{ item.id }})"
+                                    style="padding:4px 10px; font-size:12px; color:white; background:#f59e0b; border:none; border-radius:6px;">
+                                Review
+                            </button>
+                        </div>
+
+                        <div style="display:flex; gap:6px;">
+                            <button onclick="doHW('return', {{ item.id }})"
+                                    style="padding:4px 10px; font-size:12px; color:white; background:#ea580c; border:none; border-radius:6px;">
+                                Return
+                            </button>
+                            <button onclick="doHW('reject', {{ item.id }})"
+                                    style="padding:4px 10px; font-size:12px; color:white; background:#dc2626; border:none; border-radius:6px;">
+                                Reject
+                            </button>
+                        </div>
+
+                    </div>
+
+                    {% elif item.status == 'Pending Hardware Supervisor' and role == 'hardware_supervisor' %}
+                    <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+
+                        <div style="display:flex; gap:6px;">
+                            <button onclick="doHW('approve', {{ item.id }})"
+                                    style="padding:4px 10px; font-size:12px; color:white; background:#059669; border:none; border-radius:6px;">
+                                Approve
+                            </button>
+                            <button onclick="doHW('preview', {{ item.id }})"
+                                    style="padding:4px 10px; font-size:12px; color:white; background:#f59e0b; border:none; border-radius:6px;">
+                                Review
+                            </button>
+                        </div>
+
+                        <div style="display:flex; gap:6px;">
+                            <button onclick="doHW('return', {{ item.id }})"
+                                    style="padding:4px 10px; font-size:12px; color:white; background:#ea580c; border:none; border-radius:6px;">
+                                Return
+                            </button>
+                            <button onclick="doHW('reject', {{ item.id }})"
+                                    style="padding:4px 10px; font-size:12px; color:white; background:#dc2626; border:none; border-radius:6px;">
+                                Reject
+                            </button>
+                        </div>
+
+                    </div>
+
+                    {% elif item.status == 'Work-in-progress' and role == 'hardware_supervisor' %}
+                        <button onclick="doHW('complete', {{ item.id }})"
+                                style="padding:4px 10px; font-size:12px; color:white; background:#047857; border:none; border-radius:6px;">
+                            Complete
+                        </button>
+
+                    {% elif item.status == 'Under-preview' and role == 'team_leader' %}
+                        <button onclick="doHW('resume', {{ item.id }})" style="padding:4px 10px; font-size:12px; color:white; background:#3b82f6; border:none; border-radius:6px;">
+                            Resume
+                        </button>
+
+                    {% elif item.status == 'Under-preview' and role == 'supervisor' %}
+                        <button onclick="doHW('resume', {{ item.id }})" style="padding:4px 10px; font-size:12px; color:white; background:#3b82f6; border:none; border-radius:6px;">
+                            Resume
+                        </button>
+
+                    {% elif item.status == 'Under-preview' and role == 'hardware_supervisor' %}
+                        <button onclick="doHW('resume', {{ item.id }})" style="padding:4px 10px; font-size:12px; color:white; background:#3b82f6; border:none; border-radius:6px;">
+                            Resume
+                        </button>
+
+                    {% else %}
+                        <span class="text-gray-300">—</span>
+                    {% endif %}
+
+                </td>                
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="px-4 py-10 text-center text-gray-400">
+                    No hardware requests found.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+
+function getCookie(name) {
+    const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+    return v ? v[2] : '';
+}
+
+async function doHW(action, id) {
+    const res = await fetch(`/office-portal/hardware/action/${id}/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: `action=${action}`
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+        location.reload();
+    } else {
+        alert(data.detail);
+    }
+}
+</script>
+
+{% endblock %}

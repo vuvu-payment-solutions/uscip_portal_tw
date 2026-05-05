@@ -126,44 +126,109 @@
                         </div>
                     </td>
                     <td class="px-2 py-3 text-gray-500 text-xs">{{ app.created_at|date:"Y-m-d H:i" }}</td>
-                    {% if role in "supervisor,cio" %}
+                    {% if role == "team_leader" or role == "supervisor" or role == "cio" %}
                     <td class="px-2 py-3 text-center">
-                        {% if app.status == 'Pending Supervisor' and role == 'supervisor' or app.status == 'Pending CIO' and role == 'cio' %}
+
+                        {% if app.status == 'Pending Team Leader' and role == 'team_leader' %}
                         <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
                             <div style="display:flex; gap:3px;">
                                 <button onclick="doAction('approve', {{ app.id }}, this)"
-                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#059669; border:none; border-radius:5px; cursor:pointer;">
+                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#059669; border:none; border-radius:5px;">
                                     Approve
                                 </button>
                                 <button onclick="doAction('preview', {{ app.id }}, this)"
-                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#d97706; border:none; border-radius:5px; cursor:pointer;">
+                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#d97706; border:none; border-radius:5px;">
                                     Review
                                 </button>
                             </div>
                             <div style="display:flex; gap:3px;">
                                 <button onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}')"
-                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#ea580c; border:none; border-radius:5px; cursor:pointer;">
+                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#ea580c; border:none; border-radius:5px;">
                                     Return
                                 </button>
                                 <button onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}', true)"
-                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#dc2626; border:none; border-radius:5px; cursor:pointer;">
+                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#dc2626; border:none; border-radius:5px;">
                                     Reject
                                 </button>
                             </div>
                         </div>
-                        {% elif app.status == 'Under-preview' and app.preview_by == 'Pending Supervisor' and role == 'supervisor' or app.status == 'Under-preview' and app.preview_by == 'Pending CIO' and role == 'cio' %}
+
+                        {% elif app.status == 'Pending Supervisor' and role == 'supervisor' %}
+                        <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+                            <div style="display:flex; gap:3px;">
+                                <button onclick="doAction('approve', {{ app.id }}, this)"
+                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#059669; border:none; border-radius:5px;">
+                                    Approve
+                                </button>
+                                <button onclick="doAction('preview', {{ app.id }}, this)"
+                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#d97706; border:none; border-radius:5px;">
+                                    Review
+                                </button>
+                            </div>
+                            <div style="display:flex; gap:3px;">
+                                <button onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}')"
+                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#ea580c; border:none; border-radius:5px;">
+                                    Return
+                                </button>
+                                <button onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}', true)"
+                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#dc2626; border:none; border-radius:5px;">
+                                    Reject
+                                </button>
+                            </div>
+                        </div>
+
+                        {% elif app.status == 'Pending CIO' and role == 'cio' %}
+                        <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+                            <div style="display:flex; gap:3px;">
+                                <button onclick="doAction('approve', {{ app.id }}, this)"
+                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#059669; border:none; border-radius:5px;">
+                                    Approve
+                                </button>
+                                <button onclick="doAction('preview', {{ app.id }}, this)"
+                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#d97706; border:none; border-radius:5px;">
+                                    Review
+                                </button>
+                            </div>
+                            <div style="display:flex; gap:3px;">
+                                <button onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}')"
+                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#ea580c; border:none; border-radius:5px;">
+                                    Return
+                                </button>
+                                <button onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}', true)"
+                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#dc2626; border:none; border-radius:5px;">
+                                    Reject
+                                </button>
+                            </div>
+                        </div>
+
+                        {% elif app.status == 'Under-preview' and role == 'team_leader' and app.preview_by == 'Pending Team Leader' %}
                         <button onclick="doAction('resume', {{ app.id }}, this)"
-                                style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#3b82f6; border:none; border-radius:5px; cursor:pointer;">
+                                style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#3b82f6; border:none; border-radius:5px;">
                             Resume
                         </button>
+
+                        {% elif app.status == 'Under-preview' and role == 'supervisor' and app.preview_by == 'Pending Supervisor' %}
+                        <button onclick="doAction('resume', {{ app.id }}, this)"
+                                style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#3b82f6; border:none; border-radius:5px;">
+                            Resume
+                        </button>
+
+                        {% elif app.status == 'Under-preview' and role == 'cio' and app.preview_by == 'Pending CIO' %}
+                        <button onclick="doAction('resume', {{ app.id }}, this)"
+                                style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#3b82f6; border:none; border-radius:5px;">
+                            Resume
+                        </button>
+
                         {% elif app.status == 'Work-in-progress' and role == 'cio' %}
                         <button onclick="doAction('complete', {{ app.id }}, this)"
-                                style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#059669; border:none; border-radius:5px; cursor:pointer;">
+                                style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#059669; border:none; border-radius:5px;">
                             Complete
                         </button>
+
                         {% else %}
                         <span class="text-gray-300">—</span>
                         {% endif %}
+
                     </td>
                     {% endif %}
                 </tr>

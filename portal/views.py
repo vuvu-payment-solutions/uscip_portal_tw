@@ -32,7 +32,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import ensure_csrf_cookie
 
-from .models import AccountRequest, Application, Notice, UserProfile, PasswordResetToken, ApprovalHistory
+from .models import AccountRequest, Application, Notice, UserProfile, PasswordResetToken, ApprovalHistory, HardwareRequest
 from .services.notify import (
     teams_new_account_request,
     teams_account_pending_cio,
@@ -207,6 +207,9 @@ def portal_dashboard(request):
         "my_account_requests": AccountRequest.objects.filter(
             username=request.user.username
         ).order_by("-created_at"),
+        "my_hardware_requests": HardwareRequest.objects.filter(
+            applicant=request.user
+        ).order_by("-created_at"),
         "my_applications": Application.objects.filter(
             a_name=request.user.username
         ).order_by("-created_at"),
@@ -219,11 +222,28 @@ def portal_dashboard(request):
             Q(status="Work-in-progress") |
             Q(status="Under-preview", preview_by="Pending CIO")
         )
+    elif role == "hardware_supervisor":
+        context["pending_hardware"] = HardwareRequest.objects.filter(
+            Q(status="Pending Hardware Supervisor") |
+            Q(status="Work-in-progress")
+        )
     elif role == "supervisor":
         context["pending_accounts"] = AccountRequest.objects.filter(status="Pending Supervisor")
         context["pending_apps"] = Application.objects.filter(
             Q(status="Pending Supervisor") |
             Q(status="Under-preview", preview_by="Pending Supervisor")
+        )
+        context["pending_hardware"] = HardwareRequest.objects.filter(
+            status="Pending Supervisor"
+        )
+    elif role == "team_leader":
+        context["pending_accounts"] = AccountRequest.objects.filter(status="Pending Team Leader")
+        context["pending_apps"] = Application.objects.filter(
+            Q(status="Pending Team Leader") |
+            Q(status="Under-preview", preview_by="Pending Team Leader")
+        )
+        context["pending_hardware"] = HardwareRequest.objects.filter(
+            status="Pending Team Leader"
         )
 
     for req in context["my_account_requests"]:
@@ -350,7 +370,7 @@ def portal_register(request):
         requested_role=requested_role,
         description=description,
         attachment=attachment,
-        status="Pending Supervisor",
+        status="Pending Team Leader",
     )
     teams_new_account_request(username, full_name, department, requested_role)
     return JsonResponse({"success": True, "detail": "申請已送出，等待主管審核。"})
@@ -358,21 +378,32 @@ def portal_register(request):
 
 @login_required
 def approve_account(request, req_id: int):
-    """帳號申請簽核（SOD）"""
+    """帳號申請簽核（SOD + Team Leader）"""
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else "user"
 
-    if role not in ("supervisor", "cio"):
+    #  加入 team_leader 權限
+    if role not in ("team_leader", "supervisor", "cio"):
         return JsonResponse({"success": False, "detail": "權限不足"}, status=403)
 
     req = get_object_or_404(AccountRequest, pk=req_id)
 
-    if role == "supervisor" and req.status == "Pending Supervisor":
+    #  Team Leader 核准
+    if role == "team_leader" and req.status == "Pending Team Leader":
+        req.status = "Pending Supervisor"
+        req.team_leader = request.user  # 記錄是誰核准的
+        req.save()
+        
+        return JsonResponse({"success": True, "new_status": req.status})
+        
+    #  Supervisor 審核
+    elif role == "supervisor" and req.status == "Pending Supervisor":
         req.status = "Pending CIO"
         req.save()
         teams_account_pending_cio(req.username, req.full_name)
         return JsonResponse({"success": True, "new_status": req.status})
 
+    #  CIO 最終核准
     elif role == "cio" and req.status == "Pending CIO":
         req.status = "Approved"
         req.save()
@@ -517,7 +548,7 @@ def resubmit_account(request, req_id: int):
     req.department     = department
     req.requested_role = requested_role
     req.description    = description
-    req.status         = "Pending Supervisor"
+    req.status         = "Pending Team Leader"
     req.return_reason  = ""   # 清除退件原因
     if new_attachment:
         req.attachment = new_attachment
@@ -528,7 +559,7 @@ def resubmit_account(request, req_id: int):
 
 
 # ─────────────────────────────────────────────
-# 4. 服務 / API 申請（含檔案上傳，多階簽核）
+# 4. 服務 / API / Hardware 申請（含檔案上傳，多階簽核）
 # ─────────────────────────────────────────────
 
 @login_required
@@ -557,7 +588,7 @@ def submit_application(request):
         service_system=service_system,
         description=description,
         attachment=attachment,
-        status="Pending Supervisor",
+        status="Pending Team Leader",
     )
     teams_new_service_application(
         app.f_no, a_name, a_type, service_system, department=department
@@ -565,20 +596,35 @@ def submit_application(request):
     messages.success(request, "申請已送出，等待主管審核。")
     return redirect("portal_dashboard")
 
-
 @login_required
 def approve_application(request, app_id: int):
     """
-    SOD 簽核：
-      Supervisor → Pending Supervisor → Pending CIO
-      CIO       → Pending CIO       → Work-in-progress
+    SOD 簽核（升級版）：
+      Team Leader → Pending Team Leader → Pending Supervisor
+      Supervisor  → Pending Supervisor  → Pending CIO
+      CIO         → Pending CIO         → Work-in-progress
     """
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else "user"
 
     item = get_object_or_404(Application, pk=app_id)
 
-    if role == "supervisor" and item.status == "Pending Supervisor":
+    # 🔥 ① Team Leader
+    if role == "team_leader" and item.status == "Pending Team Leader":
+        old_status = item.status
+        item.status = "Pending Supervisor"
+        item.team_leader = request.user  # 有欄位的話就記錄
+        item.save()
+
+        _log_history(item, 'approve', old_status, item.status, request.user, role)
+
+        return JsonResponse({
+            "success": True,
+            "new_status": item.status,
+            "progress": item.progress
+        })
+
+    elif role == "supervisor" and item.status == "Pending Supervisor":
         old_status = item.status
         item.status = "Pending CIO"
         item.save()
@@ -721,7 +767,7 @@ def resubmit_application(request, app_id: int):
     item.a_type         = a_type
     item.service_system = service_system
     item.description    = description
-    item.status         = "Pending Supervisor"
+    item.status         = "Pending Team Leader"
     item.return_reason  = ""   # 清除退件原因
     if new_attachment:
         item.attachment = new_attachment
@@ -746,7 +792,9 @@ def preview_application(request, app_id: int):
 
     item = get_object_or_404(Application, pk=app_id)
 
-    if role == "supervisor" and item.status == "Pending Supervisor":
+    if role == "team_leader" and item.status == "Pending Team Leader":
+        item.preview_by = "Pending Team Leader"
+    elif role == "supervisor" and item.status == "Pending Supervisor":
         item.preview_by = "Pending Supervisor"
     elif role == "cio" and item.status == "Pending CIO":
         item.preview_by = "Pending CIO"
@@ -791,7 +839,12 @@ def resume_application(request, app_id: int):
         return JsonResponse({"success": False,
                              "detail": "只有 Under-Preview 狀態才能 Resume"}, status=400)
 
-    if item.preview_by == "Pending Supervisor" and role != "supervisor":
+    if item.preview_by == "Pending Team Leader" and role != "team_leader":
+        return JsonResponse({
+            "success": False,
+            "detail": "此申請由 Team Leader 設為 Under-Preview"
+        }, status=403)
+    elif item.preview_by == "Pending Supervisor" and role != "supervisor":
         return JsonResponse({"success": False,
                              "detail": "此申請由 Supervisor 設為 Under-Preview"}, status=403)
     elif item.preview_by == "Pending CIO" and role != "cio":
@@ -862,8 +915,25 @@ def application_list(request):
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else "user"
 
-    if role in ("supervisor", "cio"):
-        apps = Application.objects.all()
+    if role == "team_leader":
+        apps = Application.objects.filter(
+            Q(status="Pending Team Leader") |
+            Q(status="Under-preview", preview_by="Pending Team Leader")
+        )
+
+    elif role == "supervisor":
+        apps = Application.objects.filter(
+            Q(status="Pending Supervisor") |
+            Q(status="Under-preview", preview_by="Pending Supervisor")
+        )
+
+    elif role == "cio":
+        apps = Application.objects.filter(
+            Q(status="Pending CIO") |
+            Q(status="Under-preview", preview_by="Pending CIO") |
+            Q(status="Work-in-progress")
+        )
+
     else:
         apps = Application.objects.filter(a_name=request.user.username)
 
@@ -872,6 +942,203 @@ def application_list(request):
         "role": role,
     })
 
+@login_required
+def submit_hardware(request):
+    if request.method == "GET":
+        return render(request, "office_portal/hardware_apply.html")
+
+    profile = getattr(request.user, 'profile', None)
+    role = profile.role if profile else "user"
+
+    if role == "user":
+        initial_status = "Pending Team Leader"
+    elif role == "team_leader":
+        initial_status = "Pending Supervisor"
+    elif role == "supervisor":
+        initial_status = "Pending Hardware Supervisor"
+    elif role == "hardware_supervisor":
+        initial_status = "Work-in-progress"
+    else:
+        initial_status = "Pending Team Leader"
+
+    req = HardwareRequest.objects.create(
+        applicant=request.user,
+        device_type=request.POST.get("device_type"),
+        device_name=request.POST.get("device_name"),
+        quantity=request.POST.get("quantity") or 1,
+        purpose=request.POST.get("purpose"),
+        description=request.POST.get("description"),
+        attachment=request.FILES.get("file"),
+        status=initial_status,
+    )
+
+    return redirect("hardware_list")
+
+@login_required
+def approve_hardware(request, req_id):
+    profile = getattr(request.user, 'profile', None)
+    role = profile.role if profile else "user"
+
+    item = get_object_or_404(HardwareRequest, pk=req_id)
+
+    if role == "team_leader" and item.status == "Pending Team Leader":
+        item.status = "Pending Supervisor"
+        item.team_leader = request.user
+
+    elif role == "supervisor" and item.status == "Pending Supervisor":
+        item.status = "Pending Hardware Supervisor"
+        item.supervisor = request.user
+
+    elif role == "hardware_supervisor" and item.status == "Pending Hardware Supervisor":
+        item.status = "Work-in-progress"
+        item.hardware_supervisor = request.user
+
+    else:
+        return JsonResponse({"success": False, "detail": "權限錯誤"}, status=403)
+
+    item.save()
+    return JsonResponse({"success": True, "new_status": item.status})
+
+
+@login_required
+def hardware_action(request, req_id):
+    profile = getattr(request.user, 'profile', None)
+    role = profile.role if profile else "user"
+
+    item = get_object_or_404(HardwareRequest, pk=req_id)
+    action = request.POST.get("action")
+
+    old_status = item.status
+
+    # ------------------------
+    # Approve
+    # ------------------------
+    if action == "approve":
+
+        if role == "team_leader" and item.status == "Pending Team Leader":
+            item.status = "Pending Supervisor"
+
+        elif role == "supervisor" and item.status == "Pending Supervisor":
+            item.status = "Pending Hardware Supervisor"
+
+        elif role == "hardware_supervisor" and item.status == "Pending Hardware Supervisor":
+            item.status = "Work-in-progress"
+
+        else:
+            return JsonResponse({"success": False, "detail": "權限或狀態錯誤"}, status=403)
+
+    # ------------------------
+    # Review（進入 Under-preview）
+    # ------------------------
+    elif action == "preview":
+
+        if role == "team_leader" and item.status == "Pending Team Leader":
+            item.preview_by = "Pending Team Leader"
+
+        elif role == "supervisor" and item.status == "Pending Supervisor":
+            item.preview_by = "Pending Supervisor"
+
+        elif role == "hardware_supervisor" and item.status == "Pending Hardware Supervisor":
+            item.preview_by = "Pending Hardware Supervisor"
+
+        else:
+            return JsonResponse({"success": False, "detail": "權限錯誤"}, status=403)
+
+        item.status = "Under-preview"
+
+    # ------------------------
+    # Resume（離開 preview）
+    # ------------------------
+    elif action == "resume":
+
+        if item.preview_by == "Pending Team Leader" and role == "team_leader":
+            item.status = "Pending Team Leader"
+
+        elif item.preview_by == "Pending Supervisor" and role == "supervisor":
+            item.status = "Pending Supervisor"
+
+        elif item.preview_by == "Pending Hardware Supervisor" and role == "hardware_supervisor":
+            item.status = "Pending Hardware Supervisor"
+
+        else:
+            return JsonResponse({"success": False, "detail": "不可 Resume"}, status=403)
+
+        item.preview_by = ""
+
+    # ------------------------
+    # Return（退件）
+    # ------------------------
+    elif action == "return":
+
+        if not (
+            (role == "team_leader" and item.status == "Pending Team Leader") or
+            (role == "supervisor" and item.status == "Pending Supervisor") or
+            (role == "hardware_supervisor" and item.status == "Pending Hardware Supervisor")
+        ):
+            return JsonResponse({"success": False, "detail": "不可退件"}, status=403)
+
+        item.status = "Returned"
+        item.return_reason = request.POST.get("reason", "")
+
+    # ------------------------
+    # Reject（駁回）
+    # ------------------------
+    elif action == "reject":
+
+        if not (
+            (role == "supervisor" and item.status == "Pending Supervisor") or
+            (role == "hardware_supervisor" and item.status == "Pending Hardware Supervisor")
+        ):
+            return JsonResponse({"success": False, "detail": "不可拒絕"}, status=403)
+
+        item.status = "Rejected"
+        item.return_reason = request.POST.get("reason", "")
+
+    # ------------------------
+    # Complete（完成）
+    # ------------------------
+    elif action == "complete":
+
+        if role == "hardware_supervisor" and item.status == "Work-in-progress":
+            item.status = "Request Completed"
+        else:
+            return JsonResponse({"success": False, "detail": "不可完成"}, status=403)
+
+    else:
+        return JsonResponse({"success": False, "detail": "未知動作"}, status=400)
+
+    item.save()
+
+    return JsonResponse({
+        "success": True,
+        "new_status": item.status
+    })
+
+@login_required
+def hardware_list(request):
+    profile = getattr(request.user, 'profile', None)
+    role = profile.role if profile else "user"
+
+    if role in ("team_leader", "supervisor", "hardware_supervisor"):
+        items = HardwareRequest.objects.filter(
+            Q(status="Pending Team Leader") |
+            Q(status="Pending Supervisor") |
+            Q(status="Pending Hardware Supervisor") |
+            Q(status="Under-preview") |
+            Q(status="Work-in-progress") |
+            Q(status="Request Completed")
+        ).order_by("-created_at")
+
+    else:
+        # 一般 user 只能看到自己申請的
+        items = HardwareRequest.objects.filter(
+            applicant=request.user
+        ).order_by("-created_at")
+
+    return render(request, "office_portal/hardware_list.html", {
+        "items": items,
+        "role": role,   # ⚠️ 這行很重要！！
+    })
 
 # ─────────────────────────────────────────────
 # 5. 公告管理
@@ -946,7 +1213,7 @@ def application_detail_api(request, app_id):
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else "user"
 
-    if role not in ("supervisor", "cio", "admin"):
+    if role not in ("team_leader", "supervisor", "cio", "admin"):
         return JsonResponse({"error": "Permission denied"}, status=403)
 
     app = get_object_or_404(Application, pk=app_id)

@@ -7,6 +7,7 @@ class UserProfile(models.Model):
         ('user',       'User'),
         ('team_leader', 'Team Leader'),
         ('supervisor', 'Supervisor'),
+        ('hardware_supervisor', 'Hardware Supervisor'),
         ('cio',        'CIO'),
     ]
     user       = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
@@ -25,6 +26,7 @@ class AccountRequest(models.Model):
     Returned = 退件給申請人修改後重新上呈
     """
     STATUS_CHOICES = [
+        ('Pending Team Leader', 'Pending Team Leader'),
         ('Pending Supervisor', 'Pending Supervisor'),
         ('Pending CIO',        'Pending CIO'),
         ('Approved',           'Approved'),
@@ -43,6 +45,15 @@ class AccountRequest(models.Model):
     email          = models.EmailField(max_length=100)
     department     = models.CharField(max_length=50, blank=True)
     requested_role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
+    
+    team_leader    = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tl_requests'
+    )
+    
     # ── 新增欄位 ─────────────────────────────────────────
     description    = models.TextField(blank=True, verbose_name='申請說明')
     attachment     = models.FileField(upload_to='account_requests/', blank=True, null=True,
@@ -50,7 +61,7 @@ class AccountRequest(models.Model):
     return_reason  = models.TextField(blank=True, verbose_name='退件原因')
     # ────────────────────────────────────────────────────
     status         = models.CharField(max_length=30, choices=STATUS_CHOICES,
-                                      default='Pending Supervisor')
+                                      default='Pending Team Leader')
     comment        = models.CharField(max_length=255, blank=True)
     created_at     = models.DateTimeField(auto_now_add=True)
     updated_at     = models.DateTimeField(auto_now=True)
@@ -63,6 +74,52 @@ class AccountRequest(models.Model):
     def __str__(self):
         return f"{self.username} [{self.status}]"
 
+class HardwareRequest(models.Model):
+
+    STATUS_CHOICES = [
+        ('Pending Team Leader', 'Pending Team Leader'),
+        ('Pending Supervisor', 'Pending Supervisor'),
+        ('Pending Hardware Supervisor', 'Pending Hardware Supervisor'),
+        ('Under-preview', 'Under-preview'),
+        ('Work-in-progress', 'Work-in-progress'),
+        ('Request Completed', 'Request Completed'),
+        ('Rejected', 'Rejected'),
+        ('Returned', 'Returned'),
+    ]
+
+    applicant = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    device_type = models.CharField(max_length=100)
+    device_name = models.CharField(max_length=100, blank=True)
+    quantity = models.IntegerField(default=1)
+
+    purpose = models.TextField()
+    description = models.TextField(blank=True)
+    attachment = models.FileField(upload_to='hardware/', null=True, blank=True)
+
+    team_leader = models.ForeignKey(User, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='hw_tl')
+
+    supervisor = models.ForeignKey(User, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='hw_sp')
+
+    hardware_supervisor = models.ForeignKey(User, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='hw_hs')
+
+    preview_by = models.CharField(max_length=50, blank=True)
+
+    return_reason = models.TextField(blank=True)
+
+    status = models.CharField(
+        max_length=50,
+        choices=STATUS_CHOICES,
+        default='Pending Team Leader'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.applicant} - {self.device_type} [{self.status}]"
 
 class Application(models.Model):
     """
@@ -71,6 +128,7 @@ class Application(models.Model):
     """
     STATUS_CHOICES = [
         ('Under-preview',     'Under-preview'),
+        ('Pending Team Leader', 'Pending Team Leader'),
         ('Pending Supervisor', 'Pending Supervisor'),
         ('Pending CIO',        'Pending CIO'),
         ('Work-in-progress',   'Work-in-progress'),
@@ -93,9 +151,18 @@ class Application(models.Model):
     a_type         = models.CharField(max_length=50, choices=TYPE_CHOICES, verbose_name='申請類型')
     service_system = models.CharField(max_length=100, blank=True, verbose_name='服務系統')
     status         = models.CharField(max_length=30, choices=STATUS_CHOICES,
-                                      default='Pending Supervisor')
+                                      default='Pending Team Leader')
     attachment     = models.FileField(upload_to='applications/', blank=True, null=True,
                                       verbose_name='附件')
+    
+    team_leader = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="application_tl_requests"
+    )
+    
     # ── 新增欄位 ─────────────────────────────────────────
     description    = models.TextField(blank=True, verbose_name='申請說明')
     return_reason  = models.TextField(blank=True, verbose_name='退件原因')
@@ -121,6 +188,7 @@ class Application(models.Model):
     @property
     def progress(self):
         mapping = {
+            'Pending Team Leader': 10,
             'Under-preview':      15,
             'Pending Supervisor':  25,
             'Pending CIO':         50,
@@ -135,6 +203,7 @@ class Application(models.Model):
     @property
     def progress_color(self):
         mapping = {
+            'Pending Team Leader': 'bg-yellow-300',
             'Under-preview':      'bg-yellow-400',
             'Pending Supervisor':  'bg-blue-400',
             'Pending CIO':         'bg-blue-500',

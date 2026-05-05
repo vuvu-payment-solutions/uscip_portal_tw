@@ -34,6 +34,12 @@ urlpatterns = [
     path("complete-application/<int:app_id>/",     views.complete_application,   name="complete_application"),
     path("bookmark-application/<int:app_id>/",     views.add_bookmark,           name="add_bookmark"),
 
+    # ── 硬體申請 ───────────────────────────────────
+    path("hardware/apply/", views.submit_hardware, name="hardware_apply"),
+    path("hardware/list/", views.hardware_list, name="hardware_list"),
+    path("hardware/approve/<int:req_id>/", views.approve_hardware, name="approve_hardware"),
+    path("hardware/action/<int:req_id>/", views.hardware_action, name="hardware_action"),
+
     # ── 公告 ───────────────────────────────────────
     path("notices/",                               views.notice_list,            name="portal_notices"),
     path("notices/create/",                        views.create_notice,          name="portal_create_notice"),
