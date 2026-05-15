@@ -12,6 +12,38 @@
     </a>
 </div>
 
+<!-- =======================================================
+     Search Function
+     Purpose:
+     - Search Hardware Request
+     - Search by Device Type / Device Name / Purpose
+     - Keep search keyword after submit
+     ======================================================= -->
+<form method="get" class="mb-4 flex items-center gap-2">
+
+    <!-- Search input -->
+    <input type="text"
+           name="search"
+           value="{{ search }}"
+           placeholder="Search device type, name, purpose..."
+           class="px-3 py-2 text-sm border border-gray-300 rounded-lg w-80">
+
+    <!-- Search button -->
+    <button type="submit"
+            class="px-4 py-2 text-sm font-semibold text-white bg-[#1a2d4a] rounded-lg">
+        Search
+    </button>
+
+    <!-- Clear search -->
+    {% if search %}
+    <a href="{% url 'hardware_list' %}"
+       class="px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-100 rounded-lg">
+        Clear
+    </a>
+    {% endif %}
+
+</form>
+
 <div class="bg-white rounded-xl border border-gray-200 overflow-x-auto">
     <table class="w-full text-sm">
         <thead class="bg-gray-50">
@@ -46,7 +78,49 @@
                         <span class="text-gray-300">—</span>
                     {% endif %}
                 </td>
-                <td class="px-4 py-3 text-center">{{ item.status }}</td>
+                <td class="px-4 py-3 text-center">
+
+                    {{ item.status }}
+
+                    {% if item.status == 'Returned' %}
+                    <div style="margin-top:6px; padding:6px 8px; background:#fff7ed; border:1px solid #fed7aa; border-radius:6px; text-align:left;">
+                        <div style="font-size:10px; font-weight:700; color:#ea580c; margin-bottom:4px;">
+                            ↩ Returned Information
+                        </div>
+
+                        {% if item.return_date %}
+                        <div style="font-size:10px; color:#9a3412;">
+                            📅 {{ item.return_date|date:"Y-m-d H:i" }}
+                        </div>
+                        {% endif %}
+
+                        {% if item.return_reason %}
+                        <div style="font-size:11px; color:#9a3412; margin-top:4px;">
+                            {{ item.return_reason }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if item.status == 'Rejected' %}
+                    <div style="margin-top:6px; padding:6px 8px; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; text-align:left;">
+                        <div style="font-size:10px; font-weight:700; color:#dc2626; margin-bottom:4px;">
+                            ⛔ Rejected Information
+                        </div>
+
+                        {% if item.return_reason %}
+                        <div style="font-size:11px; color:#991b1b; margin-top:4px;">
+                            {{ item.return_reason }}
+                        </div>
+                        {% else %}
+                        <div style="font-size:11px; color:#991b1b; margin-top:4px;">
+                            No rejection reason recorded.
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                </td>
                 <td class="px-4 py-3 text-center" style="min-width:260px;">
 
                     {% if item.status == 'Pending Team Leader' and role == 'team_leader' %}
@@ -64,8 +138,9 @@
                         </div>
 
                         <div style="display:flex; gap:6px;">
-                            <button onclick="doHW('return', {{ item.id }})"
-                                    style="padding:4px 10px; font-size:12px; color:white; background:#ea580c; border:none; border-radius:6px;">
+                            <button onclick="openHWReturnModal({{ item.id }})"
+                                    style="padding:4px 10px; font-size:12px; color:white;
+                                        background:#ea580c; border:none; border-radius:6px;">
                                 Return
                             </button>
                         </div>
@@ -87,11 +162,12 @@
                         </div>
 
                         <div style="display:flex; gap:6px;">
-                            <button onclick="doHW('return', {{ item.id }})"
-                                    style="padding:4px 10px; font-size:12px; color:white; background:#ea580c; border:none; border-radius:6px;">
+                            <button onclick="openHWReturnModal({{ item.id }})"
+                                    style="padding:4px 10px; font-size:12px; color:white;
+                                        background:#ea580c; border:none; border-radius:6px;">
                                 Return
                             </button>
-                            <button onclick="doHW('reject', {{ item.id }})"
+                            <button onclick="openHWRejectModal({{ item.id }})"
                                     style="padding:4px 10px; font-size:12px; color:white; background:#dc2626; border:none; border-radius:6px;">
                                 Reject
                             </button>
@@ -114,11 +190,12 @@
                         </div>
 
                         <div style="display:flex; gap:6px;">
-                            <button onclick="doHW('return', {{ item.id }})"
-                                    style="padding:4px 10px; font-size:12px; color:white; background:#ea580c; border:none; border-radius:6px;">
+                            <button onclick="openHWReturnModal({{ item.id }})"
+                                    style="padding:4px 10px; font-size:12px; color:white;
+                                        background:#ea580c; border:none; border-radius:6px;">
                                 Return
                             </button>
-                            <button onclick="doHW('reject', {{ item.id }})"
+                            <button onclick="openHWRejectModal({{ item.id }})"
                                     style="padding:4px 10px; font-size:12px; color:white; background:#dc2626; border:none; border-radius:6px;">
                                 Reject
                             </button>
@@ -147,6 +224,12 @@
                             Resume
                         </button>
 
+                    {% elif item.status == 'Returned' and item.applicant == request.user %}
+                        <a href="{% url 'resubmit_hardware' item.id %}"
+                        style="padding:4px 10px; font-size:12px; color:white; background:#ea580c; border:none; border-radius:6px; display:inline-block; text-decoration:none;">
+                            Resubmit
+                        </a>
+                        
                     {% else %}
                         <span class="text-gray-300">—</span>
                     {% endif %}
@@ -163,7 +246,50 @@
         </tbody>
     </table>
 </div>
+<div id="hwReturnModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999;">
+    <div style="height:100%; display:flex; align-items:center; justify-content:center;">
+        <div style="background:white; width:420px; border-radius:12px; padding:20px;">
+            <h3 style="font-size:18px; font-weight:700; margin-bottom:12px;">↩ Return Hardware Request</h3>
 
+            <textarea id="hwReturnReason"
+                      placeholder="Please enter return reason..."
+                      style="width:100%; min-height:120px; border:1px solid #ddd; border-radius:8px; padding:10px;"></textarea>
+
+            <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:10px;">
+                <button onclick="closeHWModal()" style="padding:8px 16px; border:none; border-radius:6px; background:#ddd;">
+                    Cancel
+                </button>
+                <button onclick="submitHWReturn()" style="padding:8px 16px; border:none; border-radius:6px; background:#ea580c; color:white;">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="hwRejectModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999;">
+    <div style="height:100%; display:flex; align-items:center; justify-content:center;">
+        <div style="background:white; width:420px; border-radius:12px; padding:20px;">
+            <h3 style="font-size:18px; font-weight:700; margin-bottom:12px;">⛔ Reject Hardware Request</h3>
+
+            <p style="font-size:13px; color:#6b7280; margin-bottom:10px;">
+                This action will permanently reject the hardware request. Please enter the rejection reason.
+            </p>
+
+            <textarea id="hwRejectReason"
+                      placeholder="Please enter rejection reason..."
+                      style="width:100%; min-height:120px; border:1px solid #ddd; border-radius:8px; padding:10px;"></textarea>
+
+            <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:10px;">
+                <button onclick="closeHWRejectModal()" style="padding:8px 16px; border:none; border-radius:6px; background:#ddd;">
+                    Cancel
+                </button>
+                <button onclick="submitHWReject()" style="padding:8px 16px; border:none; border-radius:6px; background:#dc2626; color:white;">
+                    Confirm Reject
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
 
 function getCookie(name) {
@@ -189,6 +315,122 @@ async function doHW(action, id) {
         alert(data.detail);
     }
 }
+
+let currentHWId = null;
+
+function openHWReturnModal(id) {
+    currentHWId = id;
+    document.getElementById("hwReturnReason").value = "";
+    document.getElementById("hwReturnModal").style.display = "block";
+}
+
+let currentHWRejectId = null;
+
+function openHWRejectModal(id) {
+    currentHWRejectId = id;
+    document.getElementById("hwRejectReason").value = "";
+    document.getElementById("hwRejectModal").style.display = "block";
+}
+
+function closeHWRejectModal() {
+    document.getElementById("hwRejectModal").style.display = "none";
+}
+
+async function submitHWReject() {
+    const reason = document.getElementById("hwRejectReason").value.trim();
+
+    if (!reason) {
+        alert("Please enter rejection reason.");
+        return;
+    }
+
+    const res = await fetch(`/office-portal/hardware/action/${currentHWRejectId}/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: `action=reject&reason=${encodeURIComponent(reason)}`
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+        location.reload();
+    } else {
+        alert(data.detail);
+    }
+}
+
+function closeHWModal() {
+    document.getElementById("hwReturnModal").style.display = "none";
+}
+
+async function submitHWReturn() {
+    const reason = document.getElementById("hwReturnReason").value.trim();
+
+    if (!reason) {
+        alert("Please enter return reason.");
+        return;
+    }
+
+    const res = await fetch(`/office-portal/hardware/action/${currentHWId}/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: `action=return&reason=${encodeURIComponent(reason)}`
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+        location.reload();
+    } else {
+        alert(data.detail);
+    }
+}
 </script>
+
+<!-- =======================================================
+     Pagination
+     Purpose:
+     - Display 20 records per page
+     - Keep search keyword when switching pages
+     ======================================================= -->
+{% if page_obj.has_other_pages %}
+<div class="mt-4 flex items-center justify-center gap-2 text-sm">
+
+    {% if page_obj.has_previous %}
+    <a href="?search={{ search }}&page=1"
+       class="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50">
+        First
+    </a>
+
+    <a href="?search={{ search }}&page={{ page_obj.previous_page_number }}"
+       class="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50">
+        Previous
+    </a>
+    {% endif %}
+
+    <span class="px-3 py-1.5 text-gray-600">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+    <a href="?search={{ search }}&page={{ page_obj.next_page_number }}"
+       class="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50">
+        Next
+    </a>
+
+    <a href="?search={{ search }}&page={{ page_obj.paginator.num_pages }}"
+       class="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50">
+        Last
+    </a>
+    {% endif %}
+
+</div>
+{% endif %}
 
 {% endblock %}

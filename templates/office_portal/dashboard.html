@@ -81,10 +81,23 @@
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700">
                             {{ req.status }}
                         </span>
+                        {% if req.status == 'Returned' %}
+                        <div class="mt-1.5 text-xs text-orange-600 text-left max-w-[220px]
+                                    whitespace-pre-wrap leading-relaxed
+                                    border-l-2 border-orange-400 pl-2">
 
-                        {% if req.display_reason %}
-                        <div class="mt-1.5 text-xs text-orange-600 text-left max-w-[220px] whitespace-pre-wrap leading-relaxed border-l-2 border-orange-400 pl-2">
-                            ↩ {{ req.display_reason|truncatechars:120 }}
+                            {% if req.return_date %}
+                            <div style="font-size:10px; color:#9a3412;">
+                                📅 {{ req.return_date|date:"Y-m-d H:i" }}
+                            </div>
+                            {% endif %}
+
+                            {% if req.display_reason %}
+                            <div>
+                                ↩ {{ req.display_reason|truncatechars:120 }}
+                            </div>
+                            {% endif %}
+
                         </div>
                         {% endif %}
                     </td>
@@ -168,9 +181,22 @@
                             {% else %}bg-amber-50 text-amber-700{% endif %}">
                             {{ req.status }}
                         </span>
-                        {% if req.display_reason %}
-                        <div class="mt-1.5 text-xs text-orange-600 text-left max-w-[220px] whitespace-pre-wrap leading-relaxed">
-                            ↩ {{ req.display_reason|truncatechars:120 }}
+                        {% if req.status == 'Returned' %}
+                        <div class="mt-1.5 text-xs text-orange-600 text-left max-w-[220px]
+                                    whitespace-pre-wrap leading-relaxed">
+
+                            {% if req.return_date %}
+                            <div style="font-size:10px; color:#9a3412;">
+                                📅 {{ req.return_date|date:"Y-m-d H:i" }}
+                            </div>
+                            {% endif %}
+
+                            {% if req.display_reason %}
+                            <div>
+                                ↩ {{ req.display_reason|truncatechars:120 }}
+                            </div>
+                            {% endif %}
+
                         </div>
                         {% endif %}
                     </td>

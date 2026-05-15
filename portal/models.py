@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 
 class UserProfile(models.Model):
@@ -59,6 +60,8 @@ class AccountRequest(models.Model):
     attachment     = models.FileField(upload_to='account_requests/', blank=True, null=True,
                                       verbose_name='附件')
     return_reason  = models.TextField(blank=True, verbose_name='退件原因')
+    return_date    = models.DateTimeField(null=True, blank=True, verbose_name='退件日期')
+    
     # ────────────────────────────────────────────────────
     status         = models.CharField(max_length=30, choices=STATUS_CHOICES,
                                       default='Pending Team Leader')
@@ -91,7 +94,7 @@ class HardwareRequest(models.Model):
 
     device_type = models.CharField(max_length=100)
     device_name = models.CharField(max_length=100, blank=True)
-    quantity = models.IntegerField(default=1)
+    quantity = models.PositiveIntegerField(default=1)
 
     purpose = models.TextField()
     description = models.TextField(blank=True)
@@ -109,6 +112,8 @@ class HardwareRequest(models.Model):
     preview_by = models.CharField(max_length=50, blank=True)
 
     return_reason = models.TextField(blank=True)
+    
+    return_date = models.DateTimeField(null=True, blank=True, verbose_name='退件日期')
 
     status = models.CharField(
         max_length=50,
@@ -117,9 +122,47 @@ class HardwareRequest(models.Model):
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.applicant} - {self.device_type} [{self.status}]"
+
+class HardwareApprovalHistory(models.Model):
+    ACTION_CHOICES = [
+        ('submit', 'Submit'),
+        ('approve', 'Approve'),
+        ('reject', 'Reject'),
+        ('return', 'Return'),
+        ('resubmit', 'Resubmit'),
+        ('preview', 'Under-Preview'),
+        ('resume', 'Resume'),
+        ('complete', 'Complete'),
+    ]
+
+    hardware_request = models.ForeignKey(
+        HardwareRequest,
+        on_delete=models.CASCADE,
+        related_name='approval_history'
+    )
+
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    from_status = models.CharField(max_length=50, blank=True, default='')
+    to_status = models.CharField(max_length=50, blank=True, default='')
+    actor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    actor_role = models.CharField(max_length=30, blank=True, default='')
+    comment = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = '硬體申請審核歷程'
+        verbose_name_plural = '硬體申請審核歷程列表'
+
+    def __str__(self):
+        return (
+            f"HW-{self.hardware_request.id} | {self.action} "
+            f"by {self.actor} ({self.from_status} → {self.to_status})"
+        )
 
 class Application(models.Model):
     """
@@ -166,6 +209,8 @@ class Application(models.Model):
     # ── 新增欄位 ─────────────────────────────────────────
     description    = models.TextField(blank=True, verbose_name='申請說明')
     return_reason  = models.TextField(blank=True, verbose_name='退件原因')
+    return_date = models.DateTimeField(null=True, blank=True, verbose_name='退件日期')
+    
     # ────────────────────────────────────────────────────
     bookmark       = models.TextField(blank=True, default='', verbose_name='Bookmark (審核備註)')
     preview_by     = models.CharField(max_length=30, blank=True, default='',
@@ -254,7 +299,6 @@ class ApprovalHistory(models.Model):
             f"{self.application.f_no} | {self.action} "
             f"by {self.actor} ({self.from_status} → {self.to_status})"
         )
-
 
 class Notice(models.Model):
     title      = models.CharField(max_length=200, verbose_name='標題')

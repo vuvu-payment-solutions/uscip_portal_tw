@@ -25,6 +25,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -32,7 +33,17 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import ensure_csrf_cookie
 
-from .models import AccountRequest, Application, Notice, UserProfile, PasswordResetToken, ApprovalHistory, HardwareRequest
+from .models import (
+    AccountRequest,
+    Application,
+    Notice,
+    UserProfile,
+    PasswordResetToken,
+    ApprovalHistory,
+    HardwareRequest, 
+    HardwareApprovalHistory,
+)
+
 from .services.notify import (
     teams_new_account_request,
     teams_account_pending_cio,
@@ -45,7 +56,6 @@ from .services.notify import (
     email_password_reset,
 )
 
-
 # ─────────────────────────────────────────────
 # Helper：審核歷程紀錄
 # ─────────────────────────────────────────────
@@ -53,6 +63,18 @@ from .services.notify import (
 def _log_history(application, action, from_status, to_status, user, role, comment=""):
     ApprovalHistory.objects.create(
         application=application,
+        action=action,
+        from_status=from_status,
+        to_status=to_status,
+        actor=user,
+        actor_role=role,
+        comment=comment,
+    )
+    
+    
+def _log_hardware_history(hardware_request, action, from_status, to_status, user, role, comment=""):
+    HardwareApprovalHistory.objects.create(
+        hardware_request=hardware_request,
         action=action,
         from_status=from_status,
         to_status=to_status,
@@ -485,6 +507,7 @@ def reject_account(request, req_id: int):
         # Supervisor 只能退給申請人
         req.status        = "Returned"
         req.return_reason = comment
+        req.return_date   = timezone.now()
         req.save()
         return JsonResponse({"success": True, "new_status": req.status})
 
@@ -500,6 +523,7 @@ def reject_account(request, req_id: int):
             # CIO 退給申請人
             req.status        = "Returned"
             req.return_reason = comment
+            req.return_date = timezone.now()
             req.save()
             return JsonResponse({"success": True, "new_status": req.status})
 
@@ -590,6 +614,17 @@ def submit_application(request):
         attachment=attachment,
         status="Pending Team Leader",
     )
+    
+    _log_history(
+    app,
+    'submit',
+    '',
+    app.status,
+    request.user,
+    getattr(request.user, 'profile', None).role if getattr(request.user, 'profile', None) else 'user',
+    'Applicant submitted service application'
+    )
+    
     teams_new_service_application(
         app.f_no, a_name, a_type, service_system, department=department
     )
@@ -707,6 +742,7 @@ def reject_application(request, app_id: int):
         # Supervisor 只能退給申請人
         item.status        = "Returned"
         item.return_reason = comment
+        item.return_date = timezone.now()
         item.save()
         _log_history(item, 'return', old_status, item.status, request.user, role, comment)
         return JsonResponse({"success": True, "new_status": item.status,
@@ -728,6 +764,7 @@ def reject_application(request, app_id: int):
             # CIO 退給申請人
             item.status        = "Returned"
             item.return_reason = comment
+            item.return_date   = timezone.now()
             item.save()
             _log_history(item, 'return', old_status, item.status, request.user, role, comment)
             return JsonResponse({"success": True, "new_status": item.status,
@@ -769,6 +806,8 @@ def resubmit_application(request, app_id: int):
     item.description    = description
     item.status         = "Pending Team Leader"
     item.return_reason  = ""   # 清除退件原因
+    item.return_date = None    # 清除退件時間
+    
     if new_attachment:
         item.attachment = new_attachment
     item.save()
@@ -908,12 +947,15 @@ def add_bookmark(request, app_id: int):
 
     return JsonResponse({"success": True, "bookmark": item.bookmark})
 
-
 @login_required
 def application_list(request):
     """列出所有申請單"""
+
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else "user"
+
+    # 🔍 Search keyword
+    search = request.GET.get("search", "").strip()
 
     if role == "team_leader":
         apps = Application.objects.filter(
@@ -935,10 +977,29 @@ def application_list(request):
         )
 
     else:
-        apps = Application.objects.filter(a_name=request.user.username)
+        apps = Application.objects.filter(
+            a_name=request.user.username
+        )
+
+    # 🔍 Search by Application Number
+    if search:
+        apps = apps.filter(
+            f_no__icontains=search
+        )
+
+    # 📄 Pagination (20 per page)
+    paginator = Paginator(
+        apps.order_by("-created_at"),
+        20
+    )
+
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
 
     return render(request, "office_portal/application_list.html", {
-        "applications": apps,
+        "applications": page_obj,
+        "page_obj": page_obj,
+        "search": search,
         "role": role,
     })
 
@@ -972,32 +1033,77 @@ def submit_hardware(request):
         status=initial_status,
     )
 
+    _log_hardware_history(
+        req,
+        'submit',
+        '',
+        req.status,
+        request.user,
+        role,
+        'Applicant submitted hardware request'
+    )
+
     return redirect("hardware_list")
 
+
 @login_required
-def approve_hardware(request, req_id):
+def resubmit_hardware(request, req_id):
+    """
+    申請人將退件（Returned）的硬體申請重新修改後送出。
+    GET：顯示預填表單（含退件原因）
+    POST：更新申請內容，狀態重置為 Pending Team Leader，清除 return_reason / return_date
+    """
+    item = get_object_or_404(HardwareRequest, pk=req_id)
+
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else "user"
 
-    item = get_object_or_404(HardwareRequest, pk=req_id)
+    if item.applicant != request.user:
+        return JsonResponse({
+            "success": False,
+            "detail": "無法操作他人的硬體申請"
+        }, status=403)
 
-    if role == "team_leader" and item.status == "Pending Team Leader":
-        item.status = "Pending Supervisor"
-        item.team_leader = request.user
+    if item.status != "Returned":
+        return JsonResponse({
+            "success": False,
+            "detail": f"目前狀態 {item.status} 無法重新送出"
+        }, status=400)
 
-    elif role == "supervisor" and item.status == "Pending Supervisor":
-        item.status = "Pending Hardware Supervisor"
-        item.supervisor = request.user
+    if request.method == "GET":
+        return render(request, "office_portal/hardware_apply.html", {
+            "resubmit_hw": item,
+        })
 
-    elif role == "hardware_supervisor" and item.status == "Pending Hardware Supervisor":
-        item.status = "Work-in-progress"
-        item.hardware_supervisor = request.user
+    old_status = item.status
 
-    else:
-        return JsonResponse({"success": False, "detail": "權限錯誤"}, status=403)
+    item.device_type = request.POST.get("device_type", item.device_type)
+    item.device_name = request.POST.get("device_name", item.device_name)
+    item.quantity = request.POST.get("quantity") or item.quantity
+    item.purpose = request.POST.get("purpose", item.purpose)
+    item.description = request.POST.get("description", item.description)
 
+    new_attachment = request.FILES.get("file")
+    if new_attachment:
+        item.attachment = new_attachment
+
+    item.status = "Pending Team Leader"
+    item.return_reason = ""
+    item.return_date = None
     item.save()
-    return JsonResponse({"success": True, "new_status": item.status})
+
+    _log_hardware_history(
+        item,
+        'resubmit',
+        old_status,
+        item.status,
+        request.user,
+        role,
+        'Applicant resubmitted hardware request after revision'
+    )
+
+    messages.success(request, "硬體申請已重新送出，等待 Team Leader 審核。")
+    return redirect("hardware_list")
 
 
 @login_required
@@ -1079,6 +1185,7 @@ def hardware_action(request, req_id):
 
         item.status = "Returned"
         item.return_reason = request.POST.get("reason", "")
+        item.return_date = timezone.now()
 
     # ------------------------
     # Reject（駁回）
@@ -1090,6 +1197,13 @@ def hardware_action(request, req_id):
             (role == "hardware_supervisor" and item.status == "Pending Hardware Supervisor")
         ):
             return JsonResponse({"success": False, "detail": "不可拒絕"}, status=403)
+
+        reason = request.POST.get("reason", "").strip()
+        if not reason:
+            return JsonResponse({
+                "success": False,
+                "detail": "駁回原因不可空白"
+            }, status=400)
 
         item.status = "Rejected"
         item.return_reason = request.POST.get("reason", "")
@@ -1109,6 +1223,18 @@ def hardware_action(request, req_id):
 
     item.save()
 
+    comment = request.POST.get("reason", "") or request.POST.get("comment", "")
+
+    _log_hardware_history(
+        item,
+        action,
+        old_status,
+        item.status,
+        request.user,
+        role,
+        comment
+    )
+
     return JsonResponse({
         "success": True,
         "new_status": item.status
@@ -1119,6 +1245,8 @@ def hardware_list(request):
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else "user"
 
+    search = request.GET.get("search", "").strip()
+
     if role in ("team_leader", "supervisor", "hardware_supervisor"):
         items = HardwareRequest.objects.filter(
             Q(status="Pending Team Leader") |
@@ -1126,18 +1254,37 @@ def hardware_list(request):
             Q(status="Pending Hardware Supervisor") |
             Q(status="Under-preview") |
             Q(status="Work-in-progress") |
-            Q(status="Request Completed")
-        ).order_by("-created_at")
-
+            Q(status="Request Completed") |
+            Q(status="Returned") |
+            Q(status="Rejected")
+        )
     else:
-        # 一般 user 只能看到自己申請的
         items = HardwareRequest.objects.filter(
             applicant=request.user
-        ).order_by("-created_at")
+        )
+
+    if search:
+        items = items.filter(
+            Q(device_type__icontains=search) |
+            Q(device_name__icontains=search) |
+            Q(purpose__icontains=search) |
+            Q(description__icontains=search) |
+            Q(status__icontains=search)
+        )
+
+    paginator = Paginator(
+        items.order_by("-created_at"),
+        20
+    )
+
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
 
     return render(request, "office_portal/hardware_list.html", {
-        "items": items,
-        "role": role,   # ⚠️ 這行很重要！！
+        "items": page_obj,
+        "page_obj": page_obj,
+        "search": search,
+        "role": role,
     })
 
 # ─────────────────────────────────────────────

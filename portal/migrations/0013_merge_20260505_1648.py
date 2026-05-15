@@ -6,7 +6,6 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('portal', '0009_merge_20260424_1801'),
         ('portal', '0012_alter_userprofile_role'),
     ]
 

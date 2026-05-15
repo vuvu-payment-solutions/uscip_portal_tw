@@ -26,6 +26,38 @@
 <!-- Message -->
 <div id="msg" class="hidden mb-4 px-4 py-2.5 rounded-lg text-sm font-medium"></div>
 
+<!-- =======================================================
+     Search Function
+     Purpose:
+     - Search Service Application by Application Number
+     - Example: APP-0001
+     - Keep search keyword after submit
+     ======================================================= -->
+<form method="get" class="mb-4 flex items-center gap-2">
+
+    <!-- Search input -->
+    <input type="text"
+           name="search"
+           value="{{ search }}"
+           placeholder="Search by Application Number, e.g. APP-0001"
+           class="px-3 py-2 text-sm border border-gray-300 rounded-lg w-80">
+
+    <!-- Search button -->
+    <button type="submit"
+            class="px-4 py-2 text-sm font-semibold text-white bg-[#1a2d4a] rounded-lg">
+        Search
+    </button>
+
+    <!-- Clear search condition -->
+    {% if search %}
+    <a href="{% url 'application_list' %}"
+       class="px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-100 rounded-lg">
+        Clear
+    </a>
+    {% endif %}
+
+</form>
+
 <!-- Table Card -->
 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
     <div class="overflow-x-auto">
@@ -100,12 +132,41 @@
                                 {{ app.status }}
                             {% endif %}
                         </span>
-                        {% if app.status == 'Returned' and app.return_reason %}
-                        <div style="margin-top:6px; padding:6px 8px; background:#fff7ed; border:1px solid #fed7aa; border-radius:6px; text-align:left;">
-                            <div style="font-size:10px; font-weight:700; color:#ea580c; margin-bottom:2px;">↩ Return Reason</div>
-                            <div style="font-size:11px; color:#9a3412; white-space:pre-wrap; cursor:pointer;"
-                                 onclick="showDesc('{{ app.return_reason|escapejs }}')"
-                                 title="Click to expand">{{ app.return_reason|truncatechars:60 }}</div>
+                        {% if app.status == 'Returned' %}
+                        <div style="margin-top:6px;
+                                    padding:6px 8px;
+                                    background:#fff7ed;
+                                    border:1px solid #fed7aa;
+                                    border-radius:6px;
+                                    text-align:left;">
+
+                            <div style="font-size:10px;
+                                        font-weight:700;
+                                        color:#ea580c;
+                                        margin-bottom:4px;">
+                                ↩ Returned Information
+                            </div>
+
+                            {% if app.return_date %}
+                            <div style="font-size:10px;
+                                        color:#9a3412;
+                                        margin-bottom:4px;">
+                                📅 {{ app.return_date|date:"Y-m-d H:i" }}
+                            </div>
+                            {% endif %}
+
+                            {% if app.return_reason %}
+                            <div style="font-size:11px;
+                                        color:#9a3412;
+                                        white-space:pre-wrap;
+                                        cursor:pointer;"
+                                onclick="showDesc('{{ app.return_reason|escapejs }}')"
+                                title="Click to expand">
+
+                                {{ app.return_reason|truncatechars:60 }}
+                            </div>
+                            {% endif %}
+
                         </div>
                         {% endif %}
                         {% if app.status == 'Returned' and app.a_name == request.user.username %}
@@ -128,7 +189,18 @@
                     <td class="px-2 py-3 text-gray-500 text-xs">{{ app.created_at|date:"Y-m-d H:i" }}</td>
                     {% if role == "team_leader" or role == "supervisor" or role == "cio" %}
                     <td class="px-2 py-3 text-center">
-
+                        <!-- Application History / Detail Button -->
+                        <button onclick="showAppDetail({{ app.id }})"
+                                style="margin-bottom:4px;
+                                    padding:3px 8px;
+                                    font-size:11px;
+                                    font-weight:600;
+                                    color:#fff;
+                                    background:#475569;
+                                    border:none;
+                                    border-radius:5px;">
+                            History
+                        </button>
                         {% if app.status == 'Pending Team Leader' and role == 'team_leader' %}
                         <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
                             <div style="display:flex; gap:3px;">
@@ -247,6 +319,46 @@
     </div>
 </div>
 
+<!-- =======================================================
+     Pagination
+     Purpose:
+     - Display 20 records per page
+     - Keep search keyword when switching pages
+     ======================================================= -->
+{% if page_obj.has_other_pages %}
+<div class="mt-4 flex items-center justify-center gap-2 text-sm">
+
+    {% if page_obj.has_previous %}
+    <a href="?search={{ search }}&page=1"
+       class="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50">
+        First
+    </a>
+
+    <a href="?search={{ search }}&page={{ page_obj.previous_page_number }}"
+       class="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50">
+        Previous
+    </a>
+    {% endif %}
+
+    <span class="px-3 py-1.5 text-gray-600">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+    <a href="?search={{ search }}&page={{ page_obj.next_page_number }}"
+       class="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50">
+        Next
+    </a>
+
+    <a href="?search={{ search }}&page={{ page_obj.paginator.num_pages }}"
+       class="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50">
+        Last
+    </a>
+    {% endif %}
+
+</div>
+{% endif %}
+
 {% endblock %}
 
 {% block extra_js %}
@@ -279,6 +391,129 @@ function showDesc(text) {
 }
 function closeDesc() {
     document.getElementById('descModal').style.display = 'none';
+}
+
+// =======================================================
+// Application History
+// Purpose:
+// - Show application detail and timeline history
+// =======================================================
+
+async function showAppDetail(appId) {
+
+    document.getElementById(
+        "appDetailModal"
+    ).style.display = "block";
+
+    document.getElementById(
+        "appDetailBody"
+    ).innerHTML = "Loading...";
+
+    try {
+
+        const res = await fetch(
+            `/office-portal/api/application/${appId}/`
+        );
+
+        const data = await res.json();
+
+        let historyHtml = "";
+
+        if (data.history?.length) {
+
+            historyHtml =
+                data.history.map(item => `
+                    <div style="
+                        border-left:3px solid #3b82f6;
+                        padding-left:12px;
+                        margin-bottom:14px;">
+
+                        <div style="
+                            font-size:13px;
+                            font-weight:700;
+                            color:#1e293b;">
+                            ${item.action}
+                        </div>
+
+                        <div style="
+                            font-size:12px;
+                            color:#64748b;">
+                            ${item.actor || '-'}
+                            •
+                            ${item.created_at}
+                        </div>
+
+                        ${
+                            item.comment
+                            ? `<div style="
+                                margin-top:4px;
+                                font-size:12px;
+                                color:#334155;">
+                                ${item.comment}
+                               </div>`
+                            : ''
+                        }
+
+                    </div>
+                `).join("");
+
+        } else {
+
+            historyHtml =
+                `<p>No history found.</p>`;
+        }
+
+        document.getElementById(
+            "appDetailBody"
+        ).innerHTML = `
+            <div style="margin-bottom:20px;">
+                <div>
+                    <b>Application No:</b>
+                    ${data.f_no}
+                </div>
+
+                <div>
+                    <b>Applicant:</b>
+                    ${data.a_name}
+                </div>
+
+                <div>
+                    <b>Department:</b>
+                    ${data.department}
+                </div>
+
+                <div>
+                    <b>Status:</b>
+                    ${data.status}
+                </div>
+            </div>
+
+            <hr style="margin:16px 0;">
+
+            <h4 style="
+                font-size:16px;
+                font-weight:700;
+                margin-bottom:14px;">
+                Timeline
+            </h4>
+
+            ${historyHtml}
+        `;
+
+    } catch (err) {
+
+        document.getElementById(
+            "appDetailBody"
+        ).innerHTML =
+            "Failed to load history.";
+    }
+}
+
+function closeAppDetail() {
+
+    document.getElementById(
+        "appDetailModal"
+    ).style.display = "none";
 }
 
 async function doAction(action, appId, btn) {
@@ -366,6 +601,59 @@ async function submitReturn() {
     btn.textContent = 'Confirm'; btn.style.opacity = '1';
 }
 </script>
+
+<!-- =======================================================
+     Application History Modal
+     Purpose:
+     - Show application detail and approval timeline
+     ======================================================= -->
+<div id="appDetailModal"
+     style="display:none;
+            position:fixed;
+            inset:0;
+            background:rgba(0,0,0,.45);
+            z-index:9999;">
+
+    <div style="height:100%;
+                display:flex;
+                justify-content:center;
+                align-items:center;">
+
+        <div style="background:white;
+                    width:700px;
+                    max-height:80vh;
+                    overflow:auto;
+                    border-radius:14px;
+                    padding:20px;
+                    box-shadow:0 15px 40px rgba(0,0,0,.25);">
+
+            <div style="display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                        margin-bottom:16px;">
+
+                <h3 style="font-size:20px;
+                           font-weight:700;">
+                    📜 Application History
+                </h3>
+
+                <button onclick="closeAppDetail()"
+                        style="border:none;
+                               background:none;
+                               font-size:24px;
+                               cursor:pointer;">
+                    &times;
+                </button>
+            </div>
+
+            <div id="appDetailBody">
+                Loading...
+            </div>
+
+        </div>
+    </div>
+</div>
+
 
 <!-- Return / Reject Modal -->
 <div id="returnModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:10000;">

@@ -37,7 +37,7 @@ urlpatterns = [
     # ── 硬體申請 ───────────────────────────────────
     path("hardware/apply/", views.submit_hardware, name="hardware_apply"),
     path("hardware/list/", views.hardware_list, name="hardware_list"),
-    path("hardware/approve/<int:req_id>/", views.approve_hardware, name="approve_hardware"),
+    path("hardware/resubmit/<int:req_id>/", views.resubmit_hardware, name="resubmit_hardware"),
     path("hardware/action/<int:req_id>/", views.hardware_action, name="hardware_action"),
 
     # ── 公告 ───────────────────────────────────────
