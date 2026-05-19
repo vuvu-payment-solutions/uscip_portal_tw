@@ -187,7 +187,6 @@
                         </div>
                     </td>
                     <td class="px-2 py-3 text-gray-500 text-xs">{{ app.created_at|date:"Y-m-d H:i" }}</td>
-                    {% if role == "team_leader" or role == "supervisor" or role == "cio" %}
                     <td class="px-2 py-3 text-center">
                         <!-- Application History / Detail Button -->
                         <button onclick="showAppDetail({{ app.id }})"
@@ -199,7 +198,7 @@
                                     background:#475569;
                                     border:none;
                                     border-radius:5px;">
-                            History
+                            View Details
                         </button>
                         {% if app.status == 'Pending Team Leader' and role == 'team_leader' %}
                         <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
@@ -302,7 +301,6 @@
                         {% endif %}
 
                     </td>
-                    {% endif %}
                 </tr>
                 {% empty %}
                 <tr>

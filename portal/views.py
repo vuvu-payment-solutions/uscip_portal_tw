@@ -231,10 +231,10 @@ def portal_dashboard(request):
         ).order_by("-created_at"),
         "my_hardware_requests": HardwareRequest.objects.filter(
             applicant=request.user
-        ).order_by("-created_at"),
+        ).order_by("-created_at")[:5],
         "my_applications": Application.objects.filter(
             a_name=request.user.username
-        ).order_by("-created_at"),
+        ).order_by("-created_at")[:5],
     }
 
     if role == "cio":
@@ -1360,10 +1360,16 @@ def application_detail_api(request, app_id):
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else "user"
 
-    if role not in ("team_leader", "supervisor", "cio", "admin"):
-        return JsonResponse({"error": "Permission denied"}, status=403)
-
     app = get_object_or_404(Application, pk=app_id)
+    
+    # 申請人可看自己的；審核角色可看申請明細
+    if app.a_name != request.user.username and role not in (
+        "team_leader",
+        "supervisor",
+        "cio",
+        "admin",
+    ):
+        return JsonResponse({"error": "Permission denied"}, status=403)
 
     history = []
     for h in app.approval_history.order_by('created_at'):
@@ -1373,21 +1379,78 @@ def application_detail_api(request, app_id):
             "to_status":   h.to_status,
             "actor":       h.actor.username if h.actor else "—",
             "actor_role":  h.actor_role.title() if h.actor_role else "",
-            "comment":     h.comment,
-            "created_at":  h.created_at.strftime("%Y/%m/%d %H:%M"),
+            "comment":     h.comment or "",
+            "created_at":  h.created_at.strftime("%Y/%m/%d %H:%M") if h.created_at else "",
         })
 
     return JsonResponse({
+        "id":            app.id,
         "f_no":          app.f_no,
         "a_name":        app.a_name,
         "department":    app.department,
         "a_type":        app.a_type,
         "service_system": app.service_system or "",
         "a_purpose":     app.a_purpose or "",
-        "description":   app.description or "",          # ← 新增
-        "return_reason": app.return_reason or "",        # ← 新增
+        "description":   app.description or "",
+        "return_reason": app.return_reason or "",
         "attachment":    app.attachment.url if app.attachment else None,
         "status":        app.status,
         "created_at":    app.created_at.strftime("%Y/%m/%d %H:%M") if app.created_at else "",
         "history":       history,
+    })
+    
+    
+# ─────────────────────────────────────────────
+# 9. Hardware Detail API（Modal 用）
+# ─────────────────────────────────────────────
+
+@login_required
+def hardware_detail_api(request, req_id):
+    """回傳單筆硬體申請完整資料 + 審核歷程，供 Hardware Detail Modal 使用。"""
+    profile = getattr(request.user, 'profile', None)
+    role = profile.role if profile else "user"
+
+    item = get_object_or_404(HardwareRequest, pk=req_id)
+
+    # 申請人可看自己的；審核角色可看硬體申請清單中的案件。
+    if item.applicant != request.user and role not in (
+        "team_leader",
+        "supervisor",
+        "hardware_supervisor",
+        "cio",
+        "admin",
+    ):
+        return JsonResponse({"error": "Permission denied"}, status=403)
+
+    histories = HardwareApprovalHistory.objects.filter(
+        hardware_request=item
+    ).order_by("created_at")
+
+    history_data = []
+    for h in histories:
+        history_data.append({
+            "action": h.action or "",
+            "from_status": h.from_status or "",
+            "to_status": h.to_status or "",
+            "actor": h.actor.username if h.actor else "—",
+            "actor_role": h.actor_role or "",
+            "comment": h.comment or "",
+            "created_at": h.created_at.strftime("%Y/%m/%d %H:%M") if h.created_at else "",
+        })
+
+    return JsonResponse({
+        "id": item.id,
+        "device_type": item.device_type or "",
+        "device_name": item.device_name or "",
+        "quantity": item.quantity,
+        "purpose": item.purpose or "",
+        "description": item.description or "",
+        "attachment": item.attachment.url if item.attachment else None,
+        "status": item.status or "",
+        "return_reason": item.return_reason or "",
+        "return_date": item.return_date.strftime("%Y/%m/%d %H:%M") if item.return_date else "",
+        "created_at": item.created_at.strftime("%Y/%m/%d %H:%M") if item.created_at else "",
+        "updated_at": item.updated_at.strftime("%Y/%m/%d %H:%M") if getattr(item, "updated_at", None) else "",
+        "applicant": item.applicant.username if item.applicant else "—",
+        "history": history_data,
     })

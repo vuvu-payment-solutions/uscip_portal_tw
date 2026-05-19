@@ -123,6 +123,11 @@
                 </td>
                 <td class="px-4 py-3 text-center" style="min-width:260px;">
 
+                    <button onclick="openHWDetailModal({{ item.id }})"
+                            style="padding:4px 10px; font-size:12px; color:white; background:#374151; border:none; border-radius:6px; margin-bottom:6px;">
+                        View Detail
+                    </button>
+                    
                     {% if item.status == 'Pending Team Leader' and role == 'team_leader' %}
                     <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
 
@@ -290,11 +295,158 @@
         </div>
     </div>
 </div>
+<div id="hwDetailModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999;">
+    <div style="height:100%; display:flex; align-items:center; justify-content:center; padding:24px;">
+        <div style="background:white; width:900px; max-width:95vw; max-height:90vh; overflow:auto; border-radius:12px; padding:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h3 style="font-size:18px; font-weight:700;">🖥 Hardware Request Detail</h3>
+                <button onclick="closeHWDetailModal()"
+                        style="padding:6px 12px; border:none; border-radius:6px; background:#e5e7eb;">
+                    Close
+                </button>
+            </div>
+
+            <div id="hwDetailContent" style="font-size:13px; color:#111827;">
+                Loading...
+            </div>
+        </div>
+    </div>
+</div>
 <script>
 
 function getCookie(name) {
     const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
     return v ? v[2] : '';
+}
+
+function escapeHtml(value) {
+    if (value === null || value === undefined) return "";
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+function closeHWDetailModal() {
+    document.getElementById("hwDetailModal").style.display = "none";
+}
+
+async function openHWDetailModal(id) {
+    const modal = document.getElementById("hwDetailModal");
+    const content = document.getElementById("hwDetailContent");
+
+    modal.style.display = "block";
+    content.innerHTML = "Loading...";
+
+    const res = await fetch(`/office-portal/hardware/detail/${id}/`);
+    const data = await res.json();
+
+    if (!res.ok) {
+        content.innerHTML = `<div style="color:#dc2626;">${escapeHtml(data.error || "Failed to load detail.")}</div>`;
+        return;
+    }
+
+    let attachmentHtml = `<span style="color:#9ca3af;">No attachment</span>`;
+    if (data.attachment) {
+        attachmentHtml = `<a href="${data.attachment}" target="_blank" style="color:#2563eb; text-decoration:underline;">View Attachment</a>`;
+    }
+
+    let historyRows = "";
+    if (data.history && data.history.length > 0) {
+        historyRows = data.history.map(h => `
+            <tr>
+                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">${escapeHtml(h.created_at)}</td>
+                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">${escapeHtml(h.actor)}</td>
+                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">${escapeHtml(h.actor_role)}</td>
+                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">${escapeHtml(h.action)}</td>
+                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">${escapeHtml(h.from_status)} → ${escapeHtml(h.to_status)}</td>
+                <td style="padding:8px; border-bottom:1px solid #e5e7eb; white-space:pre-wrap;">${escapeHtml(h.comment || "-")}</td>
+            </tr>
+        `).join("");
+    } else {
+        historyRows = `
+            <tr>
+                <td colspan="6" style="padding:12px; text-align:center; color:#9ca3af;">
+                    No approval history.
+                </td>
+            </tr>
+        `;
+    }
+
+    let reasonHtml = "";
+    if ((data.status === "Returned" || data.status === "Rejected") && data.return_reason) {
+        const isRejected = data.status === "Rejected";
+        reasonHtml = `
+            <div style="margin-top:12px; padding:10px; background:${isRejected ? "#fef2f2" : "#fff7ed"}; border:1px solid ${isRejected ? "#fecaca" : "#fed7aa"}; border-radius:8px;">
+                <div style="font-weight:700; color:${isRejected ? "#dc2626" : "#ea580c"};">
+                    ${isRejected ? "⛔ Reject Reason" : "↩ Return Reason"}
+                </div>
+                <div style="margin-top:6px; white-space:pre-wrap; color:${isRejected ? "#991b1b" : "#9a3412"};">
+                    ${escapeHtml(data.return_reason)}
+                </div>
+            </div>
+        `;
+    }
+
+    content.innerHTML = `
+        <div style="display:grid; grid-template-columns:160px 1fr 160px 1fr; gap:10px; margin-bottom:16px;">
+            <div style="font-weight:700;">Applicant</div>
+            <div>${escapeHtml(data.applicant)}</div>
+
+            <div style="font-weight:700;">Status</div>
+            <div>${escapeHtml(data.status)}</div>
+
+            <div style="font-weight:700;">Device Type</div>
+            <div>${escapeHtml(data.device_type)}</div>
+
+            <div style="font-weight:700;">Device Name</div>
+            <div>${escapeHtml(data.device_name || "-")}</div>
+
+            <div style="font-weight:700;">Quantity</div>
+            <div>${escapeHtml(data.quantity)}</div>
+
+            <div style="font-weight:700;">Created At</div>
+            <div>${escapeHtml(data.created_at)}</div>
+
+            <div style="font-weight:700;">Attachment</div>
+            <div>${attachmentHtml}</div>
+        </div>
+
+        <div style="margin-top:12px;">
+            <div style="font-weight:700; margin-bottom:6px;">Purpose</div>
+            <div style="padding:10px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; white-space:pre-wrap;">
+                ${escapeHtml(data.purpose || "-")}
+            </div>
+        </div>
+
+        <div style="margin-top:12px;">
+            <div style="font-weight:700; margin-bottom:6px;">Description</div>
+            <div style="padding:10px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; white-space:pre-wrap;">
+                ${escapeHtml(data.description || "-")}
+            </div>
+        </div>
+
+        ${reasonHtml}
+
+        <div style="margin-top:20px;">
+            <div style="font-weight:700; margin-bottom:8px;">Approval History</div>
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                <thead>
+                    <tr style="background:#f3f4f6;">
+                        <th style="padding:8px; text-align:left;">Time</th>
+                        <th style="padding:8px; text-align:left;">Actor</th>
+                        <th style="padding:8px; text-align:left;">Role</th>
+                        <th style="padding:8px; text-align:left;">Action</th>
+                        <th style="padding:8px; text-align:left;">Status</th>
+                        <th style="padding:8px; text-align:left;">Comment</th>
+                    </tr>
+                </thead>
+                <tbody>${historyRows}</tbody>
+            </table>
+        </div>
+    `;
 }
 
 async function doHW(action, id) {
