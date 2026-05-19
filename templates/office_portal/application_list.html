@@ -138,13 +138,16 @@
                                     background:#fff7ed;
                                     border:1px solid #fed7aa;
                                     border-radius:6px;
-                                    text-align:left;">
+                                    text-align:left;
+                                    max-width:140px;
+                                    margin-left:auto;
+                                    margin-right:auto;">
 
                             <div style="font-size:10px;
                                         font-weight:700;
                                         color:#ea580c;
                                         margin-bottom:4px;">
-                                ↩ Returned Information
+                                ↩ Returned
                             </div>
 
                             {% if app.return_date %}
@@ -155,20 +158,12 @@
                             </div>
                             {% endif %}
 
-                            {% if app.return_reason %}
-                            <div style="font-size:11px;
-                                        color:#9a3412;
-                                        white-space:pre-wrap;
-                                        cursor:pointer;"
-                                onclick="showDesc('{{ app.return_reason|escapejs }}')"
-                                title="Click to expand">
-
-                                {{ app.return_reason|truncatechars:60 }}
+                            <div style="font-size:10px; color:#9a3412;">
+                                See View Details
                             </div>
-                            {% endif %}
-
                         </div>
                         {% endif %}
+
                         {% if app.status == 'Returned' and app.a_name == request.user.username %}
                         <div style="margin-top:6px;">
                             <a href="/office-portal/resubmit-application/{{ app.id }}/"
@@ -216,10 +211,6 @@
                                 <button onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}')"
                                         style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#ea580c; border:none; border-radius:5px;">
                                     Return
-                                </button>
-                                <button onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}', true)"
-                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#dc2626; border:none; border-radius:5px;">
-                                    Reject
                                 </button>
                             </div>
                         </div>

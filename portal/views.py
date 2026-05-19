@@ -700,14 +700,29 @@ def reject_application(request, app_id: int):
 
     item = get_object_or_404(Application, pk=app_id)
 
-    if role == "supervisor" and item.status != "Pending Supervisor":
-        return JsonResponse({"success": False,
-                             "detail": "Supervisor 只能退件 Pending Supervisor 狀態的申請"}, status=403)
+    if role == "team_leader" and item.status != "Pending Team Leader":
+        return JsonResponse({
+            "success": False,
+            "detail": "Team Leader 只能退件 Pending Team Leader 狀態的申請"
+        }, status=403)
+
+    elif role == "supervisor" and item.status != "Pending Supervisor":
+        return JsonResponse({
+            "success": False,
+            "detail": "Supervisor 只能退件 Pending Supervisor 狀態的申請"
+        }, status=403)
+
     elif role == "cio" and item.status != "Pending CIO":
-        return JsonResponse({"success": False,
-                             "detail": "CIO 只能退件 Pending CIO 狀態的申請"}, status=403)
-    elif role not in ("supervisor", "cio"):
-        return JsonResponse({"success": False, "detail": "權限不足"}, status=403)
+        return JsonResponse({
+            "success": False,
+            "detail": "CIO 只能退件 Pending CIO 狀態的申請"
+        }, status=403)
+
+    elif role not in ("team_leader", "supervisor", "cio"):
+        return JsonResponse({
+            "success": False,
+            "detail": "權限不足"
+        }, status=403)
 
     try:
         payload = json.loads(request.body.decode("utf-8"))
@@ -715,13 +730,34 @@ def reject_application(request, app_id: int):
         return JsonResponse({"success": False, "detail": "Bad request"}, status=400)
 
     comment   = (payload.get("comment") or "").strip()
-    action    = payload.get("action", "return")       # "return" | "reject"
-    return_to = payload.get("return_to", "applicant") # "applicant" | "supervisor"
+    action    = payload.get("action", "return")
+    return_to = payload.get("return_to", "applicant")
 
     if not comment:
         return JsonResponse({"success": False, "detail": "退件原因不可空白"}, status=400)
 
     old_status = item.status
+
+    # Team Leader 只能退件給申請人，不能永久拒絕
+    if role == "team_leader":
+        if action == "reject":
+            return JsonResponse({
+                "success": False,
+                "detail": "Team Leader 不可永久拒絕申請，只能退件給申請人修改"
+            }, status=403)
+
+        item.status = "Returned"
+        item.return_reason = comment
+        item.return_date = timezone.now()
+        item.save()
+
+        _log_history(item, 'return', old_status, item.status, request.user, role, comment)
+
+        return JsonResponse({
+            "success": True,
+            "new_status": item.status,
+            "progress": item.progress
+        })
 
     if action == "reject":
         # 永久拒絕
