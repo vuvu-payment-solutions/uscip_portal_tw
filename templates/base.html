@@ -105,6 +105,18 @@
                 </svg>
                 <span class="nav-text text-sm font-medium">Dashboard</span>
             </a>
+            
+            {% if user.profile.role == "team_leader" or user.profile.role == "supervisor" or user.profile.role == "cio" %}
+            <a href="{% url 'portal_account_list' %}"
+               class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-white/5 hover:text-white transition-all {% block nav_accounts %}{% endblock %}">
+                <svg class="nav-icon w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path d="M20 21a8 8 0 00-16 0"/>
+                    <circle cx="12" cy="7" r="4"/>
+                    <path d="M16 11l2 2 4-4"/>
+                </svg>
+                <span class="nav-text text-sm font-medium">Account</span>
+            </a>
+            {% endif %}
 
             <a href="{% url 'portal_application_list' %}"
                class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-white/5 hover:text-white transition-all {% block nav_applications %}{% endblock %}">

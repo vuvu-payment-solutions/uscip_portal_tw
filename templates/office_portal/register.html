@@ -168,8 +168,8 @@
     </main>
 
 <script>
-// Django template 把 resubmit_req.id 注入 JS
-const RESUBMIT_REQ_ID = {% if resubmit_req %}{{ resubmit_req.id }}{% else %}null{% endif %};
+// Django template 把安全 resubmit token 注入 JS
+const RESUBMIT_TOKEN = {% if resubmit_token %}"{{ resubmit_token|escapejs }}"{% else %}null{% endif %};
 
 function getCookie(name) {
     const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
@@ -188,7 +188,7 @@ async function submitRegister() {
     const description    = document.getElementById('description').value.trim();
     const attachmentFile = document.getElementById('attachment').files[0];
 
-    if (!full_name || !email || (!RESUBMIT_REQ_ID && !username)) {
+    if (!full_name || !email || (!RESUBMIT_TOKEN && !username)) {
         msg.className = 'mb-4 px-3 py-2 rounded-lg text-sm font-medium bg-red-50 text-red-600 border border-red-200';
         msg.textContent = '請填寫所有必填欄位（*）';
         msg.classList.remove('hidden');
@@ -211,8 +211,8 @@ async function submitRegister() {
         formData.append('attachment', attachmentFile);
     }
 
-    const url = RESUBMIT_REQ_ID
-        ? `/office-portal/resubmit-account/${RESUBMIT_REQ_ID}/`
+    const url = RESUBMIT_TOKEN
+        ? `/office-portal/resubmit-account/${encodeURIComponent(RESUBMIT_TOKEN)}/`
         : '/office-portal/register/';
 
     try {
@@ -239,7 +239,7 @@ async function submitRegister() {
         msg.textContent = '連線錯誤，請稍後再試';
     }
 
-    btn.textContent = RESUBMIT_REQ_ID ? 'Resubmit' : '送出申請';
+    btn.textContent = RESUBMIT_TOKEN ? 'Resubmit' : '送出申請';
     btn.style.opacity = '1';
     btn.style.pointerEvents = 'auto';
 }

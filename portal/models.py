@@ -23,16 +23,21 @@ class UserProfile(models.Model):
 
 class AccountRequest(models.Model):
     """
-    帳號申請單：Pending Supervisor → Pending CIO → Approved / Rejected / Returned
+    帳號申請單：
+    Pending Team Leader → Pending Supervisor → Pending CIO → Approved
+    Under-preview = 目前審核階段待討論，完成討論後可 Resume 回原階段
     Returned = 退件給申請人修改後重新上呈
+    Rejected = 終止申請流程
     """
+    
     STATUS_CHOICES = [
         ('Pending Team Leader', 'Pending Team Leader'),
         ('Pending Supervisor', 'Pending Supervisor'),
         ('Pending CIO',        'Pending CIO'),
+        ('Under-preview',       'Under-preview'),        
         ('Approved',           'Approved'),
         ('Rejected',           'Rejected'),
-        ('Returned',           'Returned'),   # ← 新增
+        ('Returned',           'Returned'),
     ]
     ROLE_CHOICES = [
         ('user',       'User'),
@@ -61,6 +66,12 @@ class AccountRequest(models.Model):
                                       verbose_name='附件')
     return_reason  = models.TextField(blank=True, verbose_name='退件原因')
     return_date    = models.DateTimeField(null=True, blank=True, verbose_name='退件日期')
+    preview_by     = models.CharField(
+        max_length=30,
+        blank=True,
+        default='',
+        verbose_name='Under-preview 設定者角色'
+    )
     
     # ────────────────────────────────────────────────────
     status         = models.CharField(max_length=30, choices=STATUS_CHOICES,

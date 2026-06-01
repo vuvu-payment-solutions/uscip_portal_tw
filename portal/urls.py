@@ -18,8 +18,11 @@ urlpatterns = [
 
     # ── 帳號申請及審核 ─────────────────────────────
     path("register/",                              views.portal_register,        name="portal_register"),
-    path("resubmit-account/<int:req_id>/",         views.resubmit_account,       name="portal_resubmit_account"),   # ← 新增
+    path("accounts/",                              views.account_list,           name="portal_account_list"),
+    path("resubmit-account/<str:token>/", views.resubmit_account, name="portal_resubmit_account"),
     path("approve-account/<int:req_id>/",          views.approve_account,        name="portal_approve_account"),
+    path("review-account/<int:req_id>/",           views.review_account,         name="portal_review_account"),
+    path("resume-account/<int:req_id>/",           views.resume_account,         name="portal_resume_account"),
     path("reject-account/<int:req_id>/",           views.reject_account,         name="portal_reject_account"),
 
     # ── 服務申請 ───────────────────────────────────
@@ -28,7 +31,7 @@ urlpatterns = [
     path("api/application/<int:app_id>/",          views.application_detail_api, name="application_detail_api"),
     path("approve-application/<int:app_id>/",      views.approve_application,    name="portal_approve_application"),
     path("reject-application/<int:app_id>/",       views.reject_application,     name="portal_reject_application"),
-    path("resubmit-application/<int:app_id>/",     views.resubmit_application,   name="portal_resubmit_application"),  # ← 新增
+    path("resubmit-application/<int:app_id>/",     views.resubmit_application,   name="portal_resubmit_application"),
     path("preview-application/<int:app_id>/",      views.preview_application,    name="preview_application"),
     path("resume-application/<int:app_id>/",       views.resume_application,     name="resume_application"),
     path("complete-application/<int:app_id>/",     views.complete_application,   name="complete_application"),
