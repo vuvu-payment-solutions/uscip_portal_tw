@@ -17,17 +17,17 @@ Account 退件流程：
   Supervisor 可退件 → Returned（申請人透過 Email signed token link 修改後重新送出）
   CIO 可退件給申請人 → Returned（申請人透過 Email signed token link 修改後重新送出）
   CIO 可退件給 Supervisor → Pending Supervisor（附退件原因於 comment）
-  申請人重新送出 Returned → Pending Team Leader（清除 return_reason / return_date，重新通知 ACReg）
+  申請人重新送出 Returned → 依 Department 決定：IT → Pending Supervisor；其他部門 → Pending Team Leader（清除 return_reason / return_date，重新通知 ACReg）
 
 Service / API Application 退件流程：
   Team Leader / Supervisor 可退件 → Returned
   CIO 可退件給申請人 → Returned
   CIO 可退件給 Supervisor → Pending Supervisor（附退件原因於 bookmark）
-  申請人重新送出 Returned → Pending Team Leader
+  申請人重新送出 Returned → 依 Department 決定：IT → Pending Supervisor；其他部門 → Pending Team Leader
 
 Hardware Application 退件流程：
   Team Leader / Supervisor / Hardware Supervisor 可退件 → Returned
-  申請人重新送出 Returned → Pending Team Leader
+  申請人重新送出 Returned → 依 UserProfile.department 決定：IT → Pending Hardware Supervisor；其他部門 → Pending Team Leader
 """
 import json
 import secrets
@@ -108,6 +108,83 @@ def _get_applicant_email(username: str) -> str:
         return User.objects.get(username=username).email or ""
     except User.DoesNotExist:
         return ""
+
+
+# ─────────────────────────────────────────────
+# Helper：Department / IT Department Approval Flow
+# ─────────────────────────────────────────────
+
+DEPARTMENT_CHOICES = (
+    ("IT", "IT"),
+    ("CS", "CS"),
+    ("Marketing", "Marketing"),
+    ("Procurement", "Procurement"),
+)
+
+ALLOWED_DEPARTMENTS = {value for value, _ in DEPARTMENT_CHOICES}
+IT_DEPARTMENT = "IT"
+
+
+def _normalize_department(department: str) -> str:
+    value = (department or "").strip()
+    for allowed in ALLOWED_DEPARTMENTS:
+        if value.lower() == allowed.lower():
+            return allowed
+    return value
+
+
+def _is_valid_department(department: str) -> bool:
+    return department in ALLOWED_DEPARTMENTS
+
+
+def _is_it_department(department: str) -> bool:
+    return _normalize_department(department) == IT_DEPARTMENT
+
+
+def _get_user_department(user) -> str:
+    profile = getattr(user, "profile", None)
+    if not profile:
+        return ""
+    return _normalize_department(profile.department)
+
+
+def _initial_account_status(department: str) -> str:
+    department = _normalize_department(department)
+    if _is_it_department(department):
+        return "Pending Supervisor"
+    return "Pending Team Leader"
+
+
+def _initial_application_status(department: str) -> str:
+    department = _normalize_department(department)
+    if _is_it_department(department):
+        return "Pending Supervisor"
+    return "Pending Team Leader"
+
+
+def _initial_hardware_status(department: str) -> str:
+    department = _normalize_department(department)
+    if _is_it_department(department):
+        return "Pending Hardware Supervisor"
+    return "Pending Team Leader"
+
+
+def _required_role_for_status(status: str) -> str:
+    mapping = {
+        "Pending Team Leader": "Team Leader",
+        "Pending Supervisor": "Supervisor",
+        "Pending CIO": "CIO",
+        "Pending Hardware Supervisor": "Hardware Supervisor",
+        "Work-in-progress": "Hardware Supervisor",
+    }
+    return mapping.get(status, "Supervisor")
+
+
+def _invalid_department_response():
+    return JsonResponse({
+        "success": False,
+        "detail": "請選擇有效的部門：IT、CS、Marketing、Procurement。"
+    }, status=400)
 
 
 # ─────────────────────────────────────────────
@@ -526,10 +603,17 @@ def portal_register(request):
 
     if not all([username, full_name, email]):
         return JsonResponse({"success": False, "detail": "必填欄位不完整"}, status=400)
+    
+    department = _normalize_department(department)
+    if not _is_valid_department(department):
+        return _invalid_department_response()
 
     if User.objects.filter(username=username).exists() or \
        AccountRequest.objects.filter(username=username).exclude(status="Returned").exists():
         return JsonResponse({"success": False, "detail": "帳號名稱已被使用或審核中"}, status=400)
+
+    initial_status = _initial_account_status(department)
+    next_required_role = _required_role_for_status(initial_status)
 
     req = AccountRequest.objects.create(
         username=username,
@@ -539,20 +623,23 @@ def portal_register(request):
         requested_role=requested_role,
         description=description,
         attachment=attachment,
-        status="Pending Team Leader",
+        status=initial_status,
     )
 
     teams_pending_approval(
         request_type="Account Request",
         request_no=f"ACC-{req.id:04d}",
         applicant=req.username,
-        required_role="Team Leader",
+        required_role=next_required_role,
         current_status=req.status,
         action_path="/office-portal/accounts/",
         detail=f"{req.full_name} / {req.department} / Requested Role: {req.requested_role}",
     )
 
-    return JsonResponse({"success": True, "detail": "申請已送出，等待 Team Leader 審核。"})
+    return JsonResponse({
+        "success": True,
+        "detail": f"申請已送出，等待 {next_required_role} 審核。",
+        })
 
 
 @login_required
@@ -908,12 +995,16 @@ def resubmit_account(request, token: str):
             "detail": "必填欄位不完整"
         }, status=400)
 
+    department = _normalize_department(department)
+    if not _is_valid_department(department):
+        return _invalid_department_response()
+
     req.full_name      = full_name
     req.email          = email
     req.department     = department
     req.requested_role = requested_role
     req.description    = description
-    req.status         = "Pending Team Leader"
+    req.status         = _initial_account_status(department)
     req.return_reason  = ""
     req.return_date    = None
 
@@ -922,11 +1013,12 @@ def resubmit_account(request, token: str):
 
     req.save()
 
+    next_required_role = _required_role_for_status(req.status)
     teams_pending_approval(
         request_type="Account Request",
         request_no=f"ACC-{req.id:04d}",
         applicant=req.username,
-        required_role="Team Leader",
+        required_role=next_required_role,
         current_status=req.status,
         action_path="/office-portal/accounts/",
         detail=f"{req.full_name} / {req.department} / Requested Role: {req.requested_role}",
@@ -934,7 +1026,7 @@ def resubmit_account(request, token: str):
 
     return JsonResponse({
         "success": True,
-        "detail": "申請已重新送出，等待 Team Leader 審核。"
+        "detail": f"申請已重新送出，等待 {next_required_role} 審核。",
     })
 
 
@@ -959,6 +1051,14 @@ def submit_application(request):
     if not all([a_name, department, a_purpose, a_type]):
         messages.error(request, "請填寫所有必填欄位。")
         return redirect("portal_apply")
+    
+    department = _normalize_department(department)
+    if not _is_valid_department(department):
+        messages.error(request, "請選擇有效的部門：IT、CS、Marketing、Procurement。")
+        return redirect("portal_apply")
+    
+    initial_status = _initial_application_status(department)
+    next_required_role = _required_role_for_status(initial_status)
 
     app = Application.objects.create(
         a_name=a_name,
@@ -968,7 +1068,7 @@ def submit_application(request):
         service_system=service_system,
         description=description,
         attachment=attachment,
-        status="Pending Team Leader",
+        status=initial_status,
     )
     
     _log_history(
@@ -985,13 +1085,13 @@ def submit_application(request):
         request_type="Service / API Application",
         request_no=app.f_no,
         applicant=app.a_name,
-        required_role="Team Leader",
+        required_role=next_required_role,
         current_status=app.status,
         action_path="/office-portal/applications/",
         detail=f"{app.a_type} / {app.department} / System: {app.service_system}",
     )
 
-    messages.success(request, "申請已送出，等待 Team Leader 審核。")
+    messages.success(request, f"申請已送出，等待 {next_required_role} 審核。")
     return redirect("portal_dashboard")
 
 
@@ -1266,7 +1366,14 @@ def resubmit_application(request, app_id: int):
     item.a_type         = a_type
     item.service_system = service_system
     item.description    = description
-    item.status         = "Pending Team Leader"
+    
+    department = _normalize_department(item.department)
+    if not _is_valid_department(department):
+        messages.error(request, "此申請的部門資料無效，請重新建立申請或聯絡系統管理者。")
+        return redirect("portal_dashboard")
+
+    item.department = department
+    item.status         = _initial_application_status(department)
     item.return_reason  = ""   # 清除退件原因
     item.return_date = None    # 清除退件時間
     
@@ -1277,17 +1384,19 @@ def resubmit_application(request, app_id: int):
     _log_history(item, 'resubmit', old_status, item.status, request.user,
                  getattr(request.user, 'profile', None) and request.user.profile.role or 'user',
                  "Applicant resubmitted after revision")
+    
+    next_required_role = _required_role_for_status(item.status)
     teams_pending_approval(
         request_type="Service / API Application",
         request_no=item.f_no,
         applicant=item.a_name,
-        required_role="Team Leader",
+        required_role=next_required_role,
         current_status=item.status,
         action_path="/office-portal/applications/",
         detail=f"{item.a_type} / {item.department} / System: {item.service_system}",
     )
 
-    messages.success(request, "申請已重新送出，等待 Team Leader 審核。")
+    messages.success(request, f"申請已重新送出，等待 {next_required_role} 審核。")
     return redirect("portal_dashboard")
 
 
@@ -1480,19 +1589,15 @@ def submit_hardware(request):
     if request.method == "GET":
         return render(request, "office_portal/hardware_apply.html")
 
-    profile = getattr(request.user, 'profile', None)
+    profile = getattr(request.user, "profile", None)
     role = profile.role if profile else "user"
 
-    if role == "user":
-        initial_status = "Pending Team Leader"
-    elif role == "team_leader":
-        initial_status = "Pending Supervisor"
-    elif role == "supervisor":
-        initial_status = "Pending Hardware Supervisor"
-    elif role == "hardware_supervisor":
-        initial_status = "Work-in-progress"
-    else:
-        initial_status = "Pending Team Leader"
+    department = _get_user_department(request.user)
+    if not _is_valid_department(department):
+        messages.error(request, "請先至 Profile 設定有效的部門：IT、CS、Marketing、Procurement。")
+        return redirect("portal_edit_profile")
+
+    initial_status = _initial_hardware_status(department)
 
     req = HardwareRequest.objects.create(
         applicant=request.user,
@@ -1515,20 +1620,13 @@ def submit_hardware(request):
         'Applicant submitted hardware request'
     )
 
-    if req.status == "Pending Team Leader":
-        required_role = "Team Leader"
-    elif req.status == "Pending Supervisor":
-        required_role = "Supervisor"
-    elif req.status == "Pending Hardware Supervisor":
-        required_role = "Hardware Supervisor"
-    else:
-        required_role = "Hardware Supervisor"
+    next_required_role = _required_role_for_status(req.status)
 
     teams_pending_approval(
         request_type="Hardware Application",
         request_no=f"HW-{req.id:04d}",
         applicant=request.user.username,
-        required_role=required_role,
+        required_role=next_required_role,
         current_status=req.status,
         action_path="/office-portal/hardware/",
         detail=f"{req.device_type} / {req.device_name} / Quantity: {req.quantity}",
@@ -1578,7 +1676,12 @@ def resubmit_hardware(request, req_id):
     if new_attachment:
         item.attachment = new_attachment
 
-    item.status = "Pending Team Leader"
+    department = _get_user_department(request.user)
+    if not _is_valid_department(department):
+        messages.error(request, "請先至 Profile 設定有效的部門：IT、CS、Marketing、Procurement。")
+        return redirect("portal_edit_profile")
+
+    item.status = _initial_hardware_status(department)
     item.return_reason = ""
     item.return_date = None
     item.save()
@@ -1593,17 +1696,19 @@ def resubmit_hardware(request, req_id):
         'Applicant resubmitted hardware request after revision'
     )
 
+    next_required_role = _required_role_for_status(item.status)
+
     teams_pending_approval(
         request_type="Hardware Application",
         request_no=f"HW-{item.id:04d}",
         applicant=request.user.username,
-        required_role="Team Leader",
+        required_role=next_required_role,
         current_status=item.status,
         action_path="/office-portal/hardware/",
         detail=f"{item.device_type} / {item.device_name} / Quantity: {item.quantity}",
     )
 
-    messages.success(request, "硬體申請已重新送出，等待 Team Leader 審核。")
+    messages.success(request, f"硬體申請已重新送出，等待 {next_required_role} 審核。")
     return redirect("hardware_list")
 
 
