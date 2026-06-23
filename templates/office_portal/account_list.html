@@ -11,134 +11,509 @@
 
 {% block content %}
 
-<div class="mb-6">
-    <h1 class="text-2xl font-bold text-[#0c1a2e]">Account Requests</h1>
-    <p class="text-sm text-gray-400 mt-1">
-        Manage personal account applications and approval tasks.
-    </p>
-</div>
 
-<!-- Pending Account Requests -->
-<div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
-    <div class="px-5 py-4 border-b border-gray-100">
-        <h2 class="font-bold text-[#0c1a2e]">📋 Pending Account Requests</h2>
+<style>
+    /* Account Requests - scoped Tech Console list layout
+       Keep this CSS inside account_list.html so it does not affect other pages. */
+    .tc-console {
+        --tc-bg-0: #07101f;
+        --tc-bg-1: #0b1628;
+        --tc-card-1: #121f34;
+        --tc-card-2: #0f1a2d;
+        --tc-line: #223550;
+        --tc-line-strong: #315073;
+        --tc-text: #eaf2ff;
+        --tc-muted: #9fb0ca;
+        --tc-dim: #6f819d;
+        --tc-accent: #3b82f6;
+        --tc-cyan: #35d5ea;
+        --tc-done: #34d399;
+        --tc-pending: #fbbf24;
+        --tc-review: #facc15;
+        --tc-working: #818cf8;
+        --tc-return: #fb923c;
+        --tc-reject: #fb7185;
+
+        color: var(--tc-text);
+        background:
+            radial-gradient(760px 320px at 82% -12%, rgba(59,130,246,.18), transparent 62%),
+            radial-gradient(560px 280px at 4% 0%, rgba(53,213,234,.10), transparent 58%),
+            linear-gradient(180deg, var(--tc-bg-1), var(--tc-bg-0));
+        border: 1px solid #1e3350;
+        border-radius: 0 0 16px 16px;
+        padding: 24px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, .18);
+        overflow: visible;
+        position: relative;
+        min-height: calc(100vh - 155px);
+    }
+
+    .tc-console::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: .42;
+        background-image:
+            linear-gradient(rgba(130,160,210,.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(130,160,210,.06) 1px, transparent 1px);
+        background-size: 42px 42px;
+        mask-image: radial-gradient(900px 520px at 50% 0%, #000 30%, transparent 82%);
+    }
+
+    .tc-console > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    .tc-header-panel {
+        margin: -24px -24px 18px;
+        padding: 24px 24px 14px;
+        background:
+            linear-gradient(180deg, rgba(7,16,31,.99), rgba(7,16,31,.94)),
+            radial-gradient(620px 210px at 82% 0%, rgba(59,130,246,.16), transparent 62%);
+        border-bottom: 1px solid rgba(49,80,115,.72);
+    }
+
+    .tc-topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 18px;
+        flex-wrap: wrap;
+    }
+
+    .tc-search-sticky {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        margin: 0 -24px 16px;
+        padding: 10px 24px 12px;
+        background: linear-gradient(180deg, rgba(7,16,31,.98), rgba(7,16,31,.94));
+        border-bottom: 1px solid rgba(49,80,115,.65);
+        backdrop-filter: blur(10px);
+    }
+
+    .tc-eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 6px;
+        color: var(--tc-cyan);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+    }
+
+    .tc-pulse {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--tc-cyan);
+        box-shadow: 0 0 14px rgba(53,213,234,.9);
+    }
+
+    .tc-title {
+        margin: 0;
+        color: var(--tc-text);
+        font-size: 24px;
+        line-height: 1.15;
+        font-weight: 900;
+        letter-spacing: -.025em;
+    }
+
+    .tc-subtitle {
+        margin-top: 6px;
+        color: var(--tc-muted);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .tc-count {
+        margin: 0;
+        color: var(--tc-dim);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 11px;
+    }
+
+    .tc-count b {
+        color: var(--tc-cyan);
+        font-weight: 900;
+    }
+
+    .tc-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 13px;
+    }
+
+    .tc-card {
+        --tc-led: var(--tc-pending);
+        position: relative;
+        display: grid;
+        grid-template-columns: var(--tc-grid);
+        align-items: center;
+        gap: 14px;
+        padding: 16px 20px 16px 28px;
+        min-height: 88px;
+        border: 1px solid var(--tc-line);
+        border-radius: 14px;
+        background: linear-gradient(180deg, var(--tc-card-1), var(--tc-card-2));
+        box-shadow:
+            0 1px 0 rgba(255,255,255,.045) inset,
+            0 -8px 20px -16px rgba(0,0,0,.85) inset,
+            0 18px 34px -24px rgba(0,0,0,.92),
+            0 4px 10px -7px rgba(0,0,0,.65);
+        transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    }
+
+    .tc-card::before {
+        content: "";
+        position: absolute;
+        top: 10px;
+        bottom: 10px;
+        left: 0;
+        width: 4px;
+        border-radius: 0 4px 4px 0;
+        background: var(--tc-led);
+        box-shadow: 0 0 12px -1px var(--tc-led), 0 0 24px -6px var(--tc-led);
+    }
+
+    .tc-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--tc-line-strong);
+        box-shadow:
+            0 1px 0 rgba(255,255,255,.06) inset,
+            0 -8px 20px -16px rgba(0,0,0,.85) inset,
+            0 24px 45px -24px rgba(0,0,0,.96),
+            0 0 0 1px rgba(59,130,246,.20),
+            0 0 28px -12px rgba(59,130,246,.40);
+    }
+
+    .tc-card[data-status="done"] { --tc-led: var(--tc-done); }
+    .tc-card[data-status="pending"] { --tc-led: var(--tc-pending); }
+    .tc-card[data-status="review"] { --tc-led: var(--tc-review); }
+    .tc-card[data-status="working"] { --tc-led: var(--tc-working); }
+    .tc-card[data-status="return"] { --tc-led: var(--tc-return); }
+    .tc-card[data-status="reject"] { --tc-led: var(--tc-reject); }
+
+    .tc-identity,
+    .tc-field,
+    .tc-right {
+        min-width: 0;
+    }
+
+    .tc-type {
+        display: inline-flex;
+        max-width: 100%;
+        margin-bottom: 7px;
+        padding: 3px 8px;
+        border-radius: 7px;
+        border: 1px solid rgba(53,213,234,.22);
+        background: rgba(53,213,234,.08);
+        color: var(--tc-cyan);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .tc-name {
+        color: var(--tc-text);
+        font-size: 16px;
+        font-weight: 900;
+        line-height: 1.35;
+        word-break: break-word;
+    }
+
+    .tc-subname {
+        margin-top: 3px;
+        color: var(--tc-muted);
+        font-size: 12px;
+        line-height: 1.35;
+        word-break: break-word;
+    }
+
+    .tc-field {
+        align-self: stretch;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .tc-label {
+        margin-bottom: 5px;
+        color: var(--tc-dim);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+    }
+
+    .tc-value {
+        color: var(--tc-muted);
+        font-size: 13px;
+        line-height: 1.45;
+        word-break: break-word;
+    }
+
+    .tc-value.strong {
+        color: var(--tc-text);
+        font-size: 14px;
+        font-weight: 900;
+    }
+
+    .tc-clamp {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .tc-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .tc-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        max-width: 100%;
+        padding: 6px 11px;
+        border-radius: 999px;
+        border: 1px solid color-mix(in srgb, var(--tc-led) 36%, transparent);
+        background: color-mix(in srgb, var(--tc-led) 13%, transparent);
+        color: color-mix(in srgb, var(--tc-led) 82%, white 18%);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: .03em;
+        white-space: nowrap;
+    }
+
+    .tc-status-dot {
+        width: 7px;
+        height: 7px;
+        flex: 0 0 auto;
+        border-radius: 999px;
+        background: var(--tc-led);
+        box-shadow: 0 0 8px 0 var(--tc-led);
+    }
+
+    .tc-actions {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 7px;
+        flex-wrap: wrap;
+    }
+
+    .tc-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 33px;
+        padding: 7px 12px;
+        border: 1px solid var(--tc-line-strong);
+        border-radius: 9px;
+        color: var(--tc-text);
+        background: linear-gradient(180deg, #1b2940, #14213a);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 4px 10px -7px rgba(0,0,0,.70);
+        font-size: 12px;
+        font-weight: 850;
+        text-decoration: none;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: transform .12s ease, filter .12s ease;
+    }
+
+    .tc-action:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.12);
+    }
+
+    .tc-primary { color: #04101f; border: none; background: linear-gradient(180deg, #5aa2ff, #3b82f6); }
+    .tc-go { color: #03140e; border: none; background: linear-gradient(180deg, #4fe0a8, #059669); }
+    .tc-warn { color: #1c0e02; border: none; background: linear-gradient(180deg, #fdba74, #ea580c); }
+    .tc-danger { color: #fff; border: none; background: linear-gradient(180deg, #fb7185, #dc2626); }
+
+    .tc-att-none {
+        color: var(--tc-dim);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-weight: 800;
+    }
+
+    .tc-attach-link {
+        color: var(--tc-cyan);
+        font-size: 12px;
+        font-weight: 900;
+        text-decoration: none;
+        border-bottom: 1px solid rgba(53,213,234,.45);
+    }
+
+    .tc-empty {
+        padding: 28px;
+        color: var(--tc-muted);
+        border: 1px dashed var(--tc-line-strong);
+        border-radius: 14px;
+        text-align: center;
+        background: rgba(15,26,45,.58);
+    }
+
+    .tc-account {
+        --tc-grid: minmax(190px, 1.15fr) minmax(210px, 1.05fr) minmax(150px, .75fr) minmax(260px, 1.35fr) minmax(320px, 1.2fr);
+    }
+
+
+    /* Page-only shell fix: remove white gaps around the Tech Console. */
+    body.tc-tech-page {
+        background: #07111f !important;
+    }
+
+    body.tc-tech-page main,
+    body.tc-tech-page .main,
+    body.tc-tech-page .main-content,
+    body.tc-tech-page .content,
+    body.tc-tech-page .page-content,
+    body.tc-tech-page .app-content {
+        background: #07111f !important;
+    }
+    body.tc-tech-page footer,
+    body.tc-tech-page .footer,
+    body.tc-tech-page .app-footer {
+        background: linear-gradient(180deg, #07111f 0%, #050b14 100%) !important;
+        border-top: 1px solid #22324c !important;
+        color: #8fa3c1 !important;
+        box-shadow: 0 -18px 40px rgba(0,0,0,.18);
+    }
+
+    body.tc-tech-page footer *,
+    body.tc-tech-page .footer *,
+    body.tc-tech-page .app-footer * {
+        color: #8fa3c1 !important;
+    }
+
+    body.tc-tech-page footer strong,
+    body.tc-tech-page .footer strong,
+    body.tc-tech-page .app-footer strong,
+    body.tc-tech-page footer a,
+    body.tc-tech-page .footer a,
+    body.tc-tech-page .app-footer a {
+        color: #d4af37 !important;
+    }
+
+    @media (max-width: 1180px) {
+        .tc-card { grid-template-columns: 1fr 1fr; align-items: stretch; }
+        .tc-right { grid-column: 1 / -1; align-items: flex-start; padding-top: 10px; border-top: 1px dashed rgba(159,176,202,.20); }
+        .tc-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 640px) {
+        .tc-console { padding: 18px; border-radius: 14px; }
+        .tc-header-panel { margin: -18px -18px 16px; padding: 18px; }
+        .tc-search-sticky { margin: 0 -18px 14px; padding: 10px 18px 12px; }
+        .tc-card { grid-template-columns: 1fr; }
+        .tc-right { align-items: stretch; }
+        .tc-actions { justify-content: flex-start; }
+    }
+</style>
+
+<div class="tc-console tc-account">
+    <div class="tc-header-panel">
+        <div class="tc-topbar">
+            <div>
+                <p class="tc-eyebrow"><span class="tc-pulse"></span>USCIP · Account Access</p>
+                <h1 class="tc-title">Account Requests</h1>
+                <div class="tc-subtitle">Manage personal account applications and approval tasks.</div>
+            </div>
+        </div>
     </div>
 
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="bg-gray-50 text-left">
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Username</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Full Name</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Email</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Department</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Role</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Description</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Attachment</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Status</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Actions</th>
-                </tr>
-            </thead>
+    <div class="tc-search-sticky">
+        <div class="tc-count">
+            Showing <b>{{ pending_accounts|length }}</b> pending account request(s)
+        </div>
+    </div>
 
-            <tbody class="divide-y divide-gray-100">
-                {% for req in pending_accounts %}
-                <tr id="acct-row-{{ req.id }}" class="{% cycle 'bg-white' 'bg-slate-50/70' %} hover:bg-blue-50/60 transition-colors border-b border-slate-100">
-                    <td class="px-4 py-3 font-medium text-[#1a2d4a]">{{ req.username }}</td>
-                    <td class="px-4 py-3 text-gray-700">{{ req.full_name }}</td>
-                    <td class="px-4 py-3 text-gray-600">{{ req.email }}</td>
-                    <td class="px-4 py-3 text-gray-600">{{ req.department|default:"-" }}</td>
-                    <td class="px-4 py-3 text-gray-600">{{ req.requested_role }}</td>
-                    <td class="px-4 py-3 text-gray-500 text-xs max-w-[180px]">
-                        {{ req.description|default:"-"|truncatechars:80 }}
-                    </td>
-                    <td class="px-4 py-3 text-center">
-                        {% if req.attachment %}
-                        <a href="{{ req.attachment.url }}" target="_blank"
-                           class="text-xs font-semibold text-[#2a4270] hover:text-[#c9a84c]">
-                            View
-                        </a>
-                        {% else %}
-                        <span class="text-gray-300">—</span>
+    <div class="tc-stack">
+        {% for req in pending_accounts %}
+        <article id="acct-row-{{ req.id }}" class="tc-card"
+                 data-status="{% if req.status == 'Request Completed' or req.status == 'Approved' %}done{% elif req.status == 'Rejected' %}reject{% elif req.status == 'Returned' %}return{% elif req.status == 'Under-preview' %}review{% elif req.status == 'Work-in-progress' %}working{% else %}pending{% endif %}">
+
+            <div class="tc-identity">
+                <div class="tc-type">▣ {{ req.requested_role|default:"Account" }}</div>
+                <div class="tc-name">{{ req.username }}</div>
+                <div class="tc-subname">{{ req.full_name|default:"-" }}</div>
+            </div>
+
+            <div class="tc-field">
+                <div class="tc-label">Email</div>
+                <div class="tc-value tc-clamp" title="{{ req.email }}">{{ req.email }}</div>
+            </div>
+
+            <div class="tc-field">
+                <div class="tc-label">Department</div>
+                <div class="tc-value strong">{{ req.department|default:"-" }}</div>
+                <div class="tc-label" style="margin-top:8px;">Role</div>
+                <div class="tc-value">{{ req.requested_role|default:"-" }}</div>
+            </div>
+
+            <div class="tc-field">
+                <div class="tc-label">Description / File</div>
+                <div class="tc-value tc-clamp" title="{{ req.description|default:'-' }}">{{ req.description|default:"-" }}</div>
+                <div class="tc-value" style="margin-top:4px;">
+                    {% if req.attachment %}
+                    <a href="{{ req.attachment.url }}" target="_blank" class="tc-attach-link">View Attachment</a>
+                    {% else %}
+                    <span class="tc-att-none">—</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="tc-right">
+                <span class="tc-status"><span class="tc-status-dot"></span>{{ req.status }}</span>
+                <div class="tc-actions">
+                    <button type="button" onclick="showAccountDetail({{ req.id }})" class="tc-action">View Details</button>
+
+                    {% if req.status == "Under-preview" %}
+                        <button type="button" onclick="acctAction('resume', {{ req.id }}, this)" class="tc-action tc-primary">Resume</button>
+                    {% else %}
+
+                        {% if role == "team_leader" or role == "supervisor" %}
+                            <button type="button" onclick="acctAction('approve', {{ req.id }}, this)" class="tc-action tc-go">Forward</button>
+                        {% elif role == "cio" %}
+                            <button type="button" onclick="acctAction('approve', {{ req.id }}, this)" class="tc-action tc-go">Approve</button>
                         {% endif %}
-                    </td>
-                    <td class="px-4 py-3 text-center">
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700">
-                            {{ req.status }}
-                        </span>
-                    </td>
-                    <td class="px-4 py-3 text-center">
-                        <div class="flex items-center justify-center gap-1.5">
 
-                            <button type="button"
-                                    onclick="showAccountDetail({{ req.id }})"
-                                    class="px-2.5 py-1.5 min-w-[92px] text-xs font-semibold text-white bg-slate-600 hover:bg-slate-700 rounded-md shadow-sm transition-all hover:-translate-y-0.5 whitespace-nowrap"
-                                    style="background:#475569; white-space:nowrap;">
-                                View Details
-                            </button>
+                        <button type="button" onclick="acctAction('review', {{ req.id }}, this)" class="tc-action">Review</button>
+                        <button type="button" onclick="openReturnModal('acct', {{ req.id }}, '{{ req.status }}', '{{ role }}')" class="tc-action tc-warn">Return</button>
 
-                            {% if req.status == "Under-preview" %}
-                                <button type="button"
-                                        onclick="acctAction('resume', {{ req.id }}, this)"
-                                        class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-md shadow-sm transition-all hover:-translate-y-0.5"
-                                        style="background:#0284c7;">
-                                    Resume
-                                </button>
+                        {% if role == "supervisor" or role == "cio" %}
+                            <button type="button" onclick="openReturnModal('acct', {{ req.id }}, '{{ req.status }}', '{{ role }}', true)" class="tc-action tc-danger">Reject</button>
+                        {% endif %}
 
-                            {% else %}
+                    {% endif %}
+                </div>
+            </div>
 
-                                {% if role == "team_leader" or role == "supervisor" %}
-                                    <button type="button"
-                                            onclick="acctAction('approve', {{ req.id }}, this)"
-                                            class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md shadow-sm transition-all hover:-translate-y-0.5">
-                                        Forward
-                                    </button>
-                                {% elif role == "cio" %}
-                                    <button type="button"
-                                            onclick="acctAction('approve', {{ req.id }}, this)"
-                                            class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md shadow-sm transition-all hover:-translate-y-0.5">
-                                        Approve
-                                    </button>
-                                {% endif %}
-
-                                <button type="button"
-                                        onclick="acctAction('review', {{ req.id }}, this)"
-                                        class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-slate-600 hover:bg-slate-700 rounded-md shadow-sm transition-all hover:-translate-y-0.5"
-                                        style="background:#475569;">
-                                    Review
-                                </button>
-
-                                <button type="button"
-                                        onclick="openReturnModal('acct', {{ req.id }}, '{{ req.status }}', '{{ role }}')"
-                                        class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 rounded-md shadow-sm transition-all hover:-translate-y-0.5"
-                                        style="background:#ea580c;">
-                                    Return
-                                </button>
-
-                                {% if role == "supervisor" or role == "cio" %}
-                                    <button type="button"
-                                            onclick="openReturnModal('acct', {{ req.id }}, '{{ req.status }}', '{{ role }}', true)"
-                                            class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md shadow-sm transition-all hover:-translate-y-0.5"
-                                            style="background:#dc2626;">
-                                        Reject
-                                    </button>
-                                {% endif %}
-
-                            {% endif %}
-
-                        </div>
-                    </td>
-                </tr>
-                {% empty %}     <!-- 沒有 pending_accounts 時顯示以下內容 -->
-                <tr>
-                    <td colspan="9" class="px-4 py-10 text-center text-gray-400">
-                        No pending account requests found.
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        </article>
+        {% empty %}
+        <div class="tc-empty">No pending account requests found.</div>
+        {% endfor %}
     </div>
 </div>
+
 
 <!-- ════════════════════════════════════════════════════════
      Account Return / Reject Modal
@@ -679,5 +1054,6 @@ async function submitReturn() {
         btn.style.opacity = '1';
     }
 }
+document.body.classList.add("tc-tech-page");
 </script>
 {% endblock %}

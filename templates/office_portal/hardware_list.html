@@ -6,326 +6,766 @@
 {% block content %}
 
 <style>
-    .op-data-card {
-        background: #ffffff;
-        border: 1px solid #d7e3ef;
-        border-radius: 0;
-        overflow: hidden;
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.045);
+    /* Hardware Applications - scoped Tech Console list layout
+       Keep this CSS inside hardware_list.html so it does not affect Account/Application pages. */
+    .hw-console {
+        --hw-bg-0: #07101f;
+        --hw-bg-1: #0b1628;
+        --hw-card-1: #121f34;
+        --hw-card-2: #0f1a2d;
+        --hw-line: #223550;
+        --hw-line-strong: #315073;
+        --hw-text: #eaf2ff;
+        --hw-muted: #9fb0ca;
+        --hw-dim: #6f819d;
+        --hw-accent: #3b82f6;
+        --hw-cyan: #35d5ea;
+        --hw-done: #34d399;
+        --hw-pending: #fbbf24;
+        --hw-review: #facc15;
+        --hw-working: #818cf8;
+        --hw-return: #fb923c;
+        --hw-reject: #fb7185;
+
+        color: var(--hw-text);
+        background:
+            radial-gradient(760px 320px at 82% -12%, rgba(59,130,246,.18), transparent 62%),
+            radial-gradient(560px 280px at 4% 0%, rgba(53,213,234,.10), transparent 58%),
+            linear-gradient(180deg, var(--hw-bg-1), var(--hw-bg-0));
+        border: 1px solid #1e3350;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, .18);
+        overflow: visible;
+        position: relative;
     }
 
-    .op-data-table {
-        width: 100%;
-        border-collapse: collapse;
-        border-spacing: 0;
+    .hw-console::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: .42;
+        background-image:
+            linear-gradient(rgba(130, 160, 210, .06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(130, 160, 210, .06) 1px, transparent 1px);
+        background-size: 42px 42px;
+        mask-image: radial-gradient(900px 520px at 50% 0%, #000 30%, transparent 82%);
+    }
+
+    .hw-console > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    .hw-topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 18px;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+    }
+
+    .hw-sticky-panel {
+        margin: -24px -24px 18px;
+        padding: 24px 24px 14px;
+        background:
+            linear-gradient(180deg, rgba(7,16,31,.99), rgba(7,16,31,.94)),
+            radial-gradient(620px 210px at 82% 0%, rgba(59,130,246,.16), transparent 62%);
+        border-bottom: 1px solid rgba(49,80,115,.72);
+    }
+
+    .hw-search-sticky {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        margin: 0 -24px 16px;
+        padding: 10px 24px 12px;
+        background:
+            linear-gradient(180deg, rgba(7,16,31,.98), rgba(7,16,31,.94));
+        border-bottom: 1px solid rgba(49,80,115,.65);
+        backdrop-filter: blur(10px);
+    }
+
+    .hw-eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+        color: var(--hw-cyan);
+    }
+
+    .hw-pulse {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--hw-cyan);
+        box-shadow: 0 0 14px rgba(53, 213, 234, .9);
+    }
+
+    .hw-title {
+        margin: 0;
+        color: var(--hw-text);
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: -.02em;
+    }
+
+    .hw-subtitle {
+        margin-top: 5px;
+        color: var(--hw-muted);
         font-size: 13px;
     }
 
-    .op-data-table thead th {
-        background: #eaf1f8;
-        color: #24364f;
-        font-size: 11px;
+    .hw-new-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 42px;
+        padding: 0 18px;
+        color: #04101f;
+        text-decoration: none;
+        font-size: 14px;
         font-weight: 800;
+        border-radius: 10px;
+        background: linear-gradient(180deg, #66a7ff, var(--hw-accent));
+        box-shadow: 0 14px 26px -14px rgba(59, 130, 246, .85), inset 0 1px 0 rgba(255,255,255,.45);
+        white-space: nowrap;
+    }
+
+    .hw-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 0 0 10px;
+    }
+
+    .hw-search-wrap {
+        flex: 1 1 360px;
+        min-width: 260px;
+        position: relative;
+    }
+
+    .hw-search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--hw-dim);
+        font-size: 14px;
+        pointer-events: none;
+    }
+
+    .hw-search-input {
+        width: 100%;
+        height: 42px;
+        padding: 0 14px 0 38px;
+        color: var(--hw-text);
+        background: linear-gradient(180deg, #0f1b2e, #0b1525);
+        border: 1px solid var(--hw-line);
+        border-radius: 10px;
+        outline: none;
+        font-size: 13px;
+        box-shadow: inset 0 2px 6px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
+    }
+
+    .hw-search-input::placeholder {
+        color: var(--hw-dim);
+    }
+
+    .hw-search-input:focus {
+        border-color: var(--hw-accent);
+        box-shadow: inset 0 2px 6px rgba(0,0,0,.35), 0 0 0 3px rgba(59,130,246,.22);
+    }
+
+    .hw-search-btn,
+    .hw-clear-btn {
+        height: 42px;
+        padding: 0 18px;
+        border-radius: 10px;
+        border: 1px solid var(--hw-line-strong);
+        color: var(--hw-text);
+        background: linear-gradient(180deg, #1b2b44, #132238);
+        font-size: 13px;
+        font-weight: 800;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .hw-clear-btn {
+        color: var(--hw-muted);
+        background: rgba(255,255,255,.04);
+    }
+
+    .hw-count {
+        margin: 2px 0 16px;
+        color: var(--hw-dim);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 11px;
+    }
+
+    .hw-count b {
+        color: var(--hw-cyan);
+    }
+
+    .hw-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .hw-card {
+        --hw-led: var(--hw-pending);
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(190px, 1.2fr) 68px minmax(190px, 1fr) minmax(190px, 1fr) 94px minmax(270px, .95fr);
+        align-items: center;
+        column-gap: 16px;
+        row-gap: 12px;
+        padding: 16px 18px 16px 24px;
+        background: linear-gradient(180deg, var(--hw-card-1), var(--hw-card-2));
+        border: 1px solid var(--hw-line);
+        border-radius: 13px;
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,.045),
+            inset 0 -12px 24px -22px rgba(0,0,0,.85),
+            0 18px 32px -26px rgba(0,0,0,.9);
+        transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease;
+    }
+
+    .hw-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--hw-line-strong);
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,.06),
+            0 24px 42px -28px rgba(0,0,0,.96),
+            0 0 0 1px rgba(59,130,246,.15),
+            0 0 26px -16px rgba(59,130,246,.7);
+    }
+
+    .hw-card::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 11px;
+        bottom: 11px;
+        width: 4px;
+        border-radius: 0 6px 6px 0;
+        background: var(--hw-led);
+        box-shadow: 0 0 14px -2px var(--hw-led), 0 0 28px -10px var(--hw-led);
+    }
+
+    .hw-card[data-status="done"] { --hw-led: var(--hw-done); }
+    .hw-card[data-status="pending"] { --hw-led: var(--hw-pending); }
+    .hw-card[data-status="review"] { --hw-led: var(--hw-review); }
+    .hw-card[data-status="working"] { --hw-led: var(--hw-working); }
+    .hw-card[data-status="return"] { --hw-led: var(--hw-return); }
+    .hw-card[data-status="reject"] { --hw-led: var(--hw-reject); }
+
+    .hw-device-type {
+        display: inline-flex;
+        align-items: center;
+        max-width: 100%;
+        margin-bottom: 7px;
+        padding: 3px 8px;
+        border-radius: 7px;
+        border: 1px solid rgba(53,213,234,.22);
+        background: rgba(53,213,234,.08);
+        color: var(--hw-cyan);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: .08em;
         text-transform: uppercase;
-        letter-spacing: 0.045em;
-        padding: 11px 12px;
-        border-bottom: 1px solid #cfddeb;
-        border-right: 1px solid #dbe6f2;
-        text-align: left;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
-    .op-data-table thead th:last-child {
-        border-right: none;
+    .hw-device-name {
+        color: var(--hw-text);
+        font-size: 16px;
+        font-weight: 800;
+        line-height: 1.35;
+        word-break: break-word;
     }
 
-    .op-data-table tbody tr:nth-child(odd) {
-        background: #ffffff;
+    .hw-field {
+        min-width: 0;
+        align-self: stretch;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
     }
 
-    .op-data-table tbody tr:nth-child(even) {
-        background: #f3f8fd;
+    .hw-field.center {
+        align-items: center;
+        text-align: center;
     }
 
-    .op-data-table tbody tr:hover {
-        background: #e8f3ff;
+    .hw-label {
+        margin-bottom: 5px;
+        color: var(--hw-dim);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: .13em;
+        text-transform: uppercase;
     }
 
-    .op-data-table tbody td {
-        color: #0f172a;
-        padding: 11px 12px;
-        vertical-align: middle;
-        border-bottom: 1px solid #dbe6f2;
-        border-right: 1px solid #e2eaf3;
+    .hw-value {
+        color: var(--hw-muted);
+        font-size: 13px;
+        line-height: 1.45;
+        min-width: 0;
     }
 
-    .op-data-table tbody td:last-child {
-        border-right: none;
+    .hw-value.strong {
+        color: var(--hw-text);
+        font-size: 14px;
+        font-weight: 800;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
     }
 
-    .op-data-table tbody tr:last-child td {
-        border-bottom: none;
+    .hw-clamp {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        word-break: break-word;
     }
 
-    .op-data-table tbody td:nth-child(7),
-    .op-data-table tbody td:nth-child(8) {
-        background: rgba(239, 246, 255, 0.45);
+    .hw-attach-link {
+        color: #bcd8ff;
+        font-size: 12px;
+        font-weight: 800;
+        text-decoration: none;
     }
 
-    .op-data-table tbody tr:nth-child(even) td:nth-child(7),
-    .op-data-table tbody tr:nth-child(even) td:nth-child(8) {
-        background: rgba(226, 239, 252, 0.65);
+    .hw-attach-link:hover {
+        color: var(--hw-cyan);
+        text-decoration: underline;
     }
 
-    .op-data-table tbody tr:hover td:nth-child(7),
-    .op-data-table tbody tr:hover td:nth-child(8) {
-        background: rgba(219, 234, 254, 0.9);
+    .hw-att-none {
+        color: var(--hw-dim);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    .hw-right {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .hw-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        max-width: 100%;
+        padding: 6px 11px;
+        border-radius: 999px;
+        color: color-mix(in srgb, var(--hw-led) 78%, white 22%);
+        background: color-mix(in srgb, var(--hw-led) 13%, transparent);
+        border: 1px solid color-mix(in srgb, var(--hw-led) 34%, transparent);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 10.5px;
+        font-weight: 900;
+        letter-spacing: .035em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .hw-status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--hw-led);
+        box-shadow: 0 0 9px var(--hw-led);
+        flex: 0 0 auto;
+    }
+
+    .hw-actions {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 7px;
+    }
+
+    .hw-action {
+        min-width: 86px;
+        height: 34px;
+        padding: 0 11px;
+        border: 1px solid var(--hw-line-strong);
+        border-radius: 9px;
+        color: var(--hw-text);
+        background: linear-gradient(180deg, #1b2b44, #142338);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 6px 13px -10px rgba(0,0,0,.8);
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+        white-space: nowrap;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .hw-action:hover {
+        filter: brightness(1.12);
+        transform: translateY(-1px);
+    }
+
+    .hw-action.hw-primary {
+        color: #06101e;
+        border: none;
+        background: linear-gradient(180deg, #66a7ff, var(--hw-accent));
+    }
+
+    .hw-action.hw-go {
+        color: #04140e;
+        border: none;
+        background: linear-gradient(180deg, #55e2aa, #059669);
+    }
+
+    .hw-action.hw-warn {
+        color: #1c0e02;
+        border: none;
+        background: linear-gradient(180deg, #fdba74, #ea580c);
+    }
+
+    .hw-action.hw-danger {
+        color: #fff;
+        border: none;
+        background: linear-gradient(180deg, #fb7185, #dc2626);
+    }
+
+    .hw-reason {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: 142px 1fr;
+        gap: 12px;
+        align-items: start;
+        margin-top: 2px;
+        padding: 10px 13px;
+        border-radius: 9px;
+        background: color-mix(in srgb, var(--hw-led) 8%, #091527);
+        border: 1px solid color-mix(in srgb, var(--hw-led) 28%, transparent);
+    }
+
+    .hw-reason-label {
+        color: var(--hw-led);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .09em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .hw-reason-text {
+        color: var(--hw-muted);
+        font-size: 12.5px;
+        line-height: 1.55;
+        word-break: break-word;
+    }
+
+    .hw-empty {
+        padding: 36px 18px;
+        text-align: center;
+        color: var(--hw-muted);
+        border: 1px dashed var(--hw-line-strong);
+        border-radius: 12px;
+        background: rgba(255,255,255,.03);
+    }
+
+
+    /* Hardware pagination - scoped, no global footer/header override. */
+    .hw-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 22px;
+        padding-top: 18px;
+        border-top: 1px solid rgba(49, 80, 115, .72);
+    }
+
+    .hw-page-text {
+        color: var(--hw-muted);
+        font-size: 13px;
+        padding: 8px 12px;
+        border: 1px solid rgba(49, 80, 115, .72);
+        border-radius: 10px;
+        background: rgba(255,255,255,.035);
+    }
+
+    .hw-page-link {
+        min-width: 72px;
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 14px;
+        color: var(--hw-text);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 800;
+        border: 1px solid var(--hw-line-strong);
+        border-radius: 10px;
+        background: linear-gradient(180deg, #1b2b44, #132238);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 8px 18px -14px rgba(0,0,0,.9);
+    }
+
+    .hw-page-link:hover {
+        border-color: var(--hw-accent);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 0 22px -12px rgba(59,130,246,.9);
+    }
+
+    @media (max-width: 1180px) {
+        .hw-card {
+            grid-template-columns: minmax(180px, 1.2fr) 64px minmax(180px, 1fr) minmax(230px, 1fr);
+        }
+        .hw-field.attachment {
+            display: none;
+        }
+        .hw-right {
+            grid-column: 1 / -1;
+            align-items: stretch;
+            padding-top: 12px;
+            border-top: 1px dashed var(--hw-line);
+        }
+        .hw-actions {
+            justify-content: flex-start;
+        }
+    }
+
+    @media (max-width: 720px) {
+        .hw-console {
+            padding: 18px;
+        }
+        .hw-card {
+            grid-template-columns: 1fr;
+        }
+        .hw-field.center {
+            align-items: flex-start;
+            text-align: left;
+        }
+        .hw-right {
+            grid-column: auto;
+        }
+        .hw-reason {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Hardware page only: make bottom area match Tech Console */
+    body.hw-tech-page {
+        background: #07111f;
+    }
+
+    /* Keep the global header/sidebar, only make footer fit this page */
+    body.hw-tech-page footer,
+    body.hw-tech-page .footer,
+    body.hw-tech-page .app-footer {
+        background: linear-gradient(180deg, #07111f 0%, #050b14 100%) !important;
+        border-top: 1px solid #22324c !important;
+        color: #8fa3c1 !important;
+        box-shadow: 0 -18px 40px rgba(0, 0, 0, 0.18);
+    }
+
+    /* Footer text/link color */
+    body.hw-tech-page footer *,
+    body.hw-tech-page .footer *,
+    body.hw-tech-page .app-footer * {
+        color: #8fa3c1 !important;
+    }
+
+    body.hw-tech-page footer strong,
+    body.hw-tech-page .footer strong,
+    body.hw-tech-page .app-footer strong,
+    body.hw-tech-page footer a,
+    body.hw-tech-page .footer a,
+    body.hw-tech-page .app-footer a {
+        color: #d4af37 !important;
+    }
+
+    /* Reduce the white gap under the console */
+    .hw-console {
+        margin-bottom: 0;
+        min-height: calc(100vh - 160px);
     }
 </style>
 
-<div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold text-[#0c1a2e]">🖥 Hardware Applications</h1>
-    <a href="/office-portal/hardware/apply/" class="px-4 py-2 bg-[#1a2d4a] text-white rounded-lg">
-        New Hardware Request
-    </a>
-</div>
+<div class="hw-console">
+    <div class="hw-sticky-panel">
+        <div class="hw-topbar">
+            <div>
+                <div class="hw-eyebrow"><span class="hw-pulse"></span>USCIP · Office Portal</div>
+                <h1 class="hw-title">Hardware Applications</h1>
+                <div class="hw-subtitle">Review and route hardware provisioning requests across the approval chain.</div>
+            </div>
+            <a href="/office-portal/hardware/apply/" class="hw-new-btn">+ New Hardware Request</a>
+        </div>
+    </div> 
 
-<!-- =======================================================
-     Search Function
-     Purpose:
-     - Search Hardware Request
-     - Search by Device Type / Device Name / Purpose
-     - Keep search keyword after submit
-     ======================================================= -->
-<form method="get" class="mb-4 flex items-center gap-2">
+    <div class="hw-search-sticky">
+        <form method="get" class="hw-toolbar">
+            <div class="hw-search-wrap">
+                <span class="hw-search-icon">⌕</span>
+                <input type="text"
+                    name="search"
+                    value="{{ search }}"
+                    placeholder="Search device type, name, purpose…"
+                    class="hw-search-input">
+            </div>
+            <button type="submit" class="hw-search-btn">Search</button>
+            {% if search %}
+            <a href="{% url 'hardware_list' %}" class="hw-clear-btn">Clear</a>
+            {% endif %}
+        </form>
 
-    <!-- Search input -->
-    <input type="text"
-           name="search"
-           value="{{ search }}"
-           placeholder="Search device type, name, purpose..."
-           class="px-3 py-2 text-sm border border-gray-300 rounded-lg w-80">
+        <div class="hw-count">
+            {% if page_obj %}
+                Showing <b>{{ page_obj.start_index }}–{{ page_obj.end_index }}</b> of <b>{{ page_obj.paginator.count }}</b> request(s)
+            {% else %}
+                Showing <b>{{ items|length }}</b> request(s)
+            {% endif %}
+        </div>
+    </div>   
 
-    <!-- Search button -->
-    <button type="submit"
-            class="px-4 py-2 text-sm font-semibold text-white bg-[#1a2d4a] rounded-lg">
-        Search
-    </button>
+    <div class="hw-stack">
+        {% for item in items %}
+        <article class="hw-card"
+                 data-status="{% if item.status == 'Request Completed' or item.status == 'Approved' %}done{% elif item.status == 'Rejected' %}reject{% elif item.status == 'Returned' %}return{% elif item.status == 'Under-preview' %}review{% elif item.status == 'Work-in-progress' %}working{% else %}pending{% endif %}">
 
-    <!-- Clear search -->
-    {% if search %}
-    <a href="{% url 'hardware_list' %}"
-       class="px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-100 rounded-lg">
-        Clear
-    </a>
-    {% endif %}
+            <div class="hw-device">
+                <div class="hw-device-type">▣ {{ item.device_type|default:"Device" }}</div>
+                <div class="hw-device-name">{{ item.device_name|default:"-" }}</div>
+            </div>
 
-</form>
+            <div class="hw-field center">
+                <div class="hw-label">Qty</div>
+                <div class="hw-value strong">{{ item.quantity }}</div>
+            </div>
 
-<div class="op-data-card overflow-x-auto">
-    <table class="op-data-table">
-        <thead class="bg-gray-50">
-            <tr>
-                <th class="px-4 py-3 text-left">Device Type</th>
-                <th class="px-4 py-3 text-left">Device Name</th>
-                <th class="px-4 py-3 text-left">Qty</th>
-                <th class="px-4 py-3 text-left">Purpose</th>
-                <th class="px-4 py-3 text-left">Description</th>
-                <th class="px-4 py-3 text-center">Attachment</th>
-                <th class="px-4 py-3 text-center">Status</th>
-                <th class="px-4 py-3 text-center" style="min-width:360px; width:360px;">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in items %}
-            <tr>
-                <td class="px-4 py-3">{{ item.device_type }}</td>
-                <td class="px-4 py-3">{{ item.device_name|default:"-" }}</td>
-                <td class="px-4 py-3">{{ item.quantity }}</td>
-                <td class="px-4 py-3">{{ item.purpose|truncatechars:50 }}</td>
-                <td class="px-4 py-3 text-gray-600">
-                    {{ item.description|default:"-"|truncatechars:50 }}
-                </td>
-                <td class="px-4 py-3 text-center">
+            <div class="hw-field">
+                <div class="hw-label">Purpose</div>
+                <div class="hw-value hw-clamp" title="{{ item.purpose|default:'-' }}">{{ item.purpose|default:"-" }}</div>
+            </div>
+
+            <div class="hw-field">
+                <div class="hw-label">Description</div>
+                <div class="hw-value hw-clamp" title="{{ item.description|default:'-' }}">{{ item.description|default:"-" }}</div>
+            </div>
+
+            <div class="hw-field center attachment">
+                <div class="hw-label">File</div>
+                <div class="hw-value">
                     {% if item.attachment %}
-                        <a href="{{ item.attachment.url }}" target="_blank"
-                        class="text-[#2a4270] hover:text-[#c9a84c] text-xs font-semibold underline">
-                            View
-                        </a>
+                    <a href="{{ item.attachment.url }}" target="_blank" class="hw-attach-link">View</a>
                     {% else %}
-                        <span class="text-gray-300">—</span>
+                    <span class="hw-att-none">—</span>
                     {% endif %}
-                </td>
-                <td class="px-4 py-3 text-center">
+                </div>
+            </div>
 
-                    {{ item.status }}
+            <div class="hw-right">
+                <span class="hw-status"><span class="hw-status-dot"></span>{{ item.status }}</span>
+                <div class="hw-actions">
+                    <button type="button" onclick="openHWDetailModal({{ item.id }})" class="hw-action">View Details</button>
 
-                    {% if item.status == 'Returned' %}
-                    <div style="margin-top:6px; padding:6px 8px; background:#fff7ed; border:1px solid #fed7aa; border-radius:6px; text-align:left;">
-                        <div style="font-size:10px; font-weight:700; color:#ea580c; margin-bottom:4px;">
-                            ↩ Returned Information
-                        </div>
+                    {% if item.status == 'Pending Team Leader' and role == 'team_leader' %}
+                        <button type="button" onclick="doHW('approve', {{ item.id }})" class="hw-action hw-go">Forward</button>
+                        <button type="button" onclick="doHW('preview', {{ item.id }})" class="hw-action">Review</button>
+                        <button type="button" onclick="openHWReturnModal({{ item.id }})" class="hw-action hw-warn">Return</button>
 
-                        {% if item.return_date %}
-                        <div style="font-size:10px; color:#9a3412;">
-                            📅 {{ item.return_date|date:"Y-m-d H:i" }}
-                        </div>
-                        {% endif %}
+                    {% elif item.status == 'Pending Supervisor' and role == 'supervisor' %}
+                        <button type="button" onclick="doHW('approve', {{ item.id }})" class="hw-action hw-go">Approve</button>
+                        <button type="button" onclick="doHW('preview', {{ item.id }})" class="hw-action">Review</button>
+                        <button type="button" onclick="openHWReturnModal({{ item.id }})" class="hw-action hw-warn">Return</button>
+                        <button type="button" onclick="openHWRejectModal({{ item.id }})" class="hw-action hw-danger">Reject</button>
 
-                        {% if item.return_reason %}
-                        <div style="font-size:11px; color:#9a3412; margin-top:4px;">
-                            {{ item.return_reason }}
-                        </div>
-                        {% endif %}
-                    </div>
+                    {% elif item.status == 'Pending Hardware Supervisor' and role == 'hardware_supervisor' %}
+                        <button type="button" onclick="doHW('approve', {{ item.id }})" class="hw-action hw-go">Approve</button>
+                        <button type="button" onclick="doHW('preview', {{ item.id }})" class="hw-action">Review</button>
+                        <button type="button" onclick="openHWReturnModal({{ item.id }})" class="hw-action hw-warn">Return</button>
+                        <button type="button" onclick="openHWRejectModal({{ item.id }})" class="hw-action hw-danger">Reject</button>
+
+                    {% elif item.status == 'Work-in-progress' and role == 'hardware_supervisor' %}
+                        <button type="button" onclick="doHW('complete', {{ item.id }})" class="hw-action hw-go">Complete</button>
+
+                    {% elif item.status == 'Under-preview' and role == 'team_leader' %}
+                        <button type="button" onclick="doHW('resume', {{ item.id }})" class="hw-action hw-primary">Resume</button>
+
+                    {% elif item.status == 'Under-preview' and role == 'supervisor' %}
+                        <button type="button" onclick="doHW('resume', {{ item.id }})" class="hw-action hw-primary">Resume</button>
+
+                    {% elif item.status == 'Under-preview' and role == 'hardware_supervisor' %}
+                        <button type="button" onclick="doHW('resume', {{ item.id }})" class="hw-action hw-primary">Resume</button>
+
+                    {% elif item.status == 'Returned' and item.applicant == request.user %}
+                        <a href="{% url 'resubmit_hardware' item.id %}" class="hw-action hw-warn">Resubmit</a>
                     {% endif %}
+                </div>
+            </div>
 
-                    {% if item.status == 'Rejected' %}
-                    <div style="margin-top:6px; padding:6px 8px; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; text-align:left;">
-                        <div style="font-size:10px; font-weight:700; color:#dc2626; margin-bottom:4px;">
-                            ⛔ Rejected Information
-                        </div>
+            {% if item.status == 'Returned' %}
+            <div class="hw-reason">
+                <div class="hw-reason-label">↩ Returned</div>
+                <div class="hw-reason-text">
+                    {% if item.return_date %}{{ item.return_date|date:"Y-m-d H:i" }} · {% endif %}
+                    {{ item.return_reason|default:"No return reason recorded." }}
+                </div>
+            </div>
+            {% endif %}
 
-                        {% if item.return_reason %}
-                        <div style="font-size:11px; color:#991b1b; margin-top:4px;">
-                            {{ item.return_reason }}
-                        </div>
-                        {% else %}
-                        <div style="font-size:11px; color:#991b1b; margin-top:4px;">
-                            No rejection reason recorded.
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% endif %}
+            {% if item.status == 'Rejected' %}
+            <div class="hw-reason">
+                <div class="hw-reason-label">⛔ Rejected</div>
+                <div class="hw-reason-text">{{ item.return_reason|default:"No rejection reason recorded." }}</div>
+            </div>
+            {% endif %}
 
-                </td>
-                <td class="px-4 py-3 text-center" style="min-width:360px; width:360px; white-space:nowrap;">
-                    <div style="display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:nowrap;">
+        </article>
+        {% empty %}
+        <div class="hw-empty">No hardware requests found.</div>
+        {% endfor %}
+    </div>
 
-                        <button onclick="openHWDetailModal({{ item.id }})"
-                                style="padding:6px 10px;
-                                    min-width:92px;
-                                    white-space:nowrap;
-                                    font-size:12px;
-                                    font-weight:600;
-                                    color:#fff;
-                                    background:#475569;
-                                    border:none;
-                                    border-radius:6px;
-                                    cursor:pointer;">
-                            View Details
-                        </button>
+    {% if page_obj.has_other_pages %}
+    <div class="hw-pagination">
+        {% if page_obj.has_previous %}
+        <a href="?search={{ search }}&page=1" class="hw-page-link">First</a>
+        <a href="?search={{ search }}&page={{ page_obj.previous_page_number }}" class="hw-page-link">Previous</a>
+        {% endif %}
 
-                        {% if item.status == 'Pending Team Leader' and role == 'team_leader' %}
+        <span class="hw-page-text">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
 
-                            <button onclick="doHW('approve', {{ item.id }})"
-                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#059669; border:none; border-radius:6px; cursor:pointer;">
-                                Forward
-                            </button>
-
-                            <button onclick="doHW('preview', {{ item.id }})"
-                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#475569; border:none; border-radius:6px; cursor:pointer;">
-                                Review
-                            </button>
-
-                            <button onclick="openHWReturnModal({{ item.id }})"
-                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#ea580c; border:none; border-radius:6px; cursor:pointer;">
-                                Return
-                            </button>
-
-                        {% elif item.status == 'Pending Supervisor' and role == 'supervisor' %}
-
-                            <button onclick="doHW('approve', {{ item.id }})"
-                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#059669; border:none; border-radius:6px; cursor:pointer;">
-                                Approve
-                            </button>
-
-                            <button onclick="doHW('preview', {{ item.id }})"
-                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#475569; border:none; border-radius:6px; cursor:pointer;">
-                                Review
-                            </button>
-
-                            <button onclick="openHWReturnModal({{ item.id }})"
-                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#ea580c; border:none; border-radius:6px; cursor:pointer;">
-                                Return
-                            </button>
-
-                            <button onclick="openHWRejectModal({{ item.id }})"
-                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#dc2626; border:none; border-radius:6px; cursor:pointer;">
-                                Reject
-                            </button>
-
-                        {% elif item.status == 'Pending Hardware Supervisor' and role == 'hardware_supervisor' %}
-
-                            <button onclick="doHW('approve', {{ item.id }})"
-                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#059669; border:none; border-radius:6px; cursor:pointer;">
-                                Approve
-                            </button>
-
-                            <button onclick="doHW('preview', {{ item.id }})"
-                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#475569; border:none; border-radius:6px; cursor:pointer;">
-                                Review
-                            </button>
-
-                            <button onclick="openHWReturnModal({{ item.id }})"
-                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#ea580c; border:none; border-radius:6px; cursor:pointer;">
-                                Return
-                            </button>
-
-                            <button onclick="openHWRejectModal({{ item.id }})"
-                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#dc2626; border:none; border-radius:6px; cursor:pointer;">
-                                Reject
-                            </button>
-
-                        {% elif item.status == 'Work-in-progress' and role == 'hardware_supervisor' %}
-
-                            <button onclick="doHW('complete', {{ item.id }})"
-                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#047857; border:none; border-radius:6px; cursor:pointer;">
-                                Complete
-                            </button>
-
-                        {% elif item.status == 'Under-preview' and role == 'team_leader' %}
-
-                            <button onclick="doHW('resume', {{ item.id }})"
-                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#3b82f6; border:none; border-radius:6px; cursor:pointer;">
-                                Resume
-                            </button>
-
-                        {% elif item.status == 'Under-preview' and role == 'supervisor' %}
-
-                            <button onclick="doHW('resume', {{ item.id }})"
-                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#3b82f6; border:none; border-radius:6px; cursor:pointer;">
-                                Resume
-                            </button>
-
-                        {% elif item.status == 'Under-preview' and role == 'hardware_supervisor' %}
-
-                            <button onclick="doHW('resume', {{ item.id }})"
-                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#3b82f6; border:none; border-radius:6px; cursor:pointer;">
-                                Resume
-                            </button>
-
-                        {% elif item.status == 'Returned' and item.applicant == request.user %}
-
-                            <a href="{% url 'resubmit_hardware' item.id %}"
-                            style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#ea580c; border:none; border-radius:6px; display:inline-block; text-decoration:none;">
-                                Resubmit
-                            </a>
-
-                        {% endif %}
-
-                    </div>
-                </td>           
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="8" class="px-4 py-10 text-center text-gray-400">
-                    No hardware requests found.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+        {% if page_obj.has_next %}
+        <a href="?search={{ search }}&page={{ page_obj.next_page_number }}" class="hw-page-link">Next</a>
+        <a href="?search={{ search }}&page={{ page_obj.paginator.num_pages }}" class="hw-page-link">Last</a>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
+
 <div id="hwReturnModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999;">
     <div style="height:100%; display:flex; align-items:center; justify-content:center;">
         <div style="background:white; width:420px; border-radius:12px; padding:20px;">
@@ -811,46 +1251,9 @@ async function submitHWReturn() {
         alert(data.detail);
     }
 }
+
+document.body.classList.add("hw-tech-page");
+
 </script>
-
-<!-- =======================================================
-     Pagination
-     Purpose:
-     - Display 20 records per page
-     - Keep search keyword when switching pages
-     ======================================================= -->
-{% if page_obj.has_other_pages %}
-<div class="mt-4 flex items-center justify-center gap-2 text-sm">
-
-    {% if page_obj.has_previous %}
-    <a href="?search={{ search }}&page=1"
-       class="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50">
-        First
-    </a>
-
-    <a href="?search={{ search }}&page={{ page_obj.previous_page_number }}"
-       class="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50">
-        Previous
-    </a>
-    {% endif %}
-
-    <span class="px-3 py-1.5 text-gray-600">
-        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-    </span>
-
-    {% if page_obj.has_next %}
-    <a href="?search={{ search }}&page={{ page_obj.next_page_number }}"
-       class="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50">
-        Next
-    </a>
-
-    <a href="?search={{ search }}&page={{ page_obj.paginator.num_pages }}"
-       class="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50">
-        Last
-    </a>
-    {% endif %}
-
-</div>
-{% endif %}
 
 {% endblock %}
