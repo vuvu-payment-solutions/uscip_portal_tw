@@ -42,7 +42,7 @@
 
             <tbody class="divide-y divide-gray-100">
                 {% for req in pending_accounts %}
-                <tr class="hover:bg-gray-50/50 transition-colors" id="acct-row-{{ req.id }}">
+                <tr id="acct-row-{{ req.id }}" class="{% cycle 'bg-white' 'bg-slate-50/70' %} hover:bg-blue-50/60 transition-colors border-b border-slate-100">
                     <td class="px-4 py-3 font-medium text-[#1a2d4a]">{{ req.username }}</td>
                     <td class="px-4 py-3 text-gray-700">{{ req.full_name }}</td>
                     <td class="px-4 py-3 text-gray-600">{{ req.email }}</td>
@@ -68,6 +68,13 @@
                     </td>
                     <td class="px-4 py-3 text-center">
                         <div class="flex items-center justify-center gap-1.5">
+
+                            <button type="button"
+                                    onclick="showAccountDetail({{ req.id }})"
+                                    class="px-2.5 py-1.5 min-w-[92px] text-xs font-semibold text-white bg-slate-600 hover:bg-slate-700 rounded-md shadow-sm transition-all hover:-translate-y-0.5 whitespace-nowrap"
+                                    style="background:#475569; white-space:nowrap;">
+                                View Details
+                            </button>
 
                             {% if req.status == "Under-preview" %}
                                 <button type="button"
@@ -198,6 +205,90 @@
     </div>
 </div>
 
+
+<!-- =======================================================
+     Account Detail Modal
+     Purpose:
+     - Show account request detail and timeline history
+     - Compact product-style detail layout
+     ======================================================= -->
+<div id="accountDetailModal"
+     style="display:none;
+            position:fixed;
+            inset:0;
+            background:rgba(15,23,42,.48);
+            z-index:9999;">
+
+    <div onclick="closeAccountDetail()"
+         style="position:absolute; inset:0;"></div>
+
+    <div style="
+        min-height:100%;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        padding:18px;
+        box-sizing:border-box;
+        position:relative;">
+
+        <div style="
+            background:white;
+            width:780px;
+            max-width:calc(100vw - 36px);
+            max-height:82vh;
+            overflow:auto;
+            border-radius:0;
+            border:1px solid #cbd5e1;
+            box-shadow:0 18px 42px rgba(15,23,42,.28);">
+
+            <div style="
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                padding:12px 16px;
+                border-bottom:1px solid #dbe6f2;
+                background:#f1f6fb;">
+
+                <div>
+                    <h3 style="
+                        font-size:16px;
+                        line-height:1.3;
+                        font-weight:800;
+                        color:#0c1a2e;
+                        margin:0;">
+                        📜 Account Details
+                    </h3>
+                    <div style="
+                        margin-top:2px;
+                        font-size:11px;
+                        color:#64748b;">
+                        Request information and approval timeline
+                    </div>
+                </div>
+
+                <button onclick="closeAccountDetail()"
+                        style="
+                            width:30px;
+                            height:30px;
+                            border:1px solid #cbd5e1;
+                            background:#ffffff;
+                            color:#475569;
+                            font-size:21px;
+                            line-height:1;
+                            cursor:pointer;">
+                    &times;
+                </button>
+            </div>
+
+            <div id="accountDetailBody" style="padding:14px 16px 16px;">
+                Loading...
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
 {% endblock %}
 
 {% block extra_js %}
@@ -206,6 +297,253 @@ function getCookie(name) {
     const value = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
     return value ? value[2] : '';
 }
+
+function escapeHtml(value) {
+    if (value === null || value === undefined) return "";
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+// =======================================================
+// Account History
+// Purpose:
+// - Show account request detail and timeline history
+// - Align with Service/API View Details display pattern
+// =======================================================
+
+function renderAccountDetailField(label, value, options = {}) {
+    const displayValue = value === null || value === undefined || value === "" ? "—" : value;
+    const content = options.rawHtml ? displayValue : escapeHtml(displayValue);
+
+    return `
+        <div style="
+            border:1px solid #dbe6f2;
+            background:#ffffff;
+            padding:8px 10px;
+            min-height:52px;
+            box-sizing:border-box;">
+            <div style="
+                font-size:10px;
+                line-height:1.2;
+                font-weight:800;
+                color:#64748b;
+                text-transform:uppercase;
+                letter-spacing:.045em;
+                margin-bottom:5px;">
+                ${escapeHtml(label)}
+            </div>
+            <div style="
+                font-size:13px;
+                line-height:1.45;
+                font-weight:650;
+                color:#0f172a;
+                word-break:break-word;">
+                ${content}
+            </div>
+        </div>
+    `;
+}
+
+function renderAccountTextBlock(title, value) {
+    return `
+        <div style="margin-top:10px;">
+            <div style="
+                border:1px solid #dbe6f2;
+                background:#f8fbff;
+                padding:8px 10px;">
+                <div style="
+                    font-size:10px;
+                    font-weight:800;
+                    color:#64748b;
+                    text-transform:uppercase;
+                    letter-spacing:.045em;
+                    margin-bottom:5px;">
+                    ${escapeHtml(title)}
+                </div>
+                <div style="
+                    font-size:13px;
+                    line-height:1.55;
+                    color:#1e293b;
+                    white-space:pre-wrap;
+                    word-break:break-word;">
+                    ${escapeHtml(value || "—")}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// =======================================================
+// Account History
+// Purpose:
+// - Show account request detail and timeline history
+// - Product-style compact field cards, no rounded corners
+// =======================================================
+
+async function showAccountDetail(reqId) {
+    const modal = document.getElementById("accountDetailModal");
+    const body = document.getElementById("accountDetailBody");
+
+    modal.style.display = "block";
+    body.innerHTML = `
+        <div style="padding:18px; color:#64748b; font-size:13px;">
+            Loading...
+        </div>
+    `;
+
+    try {
+        const res = await fetch(`/office-portal/api/account/${reqId}/`);
+        const data = await res.json();
+
+        if (!res.ok) {
+            body.innerHTML = `
+                <div style="
+                    margin:12px 0;
+                    padding:10px 12px;
+                    border:1px solid #fecaca;
+                    background:#fef2f2;
+                    color:#dc2626;
+                    font-size:13px;">
+                    ${escapeHtml(data.error || data.detail || "Failed to load detail.")}
+                </div>
+            `;
+            return;
+        }
+
+        const attachmentHtml = data.attachment
+            ? `<a href="${escapeHtml(data.attachment)}" target="_blank" style="color:#2563eb; font-weight:700; text-decoration:underline;">View Attachment</a>`
+            : "—";
+
+        let historyHtml = "";
+        if (data.history?.length) {
+            historyHtml = data.history.map(item => `
+                <div style="
+                    display:grid;
+                    grid-template-columns:130px 1fr;
+                    gap:0;
+                    border:1px solid #dbe6f2;
+                    border-left:4px solid #3b82f6;
+                    background:#ffffff;
+                    margin-bottom:8px;">
+                    <div style="
+                        padding:8px 10px;
+                        background:#f1f6fb;
+                        border-right:1px solid #dbe6f2;
+                        font-size:11px;
+                        color:#475569;
+                        line-height:1.45;">
+                        <div style="font-weight:800; color:#1e293b;">
+                            ${escapeHtml(item.created_at || "—")}
+                        </div>
+                        <div style="margin-top:4px;">
+                            ${escapeHtml(item.actor || "—")}
+                        </div>
+                    </div>
+                    <div style="padding:8px 10px;">
+                        <div style="
+                            font-size:13px;
+                            font-weight:800;
+                            color:#0f172a;">
+                            ${escapeHtml(item.action || "—")}
+                        </div>
+                        ${
+                            item.comment
+                            ? `<div style="
+                                margin-top:5px;
+                                font-size:12px;
+                                line-height:1.5;
+                                color:#334155;
+                                white-space:pre-wrap;
+                                word-break:break-word;">
+                                ${escapeHtml(item.comment)}
+                               </div>`
+                            : `<div style="margin-top:5px; font-size:12px; color:#94a3b8;">No comment.</div>`
+                        }
+                    </div>
+                </div>
+            `).join("");
+        } else {
+            historyHtml = `
+                <div style="
+                    border:1px solid #dbe6f2;
+                    background:#f8fafc;
+                    padding:10px;
+                    font-size:13px;
+                    color:#64748b;">
+                    No history found.
+                </div>
+            `;
+        }
+
+        body.innerHTML = `
+            <div style="
+                display:grid;
+                grid-template-columns:repeat(4, minmax(0, 1fr));
+                gap:8px;
+                margin-bottom:10px;">
+                ${renderAccountDetailField("Request No.", data.request_no)}
+                ${renderAccountDetailField("Username", data.username)}
+                ${renderAccountDetailField("Full Name", data.full_name)}
+                ${renderAccountDetailField("Email", data.email)}
+                ${renderAccountDetailField("Department", data.department)}
+                ${renderAccountDetailField("Requested Role", data.requested_role)}
+                ${renderAccountDetailField("Status", data.status)}
+                ${renderAccountDetailField("Attachment", attachmentHtml, { rawHtml: true })}
+            </div>
+
+            ${renderAccountTextBlock("Description", data.description)}
+
+            <div style="
+                margin-top:16px;
+                padding-top:12px;
+                border-top:1px solid #dbe6f2;">
+                <div style="
+                    display:flex;
+                    align-items:center;
+                    justify-content:space-between;
+                    margin-bottom:10px;">
+                    <h4 style="
+                        font-size:14px;
+                        font-weight:800;
+                        color:#0c1a2e;
+                        margin:0;">
+                        Approval Timeline
+                    </h4>
+                    <span style="
+                        font-size:11px;
+                        color:#64748b;
+                        background:#f1f5f9;
+                        border:1px solid #e2e8f0;
+                        padding:3px 8px;">
+                        ${data.history?.length || 0} record(s)
+                    </span>
+                </div>
+                ${historyHtml}
+            </div>
+        `;
+    } catch (err) {
+        body.innerHTML = `
+            <div style="
+                margin:12px 0;
+                padding:10px 12px;
+                border:1px solid #fecaca;
+                background:#fef2f2;
+                color:#dc2626;
+                font-size:13px;">
+                Failed to load history.
+            </div>
+        `;
+    }
+}
+
+function closeAccountDetail() {
+    document.getElementById("accountDetailModal").style.display = "none";
+}
+
 
 // Account actions: Forward / Approve / Review / Resume
 async function acctAction(action, reqId, btn) {

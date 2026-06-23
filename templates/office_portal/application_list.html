@@ -73,7 +73,7 @@
                 <col style="width:120px;">  <!-- Status -->
                 <col style="width:100px;">  <!-- Progress -->
                 <col style="width:90px;">   <!-- Date -->
-                <col style="width:160px;">  <!-- Actions -->
+                <col style="width:300px;">  <!-- Actions -->
             </colgroup>
             <thead class="bg-gray-50">
             <tr>
@@ -92,7 +92,7 @@
             </thead>
             <tbody class="divide-y divide-gray-100">
                 {% for app in applications %}
-                <tr class="hover:bg-gray-50/50 transition-colors" id="list-row-{{ app.id }}">
+                <tr id="list-row-{{ app.id }}" class="{% cycle 'bg-white' 'bg-slate-50/70' %} hover:bg-blue-50/60 transition-colors border-b border-slate-100">
                     <td class="px-2 py-3 font-mono text-xs font-semibold text-[#1a2d4a]" style="max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ app.f_no }}</td>
                     <td class="px-2 py-3 text-gray-700 text-xs" style="max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ app.a_name }}</td>
                     <td class="px-2 py-3 text-gray-600 text-xs" style="max-width:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ app.department }}</td>
@@ -183,114 +183,125 @@
                     </td>
                     <td class="px-2 py-3 text-gray-500 text-xs">{{ app.created_at|date:"Y-m-d H:i" }}</td>
                     <td class="px-2 py-3 text-center">
-                        <!-- Application History / Detail Button -->
-                        <button onclick="showAppDetail({{ app.id }})"
-                                style="margin-bottom:4px;
-                                    padding:3px 8px;
-                                    font-size:11px;
-                                    font-weight:600;
-                                    color:#fff;
-                                    background:#475569;
-                                    border:none;
-                                    border-radius:5px;">
-                            View Details
-                        </button>
-                        {% if app.status == 'Pending Team Leader' and role == 'team_leader' %}
-                        <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
-                            <div style="display:flex; gap:3px;">
-                                <button onclick="doAction('approve', {{ app.id }}, this)"
-                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#059669; border:none; border-radius:5px;">
-                                    Approve
-                                </button>
-                                <button onclick="doAction('preview', {{ app.id }}, this)"
-                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#d97706; border:none; border-radius:5px;">
-                                    Review
-                                </button>
-                            </div>
-                            <div style="display:flex; gap:3px;">
-                                <button onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}')"
-                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#ea580c; border:none; border-radius:5px;">
-                                    Return
-                                </button>
-                            </div>
-                        </div>
+                        <div style="display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:nowrap;">
 
-                        {% elif app.status == 'Pending Supervisor' and role == 'supervisor' %}
-                        <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
-                            <div style="display:flex; gap:3px;">
+                            <!-- Application History / Detail Button -->
+                            <button onclick="showAppDetail({{ app.id }})"
+                                    class="px-2.5 py-1.5 min-w-[92px] text-xs font-semibold text-white bg-slate-600 hover:bg-slate-700 rounded-md shadow-sm transition-all hover:-translate-y-0.5 whitespace-nowrap"
+                                    style="background:#475569; white-space:nowrap;">
+                                View Details
+                            </button>
+
+                            {% if app.status == 'Pending Team Leader' and role == 'team_leader' %}
+
                                 <button onclick="doAction('approve', {{ app.id }}, this)"
-                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#059669; border:none; border-radius:5px;">
+                                        class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md shadow-sm transition-all hover:-translate-y-0.5 whitespace-nowrap"
+                                        style="background:#059669; white-space:nowrap;">
                                     Approve
                                 </button>
+
                                 <button onclick="doAction('preview', {{ app.id }}, this)"
-                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#d97706; border:none; border-radius:5px;">
+                                        class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-slate-600 hover:bg-slate-700 rounded-md shadow-sm transition-all hover:-translate-y-0.5 whitespace-nowrap"
+                                        style="background:#475569; white-space:nowrap;">
                                     Review
                                 </button>
-                            </div>
-                            <div style="display:flex; gap:3px;">
+
                                 <button onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}')"
-                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#ea580c; border:none; border-radius:5px;">
+                                        class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 rounded-md shadow-sm transition-all hover:-translate-y-0.5 whitespace-nowrap"
+                                        style="background:#ea580c; white-space:nowrap;">
                                     Return
                                 </button>
+
+                            {% elif app.status == 'Pending Supervisor' and role == 'supervisor' %}
+
+                                <button onclick="doAction('approve', {{ app.id }}, this)"
+                                        class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md shadow-sm transition-all hover:-translate-y-0.5 whitespace-nowrap"
+                                        style="background:#059669; white-space:nowrap;">
+                                    Approve
+                                </button>
+
+                                <button onclick="doAction('preview', {{ app.id }}, this)"
+                                        class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-slate-600 hover:bg-slate-700 rounded-md shadow-sm transition-all hover:-translate-y-0.5 whitespace-nowrap"
+                                        style="background:#475569; white-space:nowrap;">
+                                    Review
+                                </button>
+
+                                <button onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}')"
+                                        class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 rounded-md shadow-sm transition-all hover:-translate-y-0.5 whitespace-nowrap"
+                                        style="background:#ea580c; white-space:nowrap;">
+                                    Return
+                                </button>
+
                                 <button onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}', true)"
-                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#dc2626; border:none; border-radius:5px;">
+                                        class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md shadow-sm transition-all hover:-translate-y-0.5 whitespace-nowrap"
+                                        style="background:#dc2626; white-space:nowrap;">
                                     Reject
                                 </button>
-                            </div>
-                        </div>
 
-                        {% elif app.status == 'Pending CIO' and role == 'cio' %}
-                        <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
-                            <div style="display:flex; gap:3px;">
+                            {% elif app.status == 'Pending CIO' and role == 'cio' %}
+
                                 <button onclick="doAction('approve', {{ app.id }}, this)"
-                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#059669; border:none; border-radius:5px;">
+                                        class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md shadow-sm transition-all hover:-translate-y-0.5 whitespace-nowrap"
+                                        style="background:#059669; white-space:nowrap;">
                                     Approve
                                 </button>
+
                                 <button onclick="doAction('preview', {{ app.id }}, this)"
-                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#d97706; border:none; border-radius:5px;">
+                                        class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-slate-600 hover:bg-slate-700 rounded-md shadow-sm transition-all hover:-translate-y-0.5 whitespace-nowrap"
+                                        style="background:#475569; white-space:nowrap;">
                                     Review
                                 </button>
-                            </div>
-                            <div style="display:flex; gap:3px;">
+
                                 <button onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}')"
-                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#ea580c; border:none; border-radius:5px;">
+                                        class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 rounded-md shadow-sm transition-all hover:-translate-y-0.5 whitespace-nowrap"
+                                        style="background:#ea580c; white-space:nowrap;">
                                     Return
                                 </button>
+
                                 <button onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}', true)"
-                                        style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#dc2626; border:none; border-radius:5px;">
+                                        class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md shadow-sm transition-all hover:-translate-y-0.5 whitespace-nowrap"
+                                        style="background:#dc2626; white-space:nowrap;">
                                     Reject
                                 </button>
-                            </div>
+
+                            {% elif app.status == 'Under-preview' and role == 'team_leader' and app.preview_by == 'Pending Team Leader' %}
+
+                                <button onclick="doAction('resume', {{ app.id }}, this)"
+                                        class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm transition-all hover:-translate-y-0.5 whitespace-nowrap"
+                                        style="background:#3b82f6; white-space:nowrap;">
+                                    Resume
+                                </button>
+
+                            {% elif app.status == 'Under-preview' and role == 'supervisor' and app.preview_by == 'Pending Supervisor' %}
+
+                                <button onclick="doAction('resume', {{ app.id }}, this)"
+                                        class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm transition-all hover:-translate-y-0.5 whitespace-nowrap"
+                                        style="background:#3b82f6; white-space:nowrap;">
+                                    Resume
+                                </button>
+
+                            {% elif app.status == 'Under-preview' and role == 'cio' and app.preview_by == 'Pending CIO' %}
+
+                                <button onclick="doAction('resume', {{ app.id }}, this)"
+                                        class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm transition-all hover:-translate-y-0.5 whitespace-nowrap"
+                                        style="background:#3b82f6; white-space:nowrap;">
+                                    Resume
+                                </button>
+
+                            {% elif app.status == 'Work-in-progress' and role == 'cio' %}
+
+                                <button onclick="doAction('complete', {{ app.id }}, this)"
+                                        class="px-2.5 py-1.5 min-w-[72px] text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-md shadow-sm transition-all hover:-translate-y-0.5 whitespace-nowrap"
+                                        style="background:#059669; white-space:nowrap;">
+                                    Complete
+                                </button>
+
+                            {% else %}
+
+                                <span class="text-gray-300">—</span>
+
+                            {% endif %}
                         </div>
-
-                        {% elif app.status == 'Under-preview' and role == 'team_leader' and app.preview_by == 'Pending Team Leader' %}
-                        <button onclick="doAction('resume', {{ app.id }}, this)"
-                                style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#3b82f6; border:none; border-radius:5px;">
-                            Resume
-                        </button>
-
-                        {% elif app.status == 'Under-preview' and role == 'supervisor' and app.preview_by == 'Pending Supervisor' %}
-                        <button onclick="doAction('resume', {{ app.id }}, this)"
-                                style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#3b82f6; border:none; border-radius:5px;">
-                            Resume
-                        </button>
-
-                        {% elif app.status == 'Under-preview' and role == 'cio' and app.preview_by == 'Pending CIO' %}
-                        <button onclick="doAction('resume', {{ app.id }}, this)"
-                                style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#3b82f6; border:none; border-radius:5px;">
-                            Resume
-                        </button>
-
-                        {% elif app.status == 'Work-in-progress' and role == 'cio' %}
-                        <button onclick="doAction('complete', {{ app.id }}, this)"
-                                style="padding:3px 8px; font-size:11px; font-weight:600; color:#fff; background:#059669; border:none; border-radius:5px;">
-                            Complete
-                        </button>
-
-                        {% else %}
-                        <span class="text-gray-300">—</span>
-                        {% endif %}
-
                     </td>
                 </tr>
                 {% empty %}
@@ -388,122 +399,281 @@ function closeDesc() {
 // - Show application detail and timeline history
 // =======================================================
 
+function escapeHtml(value) {
+    if (value === null || value === undefined || value === "") return "";
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+function renderAppDetailField(label, value, options = {}) {
+    const displayValue = value === null || value === undefined || value === "" ? "—" : value;
+    const content = options.rawHtml ? displayValue : escapeHtml(displayValue);
+
+    return `
+        <div style="
+            border:1px solid #dbe6f2;
+            background:#ffffff;
+            padding:8px 10px;
+            min-height:52px;
+            box-sizing:border-box;">
+            <div style="
+                font-size:10px;
+                line-height:1.2;
+                font-weight:800;
+                color:#64748b;
+                text-transform:uppercase;
+                letter-spacing:.045em;
+                margin-bottom:5px;">
+                ${escapeHtml(label)}
+            </div>
+            <div style="
+                font-size:13px;
+                line-height:1.45;
+                font-weight:650;
+                color:#0f172a;
+                word-break:break-word;">
+                ${content}
+            </div>
+        </div>
+    `;
+}
+
+function renderAppTextBlock(title, value) {
+    return `
+        <div style="margin-top:10px;">
+            <div style="
+                border:1px solid #dbe6f2;
+                background:#f8fbff;
+                padding:8px 10px;">
+                <div style="
+                    font-size:10px;
+                    font-weight:800;
+                    color:#64748b;
+                    text-transform:uppercase;
+                    letter-spacing:.045em;
+                    margin-bottom:5px;">
+                    ${escapeHtml(title)}
+                </div>
+                <div style="
+                    font-size:13px;
+                    line-height:1.55;
+                    color:#1e293b;
+                    white-space:pre-wrap;
+                    word-break:break-word;">
+                    ${escapeHtml(value || "—")}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// =======================================================
+// Application History
+// Purpose:
+// - Show application detail and timeline history
+// - Product-style compact field cards, no rounded corners
+// =======================================================
+
 async function showAppDetail(appId) {
+    const modal = document.getElementById("appDetailModal");
+    const body = document.getElementById("appDetailBody");
 
-    document.getElementById(
-        "appDetailModal"
-    ).style.display = "block";
-
-    document.getElementById(
-        "appDetailBody"
-    ).innerHTML = "Loading...";
+    modal.style.display = "block";
+    body.innerHTML = `
+        <div style="padding:18px; color:#64748b; font-size:13px;">
+            Loading...
+        </div>
+    `;
 
     try {
-
-        const res = await fetch(
-            `/office-portal/api/application/${appId}/`
-        );
-
+        const res = await fetch(`/office-portal/api/application/${appId}/`);
         const data = await res.json();
 
-        let historyHtml = "";
+        if (!res.ok) {
+            body.innerHTML = `
+                <div style="
+                    margin:12px 0;
+                    padding:10px 12px;
+                    border:1px solid #fecaca;
+                    background:#fef2f2;
+                    color:#dc2626;
+                    font-size:13px;">
+                    ${escapeHtml(data.error || data.detail || "Failed to load detail.")}
+                </div>
+            `;
+            return;
+        }
 
-        if (data.history?.length) {
+        const attachmentHtml = data.attachment
+            ? `<a href="${escapeHtml(data.attachment)}" target="_blank" style="color:#2563eb; font-weight:700; text-decoration:underline;">View Attachment</a>`
+            : "—";
 
-            historyHtml =
-                data.history.map(item => `
+        const appType = data.a_type || data.application_type || data.type || "—";
+        const serviceName = data.service_system || data.service || data.system_name || "—";
+        const createdAt = data.created_at || data.created || "—";
+
+        let reasonHtml = "";
+        if ((data.status === "Returned" || data.status === "Rejected") && data.return_reason) {
+            const isRejected = data.status === "Rejected";
+            reasonHtml = `
+                <div style="
+                    margin-top:10px;
+                    border:1px solid ${isRejected ? "#fecaca" : "#fed7aa"};
+                    background:${isRejected ? "#fef2f2" : "#fff7ed"};
+                    padding:9px 10px;">
                     <div style="
-                        border-left:3px solid #3b82f6;
-                        padding-left:12px;
-                        margin-bottom:14px;">
+                        font-size:10px;
+                        font-weight:800;
+                        color:${isRejected ? "#dc2626" : "#ea580c"};
+                        text-transform:uppercase;
+                        letter-spacing:.045em;
+                        margin-bottom:5px;">
+                        ${isRejected ? "Reject Reason" : "Return Reason"}
+                    </div>
+                    <div style="
+                        font-size:13px;
+                        color:${isRejected ? "#991b1b" : "#9a3412"};
+                        white-space:pre-wrap;
+                        word-break:break-word;">
+                        ${escapeHtml(data.return_reason)}
+                    </div>
+                </div>
+            `;
+        }
 
+        let historyHtml = "";
+        if (data.history?.length) {
+            historyHtml = data.history.map(item => `
+                <div style="
+                    display:grid;
+                    grid-template-columns:130px 1fr;
+                    gap:0;
+                    border:1px solid #dbe6f2;
+                    border-left:4px solid #3b82f6;
+                    background:#ffffff;
+                    margin-bottom:8px;">
+                    <div style="
+                        padding:8px 10px;
+                        background:#f1f6fb;
+                        border-right:1px solid #dbe6f2;
+                        font-size:11px;
+                        color:#475569;
+                        line-height:1.45;">
+                        <div style="font-weight:800; color:#1e293b;">
+                            ${escapeHtml(item.created_at || "—")}
+                        </div>
+                        <div style="margin-top:4px;">
+                            ${escapeHtml(item.actor || "—")}
+                        </div>
+                    </div>
+                    <div style="padding:8px 10px;">
                         <div style="
                             font-size:13px;
-                            font-weight:700;
-                            color:#1e293b;">
-                            ${item.action}
+                            font-weight:800;
+                            color:#0f172a;">
+                            ${escapeHtml(item.action || "—")}
                         </div>
-
-                        <div style="
-                            font-size:12px;
-                            color:#64748b;">
-                            ${item.actor || '-'}
-                            •
-                            ${item.created_at}
-                        </div>
-
                         ${
                             item.comment
                             ? `<div style="
-                                margin-top:4px;
+                                margin-top:5px;
                                 font-size:12px;
-                                color:#334155;">
-                                ${item.comment}
+                                line-height:1.5;
+                                color:#334155;
+                                white-space:pre-wrap;
+                                word-break:break-word;">
+                                ${escapeHtml(item.comment)}
                                </div>`
-                            : ''
+                            : `<div style="margin-top:5px; font-size:12px; color:#94a3b8;">No comment.</div>`
                         }
-
                     </div>
-                `).join("");
-
+                </div>
+            `).join("");
         } else {
-
-            historyHtml =
-                `<p>No history found.</p>`;
+            historyHtml = `
+                <div style="
+                    border:1px solid #dbe6f2;
+                    background:#f8fafc;
+                    padding:10px;
+                    font-size:13px;
+                    color:#64748b;">
+                    No history found.
+                </div>
+            `;
         }
 
-        document.getElementById(
-            "appDetailBody"
-        ).innerHTML = `
-            <div style="margin-bottom:20px;">
-                <div>
-                    <b>Application No:</b>
-                    ${data.f_no}
-                </div>
-
-                <div>
-                    <b>Applicant:</b>
-                    ${data.a_name}
-                </div>
-
-                <div>
-                    <b>Department:</b>
-                    ${data.department}
-                </div>
-
-                <div>
-                    <b>Status:</b>
-                    ${data.status}
-                </div>
+        body.innerHTML = `
+            <div style="
+                display:grid;
+                grid-template-columns:repeat(4, minmax(0, 1fr));
+                gap:8px;
+                margin-bottom:10px;">
+                ${renderAppDetailField("Application No.", data.f_no)}
+                ${renderAppDetailField("Applicant", data.a_name)}
+                ${renderAppDetailField("Department", data.department)}
+                ${renderAppDetailField("Status", data.status)}
+                ${renderAppDetailField("Type", appType)}
+                ${renderAppDetailField("Service / System", serviceName)}
+                ${renderAppDetailField("Created At", createdAt)}
+                ${renderAppDetailField("Attachment", attachmentHtml, { rawHtml: true })}
             </div>
 
-            <hr style="margin:16px 0;">
+            ${reasonHtml}
 
-            <h4 style="
-                font-size:16px;
-                font-weight:700;
-                margin-bottom:14px;">
-                Timeline
-            </h4>
+            ${renderAppTextBlock("Description", data.description)}
 
-            ${historyHtml}
+            <div style="
+                margin-top:16px;
+                padding-top:12px;
+                border-top:1px solid #dbe6f2;">
+                <div style="
+                    display:flex;
+                    align-items:center;
+                    justify-content:space-between;
+                    margin-bottom:10px;">
+                    <h4 style="
+                        font-size:14px;
+                        font-weight:800;
+                        color:#0c1a2e;
+                        margin:0;">
+                        Approval Timeline
+                    </h4>
+                    <span style="
+                        font-size:11px;
+                        color:#64748b;
+                        background:#f1f5f9;
+                        border:1px solid #e2e8f0;
+                        padding:3px 8px;">
+                        ${data.history?.length || 0} record(s)
+                    </span>
+                </div>
+                ${historyHtml}
+            </div>
         `;
 
     } catch (err) {
-
-        document.getElementById(
-            "appDetailBody"
-        ).innerHTML =
-            "Failed to load history.";
+        body.innerHTML = `
+            <div style="
+                margin:12px 0;
+                padding:10px 12px;
+                border:1px solid #fecaca;
+                background:#fef2f2;
+                color:#dc2626;
+                font-size:13px;">
+                Failed to load history.
+            </div>
+        `;
     }
 }
 
 function closeAppDetail() {
-
-    document.getElementById(
-        "appDetailModal"
-    ).style.display = "none";
+    document.getElementById("appDetailModal").style.display = "none";
 }
+
 
 async function doAction(action, appId, btn) {
     const url = `/office-portal/${action}-application/${appId}/`;
@@ -595,47 +765,77 @@ async function submitReturn() {
      Application History Modal
      Purpose:
      - Show application detail and approval timeline
+     - Compact product-style detail layout
      ======================================================= -->
 <div id="appDetailModal"
      style="display:none;
             position:fixed;
             inset:0;
-            background:rgba(0,0,0,.45);
+            background:rgba(15,23,42,.48);
             z-index:9999;">
 
-    <div style="height:100%;
+    <div onclick="closeAppDetail()"
+         style="position:absolute; inset:0;"></div>
+
+    <div style="
+        min-height:100%;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        padding:18px;
+        box-sizing:border-box;
+        position:relative;">
+
+        <div style="
+            background:white;
+            width:780px;
+            max-width:calc(100vw - 36px);
+            max-height:82vh;
+            overflow:auto;
+            border-radius:0;
+            border:1px solid #cbd5e1;
+            box-shadow:0 18px 42px rgba(15,23,42,.28);">
+
+            <div style="
                 display:flex;
-                justify-content:center;
-                align-items:center;">
+                justify-content:space-between;
+                align-items:center;
+                padding:12px 16px;
+                border-bottom:1px solid #dbe6f2;
+                background:#f1f6fb;">
 
-        <div style="background:white;
-                    width:700px;
-                    max-height:80vh;
-                    overflow:auto;
-                    border-radius:14px;
-                    padding:20px;
-                    box-shadow:0 15px 40px rgba(0,0,0,.25);">
-
-            <div style="display:flex;
-                        justify-content:space-between;
-                        align-items:center;
-                        margin-bottom:16px;">
-
-                <h3 style="font-size:20px;
-                           font-weight:700;">
-                    📜 Application History
-                </h3>
+                <div>
+                    <h3 style="
+                        font-size:16px;
+                        line-height:1.3;
+                        font-weight:800;
+                        color:#0c1a2e;
+                        margin:0;">
+                        📜 Application Details
+                    </h3>
+                    <div style="
+                        margin-top:2px;
+                        font-size:11px;
+                        color:#64748b;">
+                        Request information and approval timeline
+                    </div>
+                </div>
 
                 <button onclick="closeAppDetail()"
-                        style="border:none;
-                               background:none;
-                               font-size:24px;
-                               cursor:pointer;">
+                        style="
+                            width:30px;
+                            height:30px;
+                            border:1px solid #cbd5e1;
+                            background:#ffffff;
+                            color:#475569;
+                            font-size:21px;
+                            line-height:1;
+                            cursor:pointer;">
                     &times;
                 </button>
             </div>
 
-            <div id="appDetailBody">
+            <div id="appDetailBody" style="padding:14px 16px 16px;">
                 Loading...
             </div>
 

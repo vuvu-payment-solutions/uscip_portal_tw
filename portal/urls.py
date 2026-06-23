@@ -19,6 +19,7 @@ urlpatterns = [
     # ── 帳號申請及審核 ─────────────────────────────
     path("register/",                              views.portal_register,        name="portal_register"),
     path("accounts/",                              views.account_list,           name="portal_account_list"),
+    path("api/account/<int:req_id>/",              views.account_detail_api,   name="account_detail_api"),
     path("resubmit-account/<str:token>/", views.resubmit_account, name="portal_resubmit_account"),
     path("approve-account/<int:req_id>/",          views.approve_account,        name="portal_approve_account"),
     path("review-account/<int:req_id>/",           views.review_account,         name="portal_review_account"),

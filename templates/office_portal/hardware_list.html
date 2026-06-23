@@ -5,6 +5,83 @@
 
 {% block content %}
 
+<style>
+    .op-data-card {
+        background: #ffffff;
+        border: 1px solid #d7e3ef;
+        border-radius: 0;
+        overflow: hidden;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.045);
+    }
+
+    .op-data-table {
+        width: 100%;
+        border-collapse: collapse;
+        border-spacing: 0;
+        font-size: 13px;
+    }
+
+    .op-data-table thead th {
+        background: #eaf1f8;
+        color: #24364f;
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.045em;
+        padding: 11px 12px;
+        border-bottom: 1px solid #cfddeb;
+        border-right: 1px solid #dbe6f2;
+        text-align: left;
+    }
+
+    .op-data-table thead th:last-child {
+        border-right: none;
+    }
+
+    .op-data-table tbody tr:nth-child(odd) {
+        background: #ffffff;
+    }
+
+    .op-data-table tbody tr:nth-child(even) {
+        background: #f3f8fd;
+    }
+
+    .op-data-table tbody tr:hover {
+        background: #e8f3ff;
+    }
+
+    .op-data-table tbody td {
+        color: #0f172a;
+        padding: 11px 12px;
+        vertical-align: middle;
+        border-bottom: 1px solid #dbe6f2;
+        border-right: 1px solid #e2eaf3;
+    }
+
+    .op-data-table tbody td:last-child {
+        border-right: none;
+    }
+
+    .op-data-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .op-data-table tbody td:nth-child(7),
+    .op-data-table tbody td:nth-child(8) {
+        background: rgba(239, 246, 255, 0.45);
+    }
+
+    .op-data-table tbody tr:nth-child(even) td:nth-child(7),
+    .op-data-table tbody tr:nth-child(even) td:nth-child(8) {
+        background: rgba(226, 239, 252, 0.65);
+    }
+
+    .op-data-table tbody tr:hover td:nth-child(7),
+    .op-data-table tbody tr:hover td:nth-child(8) {
+        background: rgba(219, 234, 254, 0.9);
+    }
+</style>
+
 <div class="flex justify-between items-center mb-6">
     <h1 class="text-2xl font-bold text-[#0c1a2e]">🖥 Hardware Applications</h1>
     <a href="/office-portal/hardware/apply/" class="px-4 py-2 bg-[#1a2d4a] text-white rounded-lg">
@@ -44,8 +121,8 @@
 
 </form>
 
-<div class="bg-white rounded-xl border border-gray-200 overflow-x-auto">
-    <table class="w-full text-sm">
+<div class="op-data-card overflow-x-auto">
+    <table class="op-data-table">
         <thead class="bg-gray-50">
             <tr>
                 <th class="px-4 py-3 text-left">Device Type</th>
@@ -55,12 +132,12 @@
                 <th class="px-4 py-3 text-left">Description</th>
                 <th class="px-4 py-3 text-center">Attachment</th>
                 <th class="px-4 py-3 text-center">Status</th>
-                <th class="px-4 py-3 text-center min-w-[320px]">Actions</th>
+                <th class="px-4 py-3 text-center" style="min-width:360px; width:360px;">Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for item in items %}
-            <tr class="hover:bg-gray-50 transition-colors">
+            <tr>
                 <td class="px-4 py-3">{{ item.device_type }}</td>
                 <td class="px-4 py-3">{{ item.device_name|default:"-" }}</td>
                 <td class="px-4 py-3">{{ item.quantity }}</td>
@@ -121,125 +198,123 @@
                     {% endif %}
 
                 </td>
-                <td class="px-4 py-3 text-center" style="min-width:260px;">
+                <td class="px-4 py-3 text-center" style="min-width:360px; width:360px; white-space:nowrap;">
+                    <div style="display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:nowrap;">
 
-                    <button onclick="openHWDetailModal({{ item.id }})"
-                            style="padding:4px 10px; font-size:12px; color:white; background:#374151; border:none; border-radius:6px; margin-bottom:6px;">
-                        View Detail
-                    </button>
-                    
-                    {% if item.status == 'Pending Team Leader' and role == 'team_leader' %}
-                    <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+                        <button onclick="openHWDetailModal({{ item.id }})"
+                                style="padding:6px 10px;
+                                    min-width:92px;
+                                    white-space:nowrap;
+                                    font-size:12px;
+                                    font-weight:600;
+                                    color:#fff;
+                                    background:#475569;
+                                    border:none;
+                                    border-radius:6px;
+                                    cursor:pointer;">
+                            View Details
+                        </button>
 
-                        <div style="display:flex; gap:6px;">
+                        {% if item.status == 'Pending Team Leader' and role == 'team_leader' %}
+
                             <button onclick="doHW('approve', {{ item.id }})"
-                                    style="padding:4px 10px; font-size:12px; color:white; background:#2563eb; border:none; border-radius:6px;">
+                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#059669; border:none; border-radius:6px; cursor:pointer;">
                                 Forward
                             </button>
+
                             <button onclick="doHW('preview', {{ item.id }})"
-                                    style="padding:4px 10px; font-size:12px; color:white; background:#f59e0b; border:none; border-radius:6px;">
+                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#475569; border:none; border-radius:6px; cursor:pointer;">
                                 Review
                             </button>
-                        </div>
 
-                        <div style="display:flex; gap:6px;">
                             <button onclick="openHWReturnModal({{ item.id }})"
-                                    style="padding:4px 10px; font-size:12px; color:white;
-                                        background:#ea580c; border:none; border-radius:6px;">
+                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#ea580c; border:none; border-radius:6px; cursor:pointer;">
                                 Return
                             </button>
-                        </div>
 
-                    </div>
+                        {% elif item.status == 'Pending Supervisor' and role == 'supervisor' %}
 
-                    {% elif item.status == 'Pending Supervisor' and role == 'supervisor' %}
-                    <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
-
-                        <div style="display:flex; gap:6px;">
                             <button onclick="doHW('approve', {{ item.id }})"
-                                    style="padding:4px 10px; font-size:12px; color:white; background:#059669; border:none; border-radius:6px;">
+                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#059669; border:none; border-radius:6px; cursor:pointer;">
                                 Approve
                             </button>
+
                             <button onclick="doHW('preview', {{ item.id }})"
-                                    style="padding:4px 10px; font-size:12px; color:white; background:#f59e0b; border:none; border-radius:6px;">
+                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#475569; border:none; border-radius:6px; cursor:pointer;">
                                 Review
                             </button>
-                        </div>
 
-                        <div style="display:flex; gap:6px;">
                             <button onclick="openHWReturnModal({{ item.id }})"
-                                    style="padding:4px 10px; font-size:12px; color:white;
-                                        background:#ea580c; border:none; border-radius:6px;">
+                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#ea580c; border:none; border-radius:6px; cursor:pointer;">
                                 Return
                             </button>
+
                             <button onclick="openHWRejectModal({{ item.id }})"
-                                    style="padding:4px 10px; font-size:12px; color:white; background:#dc2626; border:none; border-radius:6px;">
+                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#dc2626; border:none; border-radius:6px; cursor:pointer;">
                                 Reject
                             </button>
-                        </div>
 
-                    </div>
+                        {% elif item.status == 'Pending Hardware Supervisor' and role == 'hardware_supervisor' %}
 
-                    {% elif item.status == 'Pending Hardware Supervisor' and role == 'hardware_supervisor' %}
-                    <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
-
-                        <div style="display:flex; gap:6px;">
                             <button onclick="doHW('approve', {{ item.id }})"
-                                    style="padding:4px 10px; font-size:12px; color:white; background:#059669; border:none; border-radius:6px;">
+                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#059669; border:none; border-radius:6px; cursor:pointer;">
                                 Approve
                             </button>
+
                             <button onclick="doHW('preview', {{ item.id }})"
-                                    style="padding:4px 10px; font-size:12px; color:white; background:#f59e0b; border:none; border-radius:6px;">
+                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#475569; border:none; border-radius:6px; cursor:pointer;">
                                 Review
                             </button>
-                        </div>
 
-                        <div style="display:flex; gap:6px;">
                             <button onclick="openHWReturnModal({{ item.id }})"
-                                    style="padding:4px 10px; font-size:12px; color:white;
-                                        background:#ea580c; border:none; border-radius:6px;">
+                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#ea580c; border:none; border-radius:6px; cursor:pointer;">
                                 Return
                             </button>
+
                             <button onclick="openHWRejectModal({{ item.id }})"
-                                    style="padding:4px 10px; font-size:12px; color:white; background:#dc2626; border:none; border-radius:6px;">
+                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#dc2626; border:none; border-radius:6px; cursor:pointer;">
                                 Reject
                             </button>
-                        </div>
+
+                        {% elif item.status == 'Work-in-progress' and role == 'hardware_supervisor' %}
+
+                            <button onclick="doHW('complete', {{ item.id }})"
+                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#047857; border:none; border-radius:6px; cursor:pointer;">
+                                Complete
+                            </button>
+
+                        {% elif item.status == 'Under-preview' and role == 'team_leader' %}
+
+                            <button onclick="doHW('resume', {{ item.id }})"
+                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#3b82f6; border:none; border-radius:6px; cursor:pointer;">
+                                Resume
+                            </button>
+
+                        {% elif item.status == 'Under-preview' and role == 'supervisor' %}
+
+                            <button onclick="doHW('resume', {{ item.id }})"
+                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#3b82f6; border:none; border-radius:6px; cursor:pointer;">
+                                Resume
+                            </button>
+
+                        {% elif item.status == 'Under-preview' and role == 'hardware_supervisor' %}
+
+                            <button onclick="doHW('resume', {{ item.id }})"
+                                    style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#3b82f6; border:none; border-radius:6px; cursor:pointer;">
+                                Resume
+                            </button>
+
+                        {% elif item.status == 'Returned' and item.applicant == request.user %}
+
+                            <a href="{% url 'resubmit_hardware' item.id %}"
+                            style="padding:6px 10px; min-width:72px; white-space:nowrap; font-size:12px; font-weight:600; color:white; background:#ea580c; border:none; border-radius:6px; display:inline-block; text-decoration:none;">
+                                Resubmit
+                            </a>
+
+                        {% endif %}
 
                     </div>
-
-                    {% elif item.status == 'Work-in-progress' and role == 'hardware_supervisor' %}
-                        <button onclick="doHW('complete', {{ item.id }})"
-                                style="padding:4px 10px; font-size:12px; color:white; background:#047857; border:none; border-radius:6px;">
-                            Complete
-                        </button>
-
-                    {% elif item.status == 'Under-preview' and role == 'team_leader' %}
-                        <button onclick="doHW('resume', {{ item.id }})" style="padding:4px 10px; font-size:12px; color:white; background:#3b82f6; border:none; border-radius:6px;">
-                            Resume
-                        </button>
-
-                    {% elif item.status == 'Under-preview' and role == 'supervisor' %}
-                        <button onclick="doHW('resume', {{ item.id }})" style="padding:4px 10px; font-size:12px; color:white; background:#3b82f6; border:none; border-radius:6px;">
-                            Resume
-                        </button>
-
-                    {% elif item.status == 'Under-preview' and role == 'hardware_supervisor' %}
-                        <button onclick="doHW('resume', {{ item.id }})" style="padding:4px 10px; font-size:12px; color:white; background:#3b82f6; border:none; border-radius:6px;">
-                            Resume
-                        </button>
-
-                    {% elif item.status == 'Returned' and item.applicant == request.user %}
-                        <a href="{% url 'resubmit_hardware' item.id %}"
-                        style="padding:4px 10px; font-size:12px; color:white; background:#ea580c; border:none; border-radius:6px; display:inline-block; text-decoration:none;">
-                            Resubmit
-                        </a>
-                        
-                    {% else %}
-                        <span class="text-gray-300">—</span>
-                    {% endif %}
-
-                </td>                
+                </td>           
             </tr>
             {% empty %}
             <tr>
@@ -295,23 +370,81 @@
         </div>
     </div>
 </div>
-<div id="hwDetailModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999;">
-    <div style="height:100%; display:flex; align-items:center; justify-content:center; padding:24px;">
-        <div style="background:white; width:900px; max-width:95vw; max-height:90vh; overflow:auto; border-radius:12px; padding:20px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                <h3 style="font-size:18px; font-weight:700;">🖥 Hardware Request Detail</h3>
+<div id="hwDetailModal"
+     style="display:none;
+            position:fixed;
+            inset:0;
+            background:rgba(15,23,42,.48);
+            z-index:9999;">
+
+    <div onclick="closeHWDetailModal()"
+         style="position:absolute; inset:0;"></div>
+
+    <div style="
+        min-height:100%;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        padding:18px;
+        box-sizing:border-box;
+        position:relative;">
+
+        <div style="
+            background:white;
+            width:780px;
+            max-width:calc(100vw - 36px);
+            max-height:82vh;
+            overflow:auto;
+            border-radius:0;
+            border:1px solid #cbd5e1;
+            box-shadow:0 18px 42px rgba(15,23,42,.28);">
+
+            <div style="
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                padding:12px 16px;
+                border-bottom:1px solid #dbe6f2;
+                background:#f1f6fb;">
+
+                <div>
+                    <h3 style="
+                        font-size:16px;
+                        line-height:1.3;
+                        font-weight:800;
+                        color:#0c1a2e;
+                        margin:0;">
+                        📜 Hardware Details
+                    </h3>
+                    <div style="
+                        margin-top:2px;
+                        font-size:11px;
+                        color:#64748b;">
+                        Request information and approval timeline
+                    </div>
+                </div>
+
                 <button onclick="closeHWDetailModal()"
-                        style="padding:6px 12px; border:none; border-radius:6px; background:#e5e7eb;">
-                    Close
+                        style="
+                            width:30px;
+                            height:30px;
+                            border:1px solid #cbd5e1;
+                            background:#ffffff;
+                            color:#475569;
+                            font-size:21px;
+                            line-height:1;
+                            cursor:pointer;">
+                    &times;
                 </button>
             </div>
 
-            <div id="hwDetailContent" style="font-size:13px; color:#111827;">
+            <div id="hwDetailContent" style="padding:14px 16px 16px;">
                 Loading...
             </div>
         </div>
     </div>
 </div>
+
 <script>
 
 function getCookie(name) {
@@ -333,121 +466,256 @@ function closeHWDetailModal() {
     document.getElementById("hwDetailModal").style.display = "none";
 }
 
+function renderHWDetailField(label, value, options = {}) {
+    const displayValue = value === null || value === undefined || value === "" ? "—" : value;
+    const content = options.rawHtml ? displayValue : escapeHtml(displayValue);
+
+    return `
+        <div style="
+            border:1px solid #dbe6f2;
+            background:#ffffff;
+            padding:8px 10px;
+            min-height:52px;
+            box-sizing:border-box;">
+            <div style="
+                font-size:10px;
+                line-height:1.2;
+                font-weight:800;
+                color:#64748b;
+                text-transform:uppercase;
+                letter-spacing:.045em;
+                margin-bottom:5px;">
+                ${escapeHtml(label)}
+            </div>
+            <div style="
+                font-size:13px;
+                line-height:1.45;
+                font-weight:650;
+                color:#0f172a;
+                word-break:break-word;">
+                ${content}
+            </div>
+        </div>
+    `;
+}
+
+function renderHWTextBlock(title, value) {
+    return `
+        <div style="margin-top:10px;">
+            <div style="
+                border:1px solid #dbe6f2;
+                background:#f8fbff;
+                padding:8px 10px;">
+                <div style="
+                    font-size:10px;
+                    font-weight:800;
+                    color:#64748b;
+                    text-transform:uppercase;
+                    letter-spacing:.045em;
+                    margin-bottom:5px;">
+                    ${escapeHtml(title)}
+                </div>
+                <div style="
+                    font-size:13px;
+                    line-height:1.55;
+                    color:#1e293b;
+                    white-space:pre-wrap;
+                    word-break:break-word;">
+                    ${escapeHtml(value || "—")}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 async function openHWDetailModal(id) {
     const modal = document.getElementById("hwDetailModal");
     const content = document.getElementById("hwDetailContent");
 
     modal.style.display = "block";
-    content.innerHTML = "Loading...";
-
-    const res = await fetch(`/office-portal/hardware/detail/${id}/`);
-    const data = await res.json();
-
-    if (!res.ok) {
-        content.innerHTML = `<div style="color:#dc2626;">${escapeHtml(data.error || "Failed to load detail.")}</div>`;
-        return;
-    }
-
-    let attachmentHtml = `<span style="color:#9ca3af;">No attachment</span>`;
-    if (data.attachment) {
-        attachmentHtml = `<a href="${data.attachment}" target="_blank" style="color:#2563eb; text-decoration:underline;">View Attachment</a>`;
-    }
-
-    let historyRows = "";
-    if (data.history && data.history.length > 0) {
-        historyRows = data.history.map(h => `
-            <tr>
-                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">${escapeHtml(h.created_at)}</td>
-                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">${escapeHtml(h.actor)}</td>
-                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">${escapeHtml(h.actor_role)}</td>
-                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">${escapeHtml(h.action)}</td>
-                <td style="padding:8px; border-bottom:1px solid #e5e7eb;">${escapeHtml(h.from_status)} → ${escapeHtml(h.to_status)}</td>
-                <td style="padding:8px; border-bottom:1px solid #e5e7eb; white-space:pre-wrap;">${escapeHtml(h.comment || "-")}</td>
-            </tr>
-        `).join("");
-    } else {
-        historyRows = `
-            <tr>
-                <td colspan="6" style="padding:12px; text-align:center; color:#9ca3af;">
-                    No approval history.
-                </td>
-            </tr>
-        `;
-    }
-
-    let reasonHtml = "";
-    if ((data.status === "Returned" || data.status === "Rejected") && data.return_reason) {
-        const isRejected = data.status === "Rejected";
-        reasonHtml = `
-            <div style="margin-top:12px; padding:10px; background:${isRejected ? "#fef2f2" : "#fff7ed"}; border:1px solid ${isRejected ? "#fecaca" : "#fed7aa"}; border-radius:8px;">
-                <div style="font-weight:700; color:${isRejected ? "#dc2626" : "#ea580c"};">
-                    ${isRejected ? "⛔ Reject Reason" : "↩ Return Reason"}
-                </div>
-                <div style="margin-top:6px; white-space:pre-wrap; color:${isRejected ? "#991b1b" : "#9a3412"};">
-                    ${escapeHtml(data.return_reason)}
-                </div>
-            </div>
-        `;
-    }
-
     content.innerHTML = `
-        <div style="display:grid; grid-template-columns:160px 1fr 160px 1fr; gap:10px; margin-bottom:16px;">
-            <div style="font-weight:700;">Applicant</div>
-            <div>${escapeHtml(data.applicant)}</div>
-
-            <div style="font-weight:700;">Status</div>
-            <div>${escapeHtml(data.status)}</div>
-
-            <div style="font-weight:700;">Device Type</div>
-            <div>${escapeHtml(data.device_type)}</div>
-
-            <div style="font-weight:700;">Device Name</div>
-            <div>${escapeHtml(data.device_name || "-")}</div>
-
-            <div style="font-weight:700;">Quantity</div>
-            <div>${escapeHtml(data.quantity)}</div>
-
-            <div style="font-weight:700;">Created At</div>
-            <div>${escapeHtml(data.created_at)}</div>
-
-            <div style="font-weight:700;">Attachment</div>
-            <div>${attachmentHtml}</div>
-        </div>
-
-        <div style="margin-top:12px;">
-            <div style="font-weight:700; margin-bottom:6px;">Purpose</div>
-            <div style="padding:10px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; white-space:pre-wrap;">
-                ${escapeHtml(data.purpose || "-")}
-            </div>
-        </div>
-
-        <div style="margin-top:12px;">
-            <div style="font-weight:700; margin-bottom:6px;">Description</div>
-            <div style="padding:10px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; white-space:pre-wrap;">
-                ${escapeHtml(data.description || "-")}
-            </div>
-        </div>
-
-        ${reasonHtml}
-
-        <div style="margin-top:20px;">
-            <div style="font-weight:700; margin-bottom:8px;">Approval History</div>
-            <table style="width:100%; border-collapse:collapse; font-size:12px;">
-                <thead>
-                    <tr style="background:#f3f4f6;">
-                        <th style="padding:8px; text-align:left;">Time</th>
-                        <th style="padding:8px; text-align:left;">Actor</th>
-                        <th style="padding:8px; text-align:left;">Role</th>
-                        <th style="padding:8px; text-align:left;">Action</th>
-                        <th style="padding:8px; text-align:left;">Status</th>
-                        <th style="padding:8px; text-align:left;">Comment</th>
-                    </tr>
-                </thead>
-                <tbody>${historyRows}</tbody>
-            </table>
+        <div style="padding:18px; color:#64748b; font-size:13px;">
+            Loading...
         </div>
     `;
+
+    try {
+        const res = await fetch(`/office-portal/hardware/detail/${id}/`);
+        const data = await res.json();
+
+        if (!res.ok) {
+            content.innerHTML = `
+                <div style="
+                    margin:12px 0;
+                    padding:10px 12px;
+                    border:1px solid #fecaca;
+                    background:#fef2f2;
+                    color:#dc2626;
+                    font-size:13px;">
+                    ${escapeHtml(data.error || data.detail || "Failed to load detail.")}
+                </div>
+            `;
+            return;
+        }
+
+        const attachmentHtml = data.attachment
+            ? `<a href="${escapeHtml(data.attachment)}" target="_blank" style="color:#2563eb; font-weight:700; text-decoration:underline;">View Attachment</a>`
+            : "—";
+
+        let reasonHtml = "";
+        if ((data.status === "Returned" || data.status === "Rejected") && data.return_reason) {
+            const isRejected = data.status === "Rejected";
+            reasonHtml = `
+                <div style="
+                    margin-top:10px;
+                    border:1px solid ${isRejected ? "#fecaca" : "#fed7aa"};
+                    background:${isRejected ? "#fef2f2" : "#fff7ed"};
+                    padding:9px 10px;">
+                    <div style="
+                        font-size:10px;
+                        font-weight:800;
+                        color:${isRejected ? "#dc2626" : "#ea580c"};
+                        text-transform:uppercase;
+                        letter-spacing:.045em;
+                        margin-bottom:5px;">
+                        ${isRejected ? "Reject Reason" : "Return Reason"}
+                    </div>
+                    <div style="
+                        font-size:13px;
+                        color:${isRejected ? "#991b1b" : "#9a3412"};
+                        white-space:pre-wrap;
+                        word-break:break-word;">
+                        ${escapeHtml(data.return_reason)}
+                    </div>
+                </div>
+            `;
+        }
+
+        let historyHtml = "";
+        if (data.history?.length) {
+            historyHtml = data.history.map(item => `
+                <div style="
+                    display:grid;
+                    grid-template-columns:130px 1fr;
+                    gap:0;
+                    border:1px solid #dbe6f2;
+                    border-left:4px solid #3b82f6;
+                    background:#ffffff;
+                    margin-bottom:8px;">
+                    <div style="
+                        padding:8px 10px;
+                        background:#f1f6fb;
+                        border-right:1px solid #dbe6f2;
+                        font-size:11px;
+                        color:#475569;
+                        line-height:1.45;">
+                        <div style="font-weight:800; color:#1e293b;">
+                            ${escapeHtml(item.created_at || "—")}
+                        </div>
+                        <div style="margin-top:4px;">
+                            ${escapeHtml(item.actor || "—")}
+                        </div>
+                    </div>
+                    <div style="padding:8px 10px;">
+                        <div style="
+                            font-size:13px;
+                            font-weight:800;
+                            color:#0f172a;">
+                            ${escapeHtml(item.action || "—")}
+                        </div>
+                        ${
+                            item.comment
+                            ? `<div style="
+                                margin-top:5px;
+                                font-size:12px;
+                                line-height:1.5;
+                                color:#334155;
+                                white-space:pre-wrap;
+                                word-break:break-word;">
+                                ${escapeHtml(item.comment)}
+                               </div>`
+                            : `<div style="margin-top:5px; font-size:12px; color:#94a3b8;">No comment.</div>`
+                        }
+                    </div>
+                </div>
+            `).join("");
+        } else {
+            historyHtml = `
+                <div style="
+                    border:1px solid #dbe6f2;
+                    background:#f8fafc;
+                    padding:10px;
+                    font-size:13px;
+                    color:#64748b;">
+                    No history found.
+                </div>
+            `;
+        }
+
+        content.innerHTML = `
+            <div style="
+                display:grid;
+                grid-template-columns:repeat(4, minmax(0, 1fr));
+                gap:8px;
+                margin-bottom:10px;">
+                ${renderHWDetailField("Applicant", data.applicant)}
+                ${renderHWDetailField("Department", data.department)}
+                ${renderHWDetailField("Device Type", data.device_type)}
+                ${renderHWDetailField("Device Name", data.device_name)}
+                ${renderHWDetailField("Quantity", data.quantity)}
+                ${renderHWDetailField("Status", data.status)}
+                ${renderHWDetailField("Created At", data.created_at)}
+                ${renderHWDetailField("Attachment", attachmentHtml, { rawHtml: true })}
+            </div>
+
+            ${reasonHtml}
+
+            ${renderHWTextBlock("Purpose", data.purpose)}
+            ${renderHWTextBlock("Description", data.description)}
+
+            <div style="
+                margin-top:16px;
+                padding-top:12px;
+                border-top:1px solid #dbe6f2;">
+                <div style="
+                    display:flex;
+                    align-items:center;
+                    justify-content:space-between;
+                    margin-bottom:10px;">
+                    <h4 style="
+                        font-size:14px;
+                        font-weight:800;
+                        color:#0c1a2e;
+                        margin:0;">
+                        Approval Timeline
+                    </h4>
+                    <span style="
+                        font-size:11px;
+                        color:#64748b;
+                        background:#f1f5f9;
+                        border:1px solid #e2e8f0;
+                        padding:3px 8px;">
+                        ${data.history?.length || 0} record(s)
+                    </span>
+                </div>
+                ${historyHtml}
+            </div>
+        `;
+    } catch (err) {
+        content.innerHTML = `
+            <div style="
+                margin:12px 0;
+                padding:10px 12px;
+                border:1px solid #fecaca;
+                background:#fef2f2;
+                color:#dc2626;
+                font-size:13px;">
+                Failed to load history.
+            </div>
+        `;
+    }
 }
+
 
 async function doHW(action, id) {
     const res = await fetch(`/office-portal/hardware/action/${id}/`, {

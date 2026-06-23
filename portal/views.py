@@ -1977,8 +1977,87 @@ def compliance_dashboard(request):
     return render(request, 'compliance/dashboard.html')
 
 
+
 # ─────────────────────────────────────────────
-# 9. Application Detail API（Modal 用）
+# 9. Account Detail API（Modal 用）
+# ─────────────────────────────────────────────
+
+@login_required
+def account_detail_api(request, req_id):
+    """回傳單筆帳號申請完整資料，供 Account Detail Modal 使用。"""
+    profile = getattr(request.user, "profile", None)
+    role = profile.role if profile else "user"
+
+    req = get_object_or_404(AccountRequest, pk=req_id)
+
+    # 申請人可看自己的；審核角色可看帳號申請明細。
+    if req.username != request.user.username and role not in (
+        "team_leader",
+        "supervisor",
+        "cio",
+        "admin",
+    ):
+        return JsonResponse({"error": "Permission denied"}, status=403)
+
+    history = []
+
+    history.append({
+        "action": "Submit",
+        "actor": req.username or "—",
+        "actor_role": "Applicant",
+        "comment": req.description or "Applicant submitted account request.",
+        "created_at": req.created_at.strftime("%Y/%m/%d %H:%M") if req.created_at else "",
+    })
+
+    if req.status == "Under-preview":
+        history.append({
+            "action": "Under-Preview",
+            "actor": "—",
+            "actor_role": req.preview_by or "",
+            "comment": "This request is currently under review / discussion.",
+            "created_at": req.updated_at.strftime("%Y/%m/%d %H:%M") if req.updated_at else "",
+        })
+
+    if req.return_reason:
+        history.append({
+            "action": "Return",
+            "actor": "—",
+            "actor_role": "",
+            "comment": req.return_reason,
+            "created_at": req.return_date.strftime("%Y/%m/%d %H:%M") if req.return_date else "",
+        })
+
+    if req.comment:
+        history.append({
+            "action": "Comment",
+            "actor": "—",
+            "actor_role": "",
+            "comment": req.comment,
+            "created_at": req.updated_at.strftime("%Y/%m/%d %H:%M") if req.updated_at else "",
+        })
+
+    return JsonResponse({
+        "id": req.id,
+        "request_no": f"ACC-{req.id:04d}",
+        "username": req.username or "",
+        "full_name": req.full_name or "",
+        "email": req.email or "",
+        "department": req.department or "",
+        "requested_role": req.requested_role or "",
+        "description": req.description or "",
+        "attachment": req.attachment.url if req.attachment else None,
+        "status": req.status or "",
+        "return_reason": req.return_reason or "",
+        "return_date": req.return_date.strftime("%Y/%m/%d %H:%M") if req.return_date else "",
+        "comment": req.comment or "",
+        "created_at": req.created_at.strftime("%Y/%m/%d %H:%M") if req.created_at else "",
+        "updated_at": req.updated_at.strftime("%Y/%m/%d %H:%M") if req.updated_at else "",
+        "history": history,
+    })
+
+
+# ─────────────────────────────────────────────
+# 10. Application Detail API（Modal 用）
 # ─────────────────────────────────────────────
 
 from django.http import JsonResponse
@@ -2030,7 +2109,7 @@ def application_detail_api(request, app_id):
     
     
 # ─────────────────────────────────────────────
-# 10. Hardware Detail API（Modal 用）
+# 11. Hardware Detail API（Modal 用）
 # ─────────────────────────────────────────────
 
 @login_required
@@ -2058,7 +2137,7 @@ def hardware_detail_api(request, req_id):
     history_data = []
     for h in histories:
         history_data.append({
-            "action": h.action or "",
+            "action": h.get_action_display(),
             "from_status": h.from_status or "",
             "to_status": h.to_status or "",
             "actor": h.actor.username if h.actor else "—",
@@ -2081,5 +2160,6 @@ def hardware_detail_api(request, req_id):
         "created_at": item.created_at.strftime("%Y/%m/%d %H:%M") if item.created_at else "",
         "updated_at": item.updated_at.strftime("%Y/%m/%d %H:%M") if getattr(item, "updated_at", None) else "",
         "applicant": item.applicant.username if item.applicant else "—",
+        "department": getattr(getattr(item.applicant, "profile", None), "department", "") if item.applicant else "",
         "history": history_data,
     })
