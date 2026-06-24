@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import AccountRequest, Application, Notice, UserProfile
+from .models import AccountRequest, Application, Notice, UserProfile, BYODRequest
 
 
 @admin.register(UserProfile)
@@ -43,3 +43,39 @@ class NoticeAdmin(admin.ModelAdmin):
     list_display  = ("title", "author", "is_active", "created_at")
     list_filter   = ("is_active",)
     search_fields = ("title", "content")
+    
+    
+@admin.register(BYODRequest)
+class BYODRequestAdmin(admin.ModelAdmin):
+    list_display = (
+        "request_no",
+        "applicant",
+        "department",
+        "device_type",
+        "device_name",
+        "storage_capability",
+        "status",
+        "created_at",
+    )
+    list_filter = (
+        "status",
+        "device_type",
+        "storage_capability",
+        "created_at",
+    )
+    search_fields = (
+        "request_no",
+        "applicant__username",
+        "department",
+        "device_name",
+        "brand",
+        "model",
+        "serial_number",
+        "mac_address",
+    )
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+        "approved_at",
+        "retired_at",
+    )

@@ -348,3 +348,156 @@ class PasswordResetToken(models.Model):
 
     def __str__(self):
         return f"Reset for {self.user.username} ({'used' if self.used else 'active'})"
+    
+class BYODRequest(models.Model):
+    DEVICE_TYPE_CHOICES = [
+        ("Laptop", "Laptop / 筆記型電腦"),
+        ("Tablet", "Tablet / 平板"),
+        ("Smartphone", "Smartphone / 手機"),
+        ("External Storage", "External Storage / 外接儲存設備"),
+        ("USB Drive", "USB Drive / 隨身碟"),
+        ("Other", "Other / 其他"),
+    ]
+
+    STORAGE_CAPABILITY_CHOICES = [
+        ("Yes", "Yes / 是"),
+        ("No", "No / 否"),
+        ("Unknown", "Unknown / 未確認"),
+    ]
+
+    STATUS_CHOICES = [
+        ("Draft", "Draft / 草稿"),
+        ("Pending Team Leader", "Pending Team Leader / 待單位主管審核"),
+        ("Pending Supervisor", "Pending Supervisor / 待處級主管審核"),
+        ("Pending CIO", "Pending CIO / 待資訊主管審核"),
+        ("Approved", "Approved / 已核准"),
+        ("Rejected", "Rejected / 已拒絕"),
+        ("Returned", "Returned / 已退回"),
+        ("Retired", "Retired / 已退場"),
+    ]
+
+    request_no = models.CharField(
+        max_length=30,
+        unique=True,
+        blank=True,
+        verbose_name="Request No / 申請編號",
+    )
+
+    applicant = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="byod_requests",
+        verbose_name="Applicant / 申請人",
+    )
+
+    department = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Department / 部門",
+    )
+
+    device_type = models.CharField(
+        max_length=50,
+        choices=DEVICE_TYPE_CHOICES,
+        verbose_name="Device Type / 設備類型",
+    )
+
+    device_name = models.CharField(
+        max_length=100,
+        verbose_name="Device Name / 設備名稱",
+    )
+
+    brand = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Brand / 品牌",
+    )
+
+    model = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Model / 型號",
+    )
+
+    serial_number = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Serial Number / 序號",
+    )
+
+    mac_address = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="MAC Address / MAC 位址",
+    )
+
+    os_type = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="OS Type / 作業系統",
+    )
+
+    storage_capability = models.CharField(
+        max_length=20,
+        choices=STORAGE_CAPABILITY_CHOICES,
+        default="Unknown",
+        verbose_name="Storage Capability / 是否具儲存功能",
+    )
+
+    usage_purpose = models.TextField(
+        verbose_name="Usage Purpose / 使用目的",
+    )
+
+    security_check_note = models.TextField(
+        blank=True,
+        verbose_name="Security Check Note / 資安檢查備註",
+    )
+
+    status = models.CharField(
+        max_length=50,
+        choices=STATUS_CHOICES,
+        default="Pending Team Leader",
+        verbose_name="Status / 狀態",
+    )
+
+    return_reason = models.TextField(
+        blank=True,
+        verbose_name="Return Reason / 退回原因",
+    )
+
+    attachment = models.FileField(
+        upload_to="byod_attachments/",
+        blank=True,
+        null=True,
+        verbose_name="Attachment / 附件",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Created At / 建立時間",
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Updated At / 更新時間",
+    )
+
+    approved_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name="Approved At / 核准時間",
+    )
+
+    retired_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name="Retired At / 退場時間",
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "BYOD Request / 自攜設備申請"
+        verbose_name_plural = "BYOD Requests / 自攜設備申請"
+
+    def __str__(self):
+        return f"{self.request_no or 'BYOD'} - {self.device_name} - {self.applicant.username}"

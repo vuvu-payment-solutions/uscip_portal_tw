@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}BYOD Request{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto mt-8 bg-white shadow rounded-lg p-6">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">BYOD Request</h1>
+            <p class="text-sm text-gray-500 mt-1">
+                Register personal devices that need to access company resources.
+            </p>
+        </div>
+        <a href="{% url 'byod_list' %}"
+           class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+            Back to List
+        </a>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-5">
+        {% csrf_token %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Department</label>
+                <select name="department" required class="mt-1 w-full border rounded px-3 py-2">
+                    <option value="" disabled {% if not request.user.profile.department %}selected{% endif %}>Select department</option>
+                    <option value="IT" {% if request.user.profile.department == "IT" %}selected{% endif %}>IT</option>
+                    <option value="CS" {% if request.user.profile.department == "CS" %}selected{% endif %}>CS</option>
+                    <option value="Marketing" {% if request.user.profile.department == "Marketing" %}selected{% endif %}>Marketing</option>
+                    <option value="Procurement" {% if request.user.profile.department == "Procurement" %}selected{% endif %}>Procurement</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Device Type</label>
+                <select name="device_type" required class="mt-1 w-full border rounded px-3 py-2">
+                    <option value="">Please select</option>
+                    <option value="Laptop">Laptop</option>
+                    <option value="Tablet">Tablet</option>
+                    <option value="Smartphone">Smartphone</option>
+                    <option value="External Storage">External Storage</option>
+                    <option value="USB Drive">USB Drive</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Device Name</label>
+                <input type="text" name="device_name" required
+                       class="mt-1 w-full border rounded px-3 py-2"
+                       placeholder="e.g. Stanford's iPhone / Personal Laptop">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Brand</label>
+                <input type="text" name="brand"
+                       class="mt-1 w-full border rounded px-3 py-2"
+                       placeholder="e.g. Apple, Lenovo, ASUS">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Model</label>
+                <input type="text" name="model"
+                       class="mt-1 w-full border rounded px-3 py-2"
+                       placeholder="e.g. iPhone 15, ThinkPad X1">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Serial Number</label>
+                <input type="text" name="serial_number"
+                       class="mt-1 w-full border rounded px-3 py-2">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">MAC Address</label>
+                <input type="text" name="mac_address"
+                       class="mt-1 w-full border rounded px-3 py-2"
+                       placeholder="e.g. AA:BB:CC:DD:EE:FF">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">OS Type</label>
+                <input type="text" name="os_type"
+                       class="mt-1 w-full border rounded px-3 py-2"
+                       placeholder="e.g. Windows 11, iOS, Android, macOS">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Storage Capability</label>
+                <select name="storage_capability" class="mt-1 w-full border rounded px-3 py-2">
+                    <option value="Unknown">Unknown</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Attachment</label>
+
+                <label class="mt-1 flex items-center gap-3 px-4 py-2.5 border border-gray-300 rounded cursor-pointer hover:border-[#c9a84c] transition-all w-fit">
+                    <span class="px-3 py-1.5 bg-[#1a2d4a] text-white text-xs rounded-md">Choose File</span>
+                    <span id="byod-file-name" class="text-sm text-gray-500">No file chosen</span>
+
+                    <input type="file" name="file" class="hidden" onchange="updateByodFileName(this)">
+                </label>
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Usage Purpose</label>
+            <textarea name="usage_purpose" required rows="4"
+                      class="mt-1 w-full border rounded px-3 py-2"
+                      placeholder="Please describe why this device needs to access company resources."></textarea>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Security Check Note</label>
+            <textarea name="security_check_note" rows="3"
+                      class="mt-1 w-full border rounded px-3 py-2"
+                      placeholder="Optional. Security check notes, antivirus status, encryption status, etc."></textarea>
+        </div>
+
+        <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px;">
+            <a href="{% url 'byod_list' %}"
+            style="padding: 10px 18px; background: #e5e7eb; color: #111827; border-radius: 6px; text-decoration: none;">
+                Cancel
+            </a>
+
+            <button type="submit"
+                    style="padding: 10px 18px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                Submit BYOD Request
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function updateByodFileName(input) {
+    const fileName = input.files.length > 0 ? input.files[0].name : "No file chosen";
+    document.getElementById("byod-file-name").textContent = fileName;
+}
+</script>
+
+{% endblock %}

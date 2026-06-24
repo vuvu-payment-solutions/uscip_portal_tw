@@ -1,0 +1,502 @@
+{% extends "base.html" %}
+
+{% block title %}BYOD Requests — USCIP Office Portal{% endblock %}
+{% block nav_byod %}active{% endblock %}
+
+{% block content %}
+
+<style>
+    .byod-console {
+        --tc-bg-0: #07101f;
+        --tc-bg-1: #0b1628;
+        --tc-card-1: #121f34;
+        --tc-card-2: #0f1a2d;
+        --tc-line: #223550;
+        --tc-line-strong: #315073;
+        --tc-text: #eaf2ff;
+        --tc-muted: #9fb0ca;
+        --tc-dim: #6f819d;
+        --tc-cyan: #35d5ea;
+        --tc-pending: #fbbf24;
+        --tc-return: #fb923c;
+        --tc-reject: #fb7185;
+        --tc-done: #34d399;
+
+        color: var(--tc-text);
+        background:
+            radial-gradient(760px 320px at 82% -12%, rgba(59,130,246,.18), transparent 62%),
+            radial-gradient(560px 280px at 4% 0%, rgba(53,213,234,.10), transparent 58%),
+            linear-gradient(180deg, var(--tc-bg-1), var(--tc-bg-0));
+        border: 1px solid #1e3350;
+        border-radius: 0 0 16px 16px;
+        padding: 24px;
+        min-height: calc(100vh - 155px);
+        box-shadow: 0 18px 45px rgba(15, 23, 42, .18);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .byod-console::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: .42;
+        background-image:
+            linear-gradient(rgba(130,160,210,.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(130,160,210,.06) 1px, transparent 1px);
+        background-size: 42px 42px;
+        mask-image: radial-gradient(900px 520px at 50% 0%, #000 30%, transparent 82%);
+    }
+
+    .byod-console > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    .byod-header {
+        margin: -24px -24px 18px;
+        padding: 24px;
+        background:
+            linear-gradient(180deg, rgba(7,16,31,.99), rgba(7,16,31,.94)),
+            radial-gradient(620px 210px at 82% 0%, rgba(59,130,246,.16), transparent 62%);
+        border-bottom: 1px solid rgba(49,80,115,.72);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 18px;
+        flex-wrap: wrap;
+    }
+
+    .byod-eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 6px;
+        color: var(--tc-cyan);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+    }
+
+    .byod-pulse {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--tc-cyan);
+        box-shadow: 0 0 14px rgba(53,213,234,.9);
+    }
+
+    .byod-title {
+        margin: 0;
+        color: var(--tc-text);
+        font-size: 24px;
+        line-height: 1.15;
+        font-weight: 900;
+        letter-spacing: -.025em;
+    }
+
+    .byod-subtitle {
+        margin-top: 6px;
+        color: var(--tc-muted);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .byod-new-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 0 18px;
+        border-radius: 11px;
+        color: #03140e;
+        background: linear-gradient(180deg, #5eead4, #10b981);
+        box-shadow: 0 12px 24px rgba(16,185,129,.22);
+        font-size: 13px;
+        font-weight: 900;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: transform .12s ease, filter .12s ease;
+    }
+
+    .byod-new-btn:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.08);
+    }
+
+    .byod-search-panel {
+        margin: 0 -24px 16px;
+        padding: 12px 24px 14px;
+        background: linear-gradient(180deg, rgba(7,16,31,.98), rgba(7,16,31,.94));
+        border-bottom: 1px solid rgba(49,80,115,.65);
+    }
+
+    .byod-search-form {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .byod-search-input {
+        width: 100%;
+        min-height: 42px;
+        padding: 0 14px;
+        color: var(--tc-text);
+        background: rgba(15,26,45,.82);
+        border: 1px solid var(--tc-line-strong);
+        border-radius: 11px;
+        outline: none;
+        font-size: 13px;
+    }
+
+    .byod-search-input::placeholder {
+        color: var(--tc-dim);
+    }
+
+    .byod-search-btn {
+        min-height: 42px;
+        padding: 0 16px;
+        border-radius: 11px;
+        border: 1px solid var(--tc-line-strong);
+        font-size: 13px;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .byod-search-btn {
+        color: var(--tc-text);
+        background: linear-gradient(180deg, #1b2940, #14213a);
+    }
+
+    .byod-count {
+        margin-top: 10px;
+        color: var(--tc-dim);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 11px;
+    }
+
+    .byod-count b {
+        color: var(--tc-cyan);
+    }
+
+    .byod-message {
+        margin-bottom: 14px;
+        padding: 10px 12px;
+        border: 1px solid rgba(52,211,153,.35);
+        border-radius: 10px;
+        color: #bbf7d0;
+        background: rgba(16,185,129,.12);
+        font-size: 13px;
+    }
+
+    .byod-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 13px;
+    }
+
+    .byod-card {
+        --byod-led: var(--tc-pending);
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(190px, 1.05fr) minmax(130px, .7fr) minmax(150px, .8fr) minmax(220px, 1.2fr) minmax(160px, .8fr) minmax(210px, 1fr);
+        align-items: center;
+        gap: 14px;
+        padding: 16px 20px 16px 28px;
+        min-height: 96px;
+        border: 1px solid var(--tc-line);
+        border-radius: 14px;
+        background: linear-gradient(180deg, var(--tc-card-1), var(--tc-card-2));
+        box-shadow:
+            0 1px 0 rgba(255,255,255,.045) inset,
+            0 18px 34px -24px rgba(0,0,0,.92);
+    }
+
+    .byod-card::before {
+        content: "";
+        position: absolute;
+        top: 10px;
+        bottom: 10px;
+        left: 0;
+        width: 4px;
+        border-radius: 0 4px 4px 0;
+        background: var(--byod-led);
+        box-shadow: 0 0 12px -1px var(--byod-led), 0 0 24px -6px var(--byod-led);
+    }
+
+    .byod-card[data-status="done"] { --byod-led: var(--tc-done); }
+    .byod-card[data-status="return"] { --byod-led: var(--tc-return); }
+    .byod-card[data-status="reject"] { --byod-led: var(--tc-reject); }
+    .byod-card[data-status="pending"] { --byod-led: var(--tc-pending); }
+
+    .byod-type {
+        display: inline-flex;
+        max-width: 100%;
+        margin-bottom: 7px;
+        padding: 3px 8px;
+        border-radius: 7px;
+        border: 1px solid rgba(53,213,234,.22);
+        background: rgba(53,213,234,.08);
+        color: var(--tc-cyan);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .byod-name {
+        color: var(--tc-text);
+        font-size: 16px;
+        font-weight: 900;
+        line-height: 1.35;
+        word-break: break-word;
+    }
+
+    .byod-subname {
+        margin-top: 3px;
+        color: var(--tc-muted);
+        font-size: 12px;
+        line-height: 1.35;
+        word-break: break-word;
+    }
+
+    .byod-field {
+        min-width: 0;
+    }
+
+    .byod-label {
+        margin-bottom: 5px;
+        color: var(--tc-dim);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+    }
+
+    .byod-value {
+        color: var(--tc-muted);
+        font-size: 13px;
+        line-height: 1.45;
+        word-break: break-word;
+    }
+
+    .byod-value.strong {
+        color: var(--tc-text);
+        font-size: 14px;
+        font-weight: 900;
+    }
+
+    .byod-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 6px 11px;
+        border-radius: 999px;
+        border: 1px solid color-mix(in srgb, var(--byod-led) 36%, transparent);
+        background: color-mix(in srgb, var(--byod-led) 13%, transparent);
+        color: color-mix(in srgb, var(--byod-led) 82%, white 18%);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: .03em;
+        white-space: nowrap;
+    }
+
+    .byod-status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--byod-led);
+        box-shadow: 0 0 8px 0 var(--byod-led);
+    }
+
+    .byod-empty {
+        padding: 28px;
+        color: var(--tc-muted);
+        border: 1px dashed var(--tc-line-strong);
+        border-radius: 14px;
+        text-align: center;
+        background: rgba(15,26,45,.58);
+    }
+
+    .byod-pagination {
+        margin-top: 18px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        color: var(--tc-muted);
+        font-size: 13px;
+    }
+
+    .byod-page-link {
+        padding: 6px 12px;
+        color: var(--tc-text);
+        border: 1px solid var(--tc-line-strong);
+        border-radius: 9px;
+        text-decoration: none;
+        background: rgba(15,26,45,.68);
+    }
+
+    @media (max-width: 1180px) {
+        .byod-card {
+            grid-template-columns: 1fr 1fr;
+            align-items: stretch;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .byod-console {
+            padding: 18px;
+            border-radius: 14px;
+        }
+
+        .byod-header {
+            margin: -18px -18px 16px;
+            padding: 18px;
+            align-items: flex-start;
+        }
+
+        .byod-new-btn {
+            width: 100%;
+        }
+
+        .byod-search-panel {
+            margin: 0 -18px 14px;
+            padding: 10px 18px 12px;
+        }
+
+        .byod-search-form {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .byod-search-btn {
+            width: 100%;
+            text-align: center;
+        }
+
+        .byod-card {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="byod-console">
+    <div class="byod-header">
+        <div>
+            <p class="byod-eyebrow"><span class="byod-pulse"></span>USCIP · BYOD ACCESS</p>
+            <h1 class="byod-title">BYOD Requests</h1>
+            <div class="byod-subtitle">Manage personal devices registered for company resource access.</div>
+        </div>
+
+        <a href="{% url 'byod_apply' %}" class="byod-new-btn">
+            + New BYOD Request
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="byod-message">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="byod-search-panel">
+        <form method="get" class="byod-search-form">
+            <input type="text"
+                   name="search"
+                   value="{{ search }}"
+                   placeholder="Search request no, device, brand, model, serial, MAC, status..."
+                   class="byod-search-input">
+
+            <button type="submit" class="byod-search-btn">
+                Search
+            </button>
+
+        </form>
+
+        <div class="byod-count">
+            Showing <b>{{ items|length }}</b> BYOD request(s)
+        </div>
+    </div>
+
+    <div class="byod-stack">
+        {% for item in items %}
+            <article class="byod-card"
+                     data-status="{% if item.status == 'Request Completed' or item.status == 'Approved' %}done{% elif item.status == 'Rejected' %}reject{% elif item.status == 'Returned' %}return{% else %}pending{% endif %}">
+
+                <div class="byod-field">
+                    <div class="byod-type">▣ {{ item.request_no|default:"BYOD" }}</div>
+                    <div class="byod-name">{{ item.device_name|default:"-" }}</div>
+                    <div class="byod-subname">{{ item.applicant.username }}</div>
+                </div>
+
+                <div class="byod-field">
+                    <div class="byod-label">Department</div>
+                    <div class="byod-value strong">{{ item.department|default:"-" }}</div>
+                </div>
+
+                <div class="byod-field">
+                    <div class="byod-label">Device Type</div>
+                    <div class="byod-value">{{ item.device_type|default:"-" }}</div>
+                </div>
+
+                <div class="byod-field">
+                    <div class="byod-label">Brand / Model</div>
+                    <div class="byod-value strong">{{ item.brand|default:"-" }} / {{ item.model|default:"-" }}</div>
+                </div>
+
+                <div class="byod-field">
+                    <div class="byod-label">Storage</div>
+                    <div class="byod-value">{{ item.storage_capability|default:"-" }}</div>
+                    <div class="byod-label" style="margin-top:8px;">Created</div>
+                    <div class="byod-value">{{ item.created_at|date:"Y/m/d H:i" }}</div>
+                </div>
+
+                <div class="byod-field">
+                    <span class="byod-status">
+                        <span class="byod-status-dot"></span>{{ item.status }}
+                    </span>
+                </div>
+
+            </article>
+        {% empty %}
+            <div class="byod-empty">
+                No BYOD requests found.
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if page_obj.has_other_pages %}
+        <div class="byod-pagination">
+            {% if page_obj.has_previous %}
+                <a class="byod-page-link"
+                   href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}">
+                    Previous
+                </a>
+            {% endif %}
+
+            <span>
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <a class="byod-page-link"
+                   href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}">
+                    Next
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}

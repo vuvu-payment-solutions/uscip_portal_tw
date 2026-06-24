@@ -58,6 +58,7 @@ from .models import (
     ApprovalHistory,
     HardwareRequest, 
     HardwareApprovalHistory,
+    BYODRequest,
 )
 
 from .services.notify import (
@@ -1917,7 +1918,91 @@ def hardware_list(request):
     })
 
 # ─────────────────────────────────────────────
-# 6. 公告管理
+# 6. BYOD 自攜設備申請
+# ─────────────────────────────────────────────
+
+@login_required
+def byod_list(request):
+    profile = getattr(request.user, 'profile', None)
+    role = profile.role if profile else "user"
+
+    search = request.GET.get("search", "").strip()
+
+    if role in ("team_leader", "supervisor", "cio"):
+        items = BYODRequest.objects.all()
+    else:
+        items = BYODRequest.objects.filter(applicant=request.user)
+
+    if search:
+        items = items.filter(
+            Q(request_no__icontains=search) |
+            Q(device_type__icontains=search) |
+            Q(device_name__icontains=search) |
+            Q(brand__icontains=search) |
+            Q(model__icontains=search) |
+            Q(serial_number__icontains=search) |
+            Q(mac_address__icontains=search) |
+            Q(status__icontains=search)
+        )
+
+    paginator = Paginator(
+        items.order_by("-created_at"),
+        20
+    )
+
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "office_portal/byod_list.html", {
+        "items": page_obj,
+        "page_obj": page_obj,
+        "search": search,
+        "role": role,
+    })
+
+
+@login_required
+def submit_byod(request):
+    if request.method == "GET":
+        return render(request, "office_portal/byod_apply.html")
+
+    department = _normalize_department(request.POST.get("department", "").strip())
+
+    if not _is_valid_department(department):
+        messages.error(request, "請選擇有效的部門：IT、CS、Marketing、Procurement。")
+        return redirect("byod_apply")
+
+    if _is_it_department(department):
+        initial_status = "Pending Supervisor"
+    else:
+        initial_status = "Pending Team Leader"
+
+    item = BYODRequest.objects.create(
+        applicant=request.user,
+        department=department,
+        device_type=request.POST.get("device_type", "").strip(),
+        device_name=request.POST.get("device_name", "").strip(),
+        brand=request.POST.get("brand", "").strip(),
+        model=request.POST.get("model", "").strip(),
+        serial_number=request.POST.get("serial_number", "").strip(),
+        mac_address=request.POST.get("mac_address", "").strip(),
+        os_type=request.POST.get("os_type", "").strip(),
+        storage_capability=request.POST.get("storage_capability", "Unknown"),
+        usage_purpose=request.POST.get("usage_purpose", "").strip(),
+        security_check_note=request.POST.get("security_check_note", "").strip(),
+        attachment=request.FILES.get("file"),
+        status=initial_status,
+    )
+
+    if not item.request_no:
+        item.request_no = f"BYOD-{item.id:04d}"
+        item.save(update_fields=["request_no"])
+
+    messages.success(request, "BYOD request submitted successfully.")
+    return redirect("byod_list")
+
+# ─────────────────────────────────────────────
+# 7. 公告管理
 # ─────────────────────────────────────────────
 
 @require_GET
