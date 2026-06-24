@@ -6,6 +6,31 @@
 {% block content %}
 
 <style>
+    /* Page-only shell fix: match Tech Console pages and remove white footer gap. */
+    body {
+        background: #07101f !important;
+    }
+
+    .main-content,
+    main {
+        background: #07101f !important;
+    }
+
+    footer {
+        background: linear-gradient(180deg, #07101f 0%, #050b14 100%) !important;
+        border-top: 1px solid #223550 !important;
+        color: #8fa3c1 !important;
+        box-shadow: 0 -18px 40px rgba(0,0,0,.18);
+    }
+
+    footer * {
+        color: #8fa3c1 !important;
+    }
+
+    footer span {
+        color: #d4af37 !important;
+    }
+
     .byod-console {
         --tc-bg-0: #07101f;
         --tc-bg-1: #0b1628;
@@ -27,11 +52,11 @@
             radial-gradient(760px 320px at 82% -12%, rgba(59,130,246,.18), transparent 62%),
             radial-gradient(560px 280px at 4% 0%, rgba(53,213,234,.10), transparent 58%),
             linear-gradient(180deg, var(--tc-bg-1), var(--tc-bg-0));
-        border: 1px solid #1e3350;
-        border-radius: 0 0 16px 16px;
+        border: none;
+        border-radius: 0;
         padding: 24px;
-        min-height: calc(100vh - 155px);
-        box-shadow: 0 18px 45px rgba(15, 23, 42, .18);
+        min-height: calc(100vh - 128px);
+        box-shadow: none;
         position: relative;
         overflow: hidden;
     }
@@ -57,6 +82,8 @@
     .byod-header {
         margin: -24px -24px 18px;
         padding: 24px;
+        min-height: 128px;
+        box-sizing: border-box;
         background:
             linear-gradient(180deg, rgba(7,16,31,.99), rgba(7,16,31,.94)),
             radial-gradient(620px 210px at 82% 0%, rgba(59,130,246,.16), transparent 62%);
@@ -347,6 +374,23 @@
         background: rgba(15,26,45,.68);
     }
 
+    /* Standardize list page primary/search buttons */
+    .byod-new-btn,
+    .byod-search-btn {
+        min-height: 42px;
+        height: 42px;
+        padding: 0 16px;
+        border-radius: 11px;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .byod-new-btn {
+        padding: 0 18px;
+        font-weight: 900;
+    }
+
     @media (max-width: 1180px) {
         .byod-card {
             grid-template-columns: 1fr 1fr;
@@ -357,14 +401,24 @@
     @media (max-width: 640px) {
         .byod-console {
             padding: 18px;
-            border-radius: 14px;
+            border-radius: 0;
         }
 
         .byod-header {
-            margin: -18px -18px 16px;
-            padding: 18px;
-            align-items: flex-start;
-        }
+        margin: -24px -24px 18px;
+        padding: 24px;
+        min-height: 128px;
+        box-sizing: border-box;
+        background:
+            linear-gradient(180deg, rgba(7,16,31,.99), rgba(7,16,31,.94)),
+            radial-gradient(620px 210px at 82% 0%, rgba(59,130,246,.16), transparent 62%);
+        border-bottom: 1px solid rgba(49,80,115,.72);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 18px;
+        flex-wrap: wrap;
+    }
 
         .byod-new-btn {
             width: 100%;

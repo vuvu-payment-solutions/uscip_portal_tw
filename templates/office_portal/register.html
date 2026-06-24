@@ -19,14 +19,24 @@
 {% csrf_token %}
 
     <!-- Top Header -->
-    <header class="w-full flex items-center gap-3 px-6 py-4 bg-white border-b border-gray-100 shadow-sm relative z-10">
-        <img src="{% static 'images/quilter_logo.png' %}" alt="Quilter" class="w-11 h-11 object-contain" onerror="this.style.display='none'">
-        <div>
-            <div class="font-display font-bold text-lg text-[#0c1a2e] leading-tight">Office Portal</div>
-            <div class="text-[10.5px] font-semibold text-[#a88a2e] tracking-[2.5px] uppercase">Quilter International</div>
+    <header class="w-full bg-white relative z-10">
+        <div class="h-[84.75px] flex items-center gap-3 px-5">
+            <img src="{% static 'images/quilter_logo.png' %}" 
+                alt="Quilter" 
+                class="h-19 w-auto object-contain">
+            <div class="border-l-4 border-[#c9a84c] pl-3">
+                <div class="text-[#0c1a2e] font-bold text-lg tracking-wider uppercase leading-none">
+                    Office Portal
+                </div>
+                <div class="text-[10px] font-semibold text-[#a88a2e] tracking-[2px] uppercase mt-0.5">
+                    Quilter International
+                </div>
+            </div>
         </div>
+        <div class="h-[3px] w-full bg-[#c9a84c]"></div>
     </header>
-    <div class="gold-accent h-[3px]"></div>
+
+    <div class="h-[2px] w-full bg-[#c9a84c] opacity-90"></div>
 
     <main class="flex-1 flex items-center justify-center px-5 py-10">
         <div class="w-full max-w-2xl mx-auto">

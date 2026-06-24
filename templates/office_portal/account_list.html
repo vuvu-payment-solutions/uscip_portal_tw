@@ -68,17 +68,22 @@
 
     .tc-header-panel {
         margin: -24px -24px 18px;
-        padding: 24px 24px 14px;
+        padding: 24px;
+        min-height: 128px;
+        box-sizing: border-box;
         background:
             linear-gradient(180deg, rgba(7,16,31,.99), rgba(7,16,31,.94)),
             radial-gradient(620px 210px at 82% 0%, rgba(59,130,246,.16), transparent 62%);
         border-bottom: 1px solid rgba(49,80,115,.72);
+        display: flex;
+        align-items: center;
     }
 
     .tc-topbar {
+        width: 100%;
         display: flex;
         justify-content: space-between;
-        align-items: flex-end;
+        align-items: center;
         gap: 18px;
         flex-wrap: wrap;
     }
@@ -329,8 +334,6 @@
         justify-content: center;
         min-height: 33px;
         padding: 7px 12px;
-        width: 100%;
-        box-sizing: border-box;
         border: 1px solid var(--tc-line-strong);
         border-radius: 9px;
         color: var(--tc-text);
@@ -430,6 +433,49 @@
         color: #d4af37 !important;
     }
 
+    /* Standardize row action buttons */
+    .tc-actions {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 7px;
+        flex-wrap: wrap;
+    }
+
+    /* Account list action column fix */
+    .tc-account {
+        --tc-grid: minmax(170px, .9fr)
+                minmax(190px, .85fr)
+                minmax(170px, .75fr)
+                minmax(260px, 1.1fr)
+                minmax(430px, 1.25fr);
+    }
+
+    .tc-right {
+        align-items: flex-end;
+    }
+
+    .tc-actions {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 7px;
+        flex-wrap: nowrap;
+        min-width: 410px;
+        max-width: none;
+    }
+
+    .tc-action {
+        width: auto;
+        min-width: 0;
+        min-height: 33px;
+        padding: 7px 12px;
+        border-radius: 9px;
+        font-size: 12px;
+        font-weight: 850;
+        line-height: 1;
+    }
+    
     @media (max-width: 1180px) {
         .tc-card { grid-template-columns: 1fr 1fr; align-items: stretch; }
         .tc-right { grid-column: 1 / -1; align-items: flex-start; padding-top: 10px; border-top: 1px dashed rgba(159,176,202,.20); }
@@ -438,7 +484,18 @@
 
     @media (max-width: 640px) {
         .tc-console { padding: 18px; border-radius: 14px; }
-        .tc-header-panel { margin: -18px -18px 16px; padding: 18px; }
+        .tc-header-panel {
+        margin: -24px -24px 18px;
+        padding: 24px;
+        min-height: 128px;
+        box-sizing: border-box;
+        background:
+            linear-gradient(180deg, rgba(7,16,31,.99), rgba(7,16,31,.94)),
+            radial-gradient(620px 210px at 82% 0%, rgba(59,130,246,.16), transparent 62%);
+        border-bottom: 1px solid rgba(49,80,115,.72);
+        display: flex;
+        align-items: center;
+    }
         .tc-search-sticky { margin: 0 -18px 14px; padding: 10px 18px 12px; }
         .tc-card { grid-template-columns: 1fr; }
         .tc-right { align-items: stretch; }

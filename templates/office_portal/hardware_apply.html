@@ -2,162 +2,594 @@
 
 {% block title %}Hardware Request — USCIP Office Portal{% endblock %}
 {% block nav_hardware %}active{% endblock %}
+
 {% block breadcrumb %}
 <span class="text-gray-400">Home</span>
-<span class="mx-1.5 text-gray-300">/</span>
-<a href="/office-portal/hardware/list/" class="text-gray-400 hover:text-[#c9a84c] transition-colors">Hardware Applications</a>
-<span class="mx-1.5 text-gray-300">/</span>
-<span class="text-gray-700 font-medium">New</span>
+<span class="mx-1.5 text-gray-500">/</span>
+<a href="/office-portal/hardware/list/" class="text-gray-400 hover:text-[#35d5ea] transition-colors">Hardware Applications</a>
+<span class="mx-1.5 text-gray-500">/</span>
+<span class="text-[#eaf2ff] font-medium">{% if resubmit_hw %}Resubmit{% else %}New{% endif %}</span>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto">
 
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-[#0c1a2e]">Hardware Application</h1>
-        <p class="text-sm text-gray-400 mt-1">Fill out the form below to submit a hardware request</p>
-    </div>
+<style>
+    html,
+    body {
+        background: #07101f !important;
+    }
 
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-            <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#1a2d4a] to-[#2a4270] flex items-center justify-center flex-shrink-0">
-                <svg class="w-4.5 h-4.5 text-[#e8d48b]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M4 7h16M6 7v10a2 2 0 002 2h8a2 2 0 002-2V7"/>
-                    <path d="M9 11h6"/>
-                </svg>
-            </div>
-            <div>
-                <h2 class="font-bold text-[#0c1a2e]">Hardware Request Form</h2>
-                <p class="text-xs text-gray-400">Fields marked with * are required</p>
+    body {
+        overflow-x: hidden;
+    }
+
+    footer {
+        background: #07101f !important;
+        border-top: 1px solid rgba(49,80,115,.72) !important;
+        color: #6f819d !important;
+    }
+
+    footer * {
+        color: #6f819d !important;
+    }
+
+    footer span,
+    footer .text-\[\#a88a2e\] {
+        color: #c9a84c !important;
+    }
+
+    .request-console {
+        --rc-bg-0: #07101f;
+        --rc-bg-1: #0b1628;
+        --rc-card: #121f34;
+        --rc-card-2: #0f1a2d;
+        --rc-line: #223550;
+        --rc-line-strong: #315073;
+        --rc-text: #eaf2ff;
+        --rc-muted: #9fb0ca;
+        --rc-dim: #6f819d;
+        --rc-cyan: #35d5ea;
+        --rc-gold: #c9a84c;
+        --rc-warn: #fb923c;
+
+        min-height: calc(100vh - 155px);
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        color: var(--rc-text);
+        background:
+            radial-gradient(760px 320px at 82% -12%, rgba(59,130,246,.18), transparent 62%),
+            radial-gradient(560px 280px at 4% 0%, rgba(53,213,234,.10), transparent 58%),
+            linear-gradient(180deg, var(--rc-bg-1), var(--rc-bg-0));
+        position: relative;
+        overflow-x: hidden;
+        overflow-y: visible;
+    }
+
+    .request-console::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: .42;
+        background-image:
+            linear-gradient(rgba(130,160,210,.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(130,160,210,.06) 1px, transparent 1px);
+        background-size: 42px 42px;
+        mask-image: radial-gradient(900px 520px at 50% 0%, #000 30%, transparent 82%);
+    }
+
+    .request-console > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    .request-header {
+        padding: 26px 28px 24px;
+        background:
+            linear-gradient(180deg, rgba(7,16,31,.99), rgba(7,16,31,.94)),
+            radial-gradient(620px 210px at 82% 0%, rgba(59,130,246,.16), transparent 62%);
+        border-bottom: 1px solid rgba(49,80,115,.72);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        flex-wrap: wrap;
+    }
+
+    .request-eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 7px;
+        color: var(--rc-cyan);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+    }
+
+    .request-pulse {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--rc-cyan);
+        box-shadow: 0 0 14px rgba(53,213,234,.9);
+    }
+
+    .request-title {
+        margin: 0;
+        color: var(--rc-text);
+        font-size: 28px;
+        line-height: 1.12;
+        font-weight: 900;
+        letter-spacing: -.025em;
+    }
+
+    .request-subtitle {
+        margin-top: 7px;
+        color: var(--rc-muted);
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .request-back-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 0 18px;
+        border-radius: 11px;
+        color: var(--rc-text);
+        background: linear-gradient(180deg, #1b2940, #14213a);
+        border: 1px solid var(--rc-line-strong);
+        box-shadow: 0 12px 24px rgba(15,23,42,.22);
+        font-size: 13px;
+        font-weight: 800;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: transform .12s ease, filter .12s ease;
+    }
+
+    .request-back-btn:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.08);
+    }
+
+    .request-body {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        padding: 28px 28px 72px;
+        overflow-x: hidden;
+    }
+
+    .request-shell {
+        width: min(100%, 980px);
+        max-width: 980px;
+        margin: 0 auto;
+        box-sizing: border-box;
+    }
+
+    .request-card {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        border: 1px solid var(--rc-line);
+        border-radius: 16px;
+        background:
+            linear-gradient(180deg, rgba(18,31,52,.96), rgba(15,26,45,.96));
+        box-shadow:
+            0 1px 0 rgba(255,255,255,.045) inset,
+            0 24px 44px -28px rgba(0,0,0,.95);
+        overflow: hidden;
+    }
+
+    .request-card-header {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        padding: 18px 22px;
+        border-bottom: 1px solid rgba(49,80,115,.62);
+        background: linear-gradient(180deg, rgba(20,35,58,.96), rgba(15,26,45,.92));
+    }
+
+    .request-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: linear-gradient(180deg, #1d3354, #162844);
+        border: 1px solid rgba(53,213,234,.25);
+        color: var(--rc-cyan);
+        box-shadow: 0 0 18px rgba(53,213,234,.12);
+    }
+
+    .request-card-title {
+        margin: 0;
+        color: var(--rc-text);
+        font-size: 17px;
+        font-weight: 900;
+    }
+
+    .request-card-note {
+        margin-top: 2px;
+        color: var(--rc-dim);
+        font-size: 12px;
+    }
+
+    .request-form {
+        padding: 22px;
+    }
+
+    .request-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .request-field {
+        min-width: 0;
+    }
+
+    .request-field.full {
+        grid-column: 1 / -1;
+    }
+
+    .request-label {
+        display: block;
+        margin-bottom: 7px;
+        color: #c8d8f4;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+    }
+
+    .request-input,
+    .request-select,
+    .request-textarea {
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 12px;
+        border-radius: 11px;
+        border: 1px solid var(--rc-line-strong);
+        color: var(--rc-text);
+        background: rgba(7,16,31,.72);
+        outline: none;
+        font-size: 14px;
+        line-height: 1.45;
+        transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+
+    .request-textarea {
+        min-height: 104px;
+        resize: vertical;
+    }
+
+    .request-input::placeholder,
+    .request-textarea::placeholder {
+        color: var(--rc-dim);
+    }
+
+    .request-input:focus,
+    .request-select:focus,
+    .request-textarea:focus {
+        border-color: var(--rc-cyan);
+        background: rgba(9,22,39,.92);
+        box-shadow: 0 0 0 3px rgba(53,213,234,.12);
+    }
+
+    .request-file-label {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        min-height: 44px;
+        padding: 8px 12px;
+        border-radius: 11px;
+        border: 1px solid var(--rc-line-strong);
+        background: rgba(7,16,31,.72);
+        cursor: pointer;
+        transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+
+    .request-file-label:hover {
+        border-color: var(--rc-cyan);
+        background: rgba(9,22,39,.92);
+    }
+
+    .request-file-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 7px 12px;
+        border-radius: 8px;
+        color: #06111f;
+        background: linear-gradient(180deg, #67e8f9, #22d3ee);
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .request-file-name {
+        color: var(--rc-muted);
+        font-size: 13px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .request-help {
+        margin-top: 6px;
+        color: var(--rc-dim);
+        font-size: 12px;
+    }
+
+    .request-warning {
+        margin-bottom: 18px;
+        padding: 14px 16px;
+        border: 1px solid rgba(251,146,60,.45);
+        border-radius: 13px;
+        color: #fed7aa;
+        background: rgba(251,146,60,.12);
+    }
+
+    .request-warning-title {
+        color: #fdba74;
+        font-size: 13px;
+        font-weight: 900;
+        margin-bottom: 4px;
+    }
+
+    .request-warning-text {
+        color: #fed7aa;
+        font-size: 13px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+    }
+
+    .request-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(49,80,115,.58);
+    }
+
+    .request-submit {
+        flex: 1;
+        min-height: 46px;
+        border: none;
+        border-radius: 11px;
+        color: #04130e;
+        background: linear-gradient(180deg, #5eead4, #10b981);
+        box-shadow: 0 14px 28px rgba(16,185,129,.20);
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: transform .12s ease, filter .12s ease;
+    }
+
+    .request-submit:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.06);
+    }
+
+    .request-cancel {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 46px;
+        padding: 0 18px;
+        border-radius: 11px;
+        color: var(--rc-muted);
+        background: rgba(15,26,45,.82);
+        border: 1px solid var(--rc-line-strong);
+        font-size: 13px;
+        font-weight: 800;
+        text-decoration: none;
+        transition: transform .12s ease, filter .12s ease;
+    }
+
+    .request-cancel:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.08);
+    }
+
+    @media (max-width: 760px) {
+        .request-console {
+            margin: 0;
+        }
+
+        .request-header {
+            padding: 20px;
+        }
+
+        .request-title {
+            font-size: 24px;
+        }
+
+        .request-body {
+            padding: 18px 18px 72px;
+        }
+
+        .request-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .request-form {
+            padding: 18px;
+        }
+
+        .request-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .request-submit,
+        .request-cancel {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="request-console">
+    <div class="request-header">
+        <div>
+            <p class="request-eyebrow"><span class="request-pulse"></span>USCIP · HARDWARE ACCESS</p>
+            <h1 class="request-title">
+                {% if resubmit_hw %}Resubmit Hardware Request{% else %}Hardware Application{% endif %}
+            </h1>
+            <div class="request-subtitle">
+                Fill out the form below to submit a hardware request.
             </div>
         </div>
 
-        <form method="post"
-            enctype="multipart/form-data"
-            action="{% if resubmit_hw %}{% url 'resubmit_hardware' resubmit_hw.id %}{% else %}{% url 'hardware_apply' %}{% endif %}"
-            class="px-6 py-5">
-            {% csrf_token %}
+        <a href="/office-portal/hardware/list/" class="request-back-btn">
+            Back to List
+        </a>
+    </div>
 
-            {% if resubmit_hw and resubmit_hw.return_reason %}
-            <div class="mb-4 p-3 rounded-lg border border-orange-200 bg-orange-50">
-                <div class="text-xs font-bold text-orange-600 mb-1">
-                    ↩ Return Reason
-                </div>
-                <div class="text-sm text-orange-800">
-                    {{ resubmit_hw.return_reason }}
-                </div>
-            </div>
-            {% endif %}
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Department *</label>
-                    <select name="department" required
-                            class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
-                                focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
-                        <option value="" disabled
-                            {% if not resubmit_hw and not request.user.profile.department %}selected{% endif %}>
-                            Select department
-                        </option>
-
-                        <option value="IT"
-                            {% if resubmit_hw.department == "IT" or request.user.profile.department == "IT" %}selected{% endif %}>
-                            IT
-                        </option>
-
-                        <option value="CS"
-                            {% if resubmit_hw.department == "CS" or request.user.profile.department == "CS" %}selected{% endif %}>
-                            CS
-                        </option>
-
-                        <option value="Marketing"
-                            {% if resubmit_hw.department == "Marketing" or request.user.profile.department == "Marketing" %}selected{% endif %}>
-                            Marketing
-                        </option>
-
-                        <option value="Procurement"
-                            {% if resubmit_hw.department == "Procurement" or request.user.profile.department == "Procurement" %}selected{% endif %}>
-                            Procurement
-                        </option>
-                    </select>
+    <div class="request-body">
+        <div class="request-shell">
+            <div class="request-card">
+                <div class="request-card-header">
+                    <div class="request-icon">
+                        <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M4 7h16M6 7v10a2 2 0 002 2h8a2 2 0 002-2V7"/>
+                            <path d="M9 11h6"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="request-card-title">Hardware Request Form</h2>
+                        <div class="request-card-note">Fields marked with * are required</div>
+                    </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Device Type *</label>
-                    <input name="device_type"
-                        value="{{ resubmit_hw.device_type|default:'' }}"
-                        placeholder="e.g. Laptop, Monitor"
-                        required
-                        class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
-                            focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
-                </div>
+                <form method="post"
+                      enctype="multipart/form-data"
+                      action="{% if resubmit_hw %}{% url 'resubmit_hardware' resubmit_hw.id %}{% else %}{% url 'hardware_apply' %}{% endif %}"
+                      class="request-form">
+                    {% csrf_token %}
+
+                    {% if resubmit_hw and resubmit_hw.return_reason %}
+                    <div class="request-warning">
+                        <div class="request-warning-title">Return Reason</div>
+                        <div class="request-warning-text">{{ resubmit_hw.return_reason }}</div>
+                    </div>
+                    {% endif %}
+
+                    <div class="request-grid">
+                        <div class="request-field">
+                            <label class="request-label">Department *</label>
+                            <select name="department" required class="request-select">
+                                <option value="" disabled
+                                    {% if not resubmit_hw and not request.user.profile.department %}selected{% endif %}>
+                                    Select department
+                                </option>
+                                <option value="IT"
+                                    {% if resubmit_hw.department == "IT" or request.user.profile.department == "IT" %}selected{% endif %}>
+                                    IT
+                                </option>
+                                <option value="CS"
+                                    {% if resubmit_hw.department == "CS" or request.user.profile.department == "CS" %}selected{% endif %}>
+                                    CS
+                                </option>
+                                <option value="Marketing"
+                                    {% if resubmit_hw.department == "Marketing" or request.user.profile.department == "Marketing" %}selected{% endif %}>
+                                    Marketing
+                                </option>
+                                <option value="Procurement"
+                                    {% if resubmit_hw.department == "Procurement" or request.user.profile.department == "Procurement" %}selected{% endif %}>
+                                    Procurement
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="request-field">
+                            <label class="request-label">Device Type *</label>
+                            <input name="device_type"
+                                   value="{{ resubmit_hw.device_type|default:'' }}"
+                                   placeholder="e.g. Laptop, Monitor"
+                                   required
+                                   class="request-input">
+                        </div>
+
+                        <div class="request-field full">
+                            <label class="request-label">Device Name</label>
+                            <input name="device_name"
+                                   value="{{ resubmit_hw.device_name|default:'' }}"
+                                   placeholder="e.g. Dell Latitude 5450"
+                                   class="request-input">
+                        </div>
+
+                        <div class="request-field">
+                            <label class="request-label">Quantity *</label>
+                            <input name="quantity"
+                                   type="number"
+                                   value="{{ resubmit_hw.quantity|default:'1' }}"
+                                   min="1"
+                                   required
+                                   class="request-input">
+                        </div>
+
+                        <div class="request-field full">
+                            <label class="request-label">Purpose *</label>
+                            <textarea name="purpose"
+                                      placeholder="Please explain the purpose and business requirements"
+                                      required
+                                      rows="3"
+                                      class="request-textarea">{{ resubmit_hw.purpose|default:'' }}</textarea>
+                        </div>
+
+                        <div class="request-field full">
+                            <label class="request-label">Description</label>
+                            <textarea name="description"
+                                      placeholder="Additional details, model, specifications, or background information"
+                                      rows="3"
+                                      class="request-textarea">{{ resubmit_hw.description|default:'' }}</textarea>
+                        </div>
+
+                        <div class="request-field full">
+                            <label class="request-label">Attachments (Optional)</label>
+                            <label class="request-file-label">
+                                <span class="request-file-btn">Choose File</span>
+                                <span id="hardware-file-name" class="request-file-name">No file chosen</span>
+                                <input type="file" name="file" class="hidden" onchange="updateHardwareFileName(this)">
+                            </label>
+                            <div class="request-help">Max 100 MB.</div>
+                        </div>
+                    </div>
+
+                    <div class="request-actions">
+                        <button type="submit" class="request-submit">
+                            {% if resubmit_hw %}Resubmit{% else %}Submit{% endif %}
+                        </button>
+                        <a href="/office-portal/hardware/list/" class="request-cancel">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
             </div>
-
-            <div class="mt-4">
-                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Device Name</label>
-                <input name="device_name"
-                    value="{{ resubmit_hw.device_name|default:'' }}"
-                    placeholder="e.g. Dell Latitude 5450"
-                    class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
-                        focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
-            </div>
-
-            <div class="mt-4">
-                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Quantity *</label>
-                    <input name="quantity"
-                        type="number"
-                        value="{{ resubmit_hw.quantity|default:'1' }}"
-                        min="1"
-                        required
-                        class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
-            </div>
-
-            <div class="mt-4">
-                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Purpose *</label>
-                    <textarea name="purpose"
-                            placeholder="Please explain the purpose and business requirements"
-                            required
-                            rows="3"
-                            class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all resize-y focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">{{ resubmit_hw.purpose|default:'' }}</textarea>
-            </div>
-
-            <div class="mt-4">
-                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Description</label>
-                    <textarea name="description"
-                            placeholder="Additional details, model, specifications, or background information"
-                            rows="3"
-                            class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all resize-y focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">{{ resubmit_hw.description|default:'' }}</textarea>
-            </div>
-
-            <div class="mt-4">
-                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Attachments (Optional)</label>
-                <label class="flex items-center gap-3 px-4 py-2.5 border border-gray-200 rounded-lg cursor-pointer hover:border-[#c9a84c] transition-all w-fit">
-                    <span class="px-3 py-1.5 bg-[#1a2d4a] text-white text-xs rounded-md">Choose File</span>
-                    <span id="file-name" class="text-sm text-gray-500">No file chosen</span>
-
-                    <input type="file" name="file" class="hidden" onchange="updateFileName(this)">
-                </label>
-
-                <p class="text-xs text-gray-400 mt-1">Max 100 MB.</p>
-            </div>
-
-            <div class="flex items-center gap-3 mt-6 pt-5 border-t border-gray-100">
-                <button type="submit"
-                        class="flex-1 py-3 text-white text-sm font-bold uppercase tracking-wider bg-gradient-to-r from-[#1a2d4a] to-[#2a4270] rounded-lg shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer">
-                    {% if resubmit_hw %}Resubmit{% else %}Submit{% endif %}
-                </button>
-                <a href="/office-portal/hardware/list/"
-                   class="px-5 py-3 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-center">
-                    Cancel
-                </a>
-            </div>
-        </form>
+        </div>
     </div>
 </div>
+
 <script>
-function updateFileName(input) {
+function updateHardwareFileName(input) {
     const fileName = input.files.length > 0 ? input.files[0].name : "No file chosen";
-    document.getElementById("file-name").textContent = fileName;
+    document.getElementById("hardware-file-name").textContent = fileName;
 }
 </script>
 

@@ -60,11 +60,15 @@
 
     .tc-header-panel {
         margin: -24px -24px 18px;
-        padding: 24px 24px 14px;
+        padding: 24px;
+        min-height: 128px;
+        box-sizing: border-box;
         background:
             linear-gradient(180deg, rgba(7,16,31,.99), rgba(7,16,31,.94)),
             radial-gradient(620px 210px at 82% 0%, rgba(59,130,246,.16), transparent 62%);
         border-bottom: 1px solid rgba(49,80,115,.72);
+        display: flex;
+        align-items: center;
     }
 
     .tc-search-sticky {
@@ -122,12 +126,12 @@
 
 
     .tc-topbar {
+        width: 100%;
         display: flex;
         justify-content: space-between;
-        align-items: flex-end;
+        align-items: center;
         gap: 18px;
         flex-wrap: wrap;
-        margin-bottom: 18px;
     }
 
     .tc-eyebrow {
@@ -161,7 +165,7 @@
     .tc-title {
         margin: 0;
         color: var(--tc-text);
-        font-size: 27px;
+        font-size: 24px;
         line-height: 1.15;
         font-weight: 900;
         letter-spacing: -.025em;
@@ -276,7 +280,7 @@
         align-items: center;
         gap: 14px;
         padding: 16px 20px 16px 28px;
-        min-height: 88px;
+        min-height: 82px;
         border: 1px solid var(--tc-line);
         border-radius: 14px;
         background: linear-gradient(180deg, var(--tc-card-1), var(--tc-card-2));
@@ -341,7 +345,7 @@
 
     .tc-name {
         color: var(--tc-text);
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 900;
         line-height: 1.35;
         word-break: break-word;
@@ -376,7 +380,7 @@
 
     .tc-value.strong {
         color: var(--tc-text);
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 900;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
     }
@@ -560,6 +564,85 @@
     .tc-account { --tc-grid: minmax(160px, 1.1fr) minmax(150px, .9fr) minmax(220px, 1.2fr) minmax(190px, 1.1fr) minmax(250px, 1.25fr); }
     .tc-application { --tc-grid: minmax(150px, 1fr) minmax(120px, .8fr) minmax(120px, .8fr) minmax(150px, 1fr) minmax(140px, .85fr) minmax(290px, 1.35fr); }
 
+    /* Standardize list page primary/search/action buttons */
+    .tc-new-btn,
+    .tc-search-btn,
+    .tc-clear-btn {
+        min-height: 42px;
+        height: 42px;
+        padding: 0 16px;
+        border-radius: 11px;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .tc-new-btn {
+        padding: 0 18px;
+        font-weight: 900;
+    }
+
+    .tc-action {
+        min-height: 33px;
+        padding: 7px 12px;
+        border-radius: 9px;
+        font-size: 12px;
+        font-weight: 850;
+        line-height: 1;
+    }
+
+    /* Match Account Requests compact card/action layout */
+    .tc-application {
+        --tc-grid: minmax(170px, .9fr)
+                minmax(130px, .65fr)
+                minmax(130px, .65fr)
+                minmax(170px, .85fr)
+                minmax(260px, 1.05fr)
+                minmax(430px, 1.25fr);
+    }
+
+    .tc-card {
+        padding: 14px 18px 14px 26px;
+        min-height: 118px;
+    }
+
+    .tc-right {
+        align-items: flex-end;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .tc-actions {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 7px;
+        flex-wrap: nowrap;
+        min-width: 410px;
+        max-width: none;
+    }
+
+    .tc-action {
+        width: auto;
+        min-width: 0;
+        min-height: 33px;
+        padding: 7px 12px;
+        border-radius: 9px;
+        font-size: 12px;
+        font-weight: 850;
+        line-height: 1;
+    }
+
+    .tc-progress {
+        margin-bottom: 2px;
+    }
+
+    .tc-review-btn {
+        color: #f4f1ff;
+        border-color: rgba(167, 139, 250, .72);
+        background: linear-gradient(180deg, #433878, #2f2b5f);
+    }
+
     @media (max-width: 1180px) {
         .tc-card { grid-template-columns: 1fr 1fr; align-items: stretch; }
         .tc-right { grid-column: 1 / -1; align-items: flex-start; padding-top: 10px; border-top: 1px dashed rgba(159,176,202,.20); }
@@ -568,7 +651,18 @@
 
     @media (max-width: 640px) {
         .tc-console { padding: 18px; border-radius: 14px; }
-        .tc-header-panel { margin: -18px -18px 16px; padding: 18px; }
+        .tc-header-panel {
+        margin: -24px -24px 18px;
+        padding: 24px;
+        min-height: 128px;
+        box-sizing: border-box;
+        background:
+            linear-gradient(180deg, rgba(7,16,31,.99), rgba(7,16,31,.94)),
+            radial-gradient(620px 210px at 82% 0%, rgba(59,130,246,.16), transparent 62%);
+        border-bottom: 1px solid rgba(49,80,115,.72);
+        display: flex;
+        align-items: center;
+    }
         .tc-search-sticky { margin: 0 -18px 14px; padding: 10px 18px 12px; }
         .tc-card { grid-template-columns: 1fr; }
         .tc-right { align-items: stretch; }
@@ -664,18 +758,18 @@
 
                     {% if app.status == 'Pending Team Leader' and role == 'team_leader' %}
                         <button type="button" onclick="doAction('approve', {{ app.id }}, this)" class="tc-action tc-go">Approve</button>
-                        <button type="button" onclick="doAction('preview', {{ app.id }}, this)" class="tc-action">Review</button>
+                        <button type="button" onclick="doAction('preview', {{ app.id }}, this)" class="tc-action tc-review-btn">Review</button>
                         <button type="button" onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}')" class="tc-action tc-warn">Return</button>
 
                     {% elif app.status == 'Pending Supervisor' and role == 'supervisor' %}
                         <button type="button" onclick="doAction('approve', {{ app.id }}, this)" class="tc-action tc-go">Approve</button>
-                        <button type="button" onclick="doAction('preview', {{ app.id }}, this)" class="tc-action">Review</button>
+                        <button type="button" onclick="doAction('preview', {{ app.id }}, this)" class="tc-action tc-review-btn">Review</button>
                         <button type="button" onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}')" class="tc-action tc-warn">Return</button>
                         <button type="button" onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}', true)" class="tc-action tc-danger">Reject</button>
 
                     {% elif app.status == 'Pending CIO' and role == 'cio' %}
                         <button type="button" onclick="doAction('approve', {{ app.id }}, this)" class="tc-action tc-go">Approve</button>
-                        <button type="button" onclick="doAction('preview', {{ app.id }}, this)" class="tc-action">Review</button>
+                        <button type="button" onclick="doAction('preview', {{ app.id }}, this)" class="tc-action tc-review-btn">Review</button>
                         <button type="button" onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}')" class="tc-action tc-warn">Return</button>
                         <button type="button" onclick="openReturnModal({{ app.id }}, '{{ app.status }}', '{{ role }}', true)" class="tc-action tc-danger">Reject</button>
 

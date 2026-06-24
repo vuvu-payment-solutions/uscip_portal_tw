@@ -59,21 +59,25 @@
     }
 
     .hw-topbar {
+        width: 100%;
         display: flex;
         justify-content: space-between;
-        align-items: flex-end;
+        align-items: center;
         gap: 18px;
         flex-wrap: wrap;
-        margin-bottom: 18px;
     }
 
     .hw-sticky-panel {
         margin: -24px -24px 18px;
-        padding: 24px 24px 14px;
+        padding: 24px;
+        min-height: 128px;
+        box-sizing: border-box;
         background:
             linear-gradient(180deg, rgba(7,16,31,.99), rgba(7,16,31,.94)),
             radial-gradient(620px 210px at 82% 0%, rgba(59,130,246,.16), transparent 62%);
         border-bottom: 1px solid rgba(49,80,115,.72);
+        display: flex;
+        align-items: center;
     }
 
     .hw-search-sticky {
@@ -113,14 +117,16 @@
         margin: 0;
         color: var(--hw-text);
         font-size: 24px;
-        font-weight: 800;
-        letter-spacing: -.02em;
+        line-height: 1.15;
+        font-weight: 900;
+        letter-spacing: -.025em;
     }
 
     .hw-subtitle {
-        margin-top: 5px;
+        margin-top: 6px;
         color: var(--hw-muted);
         font-size: 13px;
+        line-height: 1.5;
     }
 
     .hw-new-btn {
@@ -536,6 +542,34 @@
     .hw-page-link:hover {
         border-color: var(--hw-accent);
         box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 0 22px -12px rgba(59,130,246,.9);
+    }
+
+    /* Standardize list page primary/search/action buttons */
+    .hw-new-btn,
+    .hw-search-btn,
+    .hw-clear-btn {
+        min-height: 42px;
+        height: 42px;
+        padding: 0 16px;
+        border-radius: 11px;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .hw-new-btn {
+        padding: 0 18px;
+        font-weight: 900;
+    }
+
+    .hw-action {
+        min-height: 33px;
+        height: 33px;
+        padding: 7px 12px;
+        border-radius: 9px;
+        font-size: 12px;
+        font-weight: 850;
+        line-height: 1;
     }
 
     @media (max-width: 1180px) {
