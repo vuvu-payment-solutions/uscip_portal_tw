@@ -282,7 +282,10 @@
         flex-direction: column;
         align-items: flex-end;
         justify-content: center;
-        gap: 10px;
+        gap: 9px;
+        width: 100%;
+        min-width: 0;
+        overflow: hidden;
     }
 
     .tc-status {
@@ -312,11 +315,12 @@
     }
 
     .tc-actions {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 7px;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        justify-content: end;
+        gap: 8px;
+        width: 100%;
+        max-width: 280px;
     }
 
     .tc-action {
@@ -325,6 +329,8 @@
         justify-content: center;
         min-height: 33px;
         padding: 7px 12px;
+        width: 100%;
+        box-sizing: border-box;
         border: 1px solid var(--tc-line-strong);
         border-radius: 9px;
         color: var(--tc-text);
@@ -347,6 +353,18 @@
     .tc-go { color: #03140e; border: none; background: linear-gradient(180deg, #4fe0a8, #059669); }
     .tc-warn { color: #1c0e02; border: none; background: linear-gradient(180deg, #fdba74, #ea580c); }
     .tc-danger { color: #fff; border: none; background: linear-gradient(180deg, #fb7185, #dc2626); }
+
+    .tc-detail {
+        color: #eaf2ff;
+        border-color: rgba(96, 165, 250, .72);
+        background: linear-gradient(180deg, #254a78, #18345a);
+    }
+
+    .tc-review-btn {
+        color: #f4f1ff;
+        border-color: rgba(167, 139, 250, .72);
+        background: linear-gradient(180deg, #433878, #2f2b5f);
+    }
 
     .tc-att-none {
         color: var(--tc-dim);
@@ -372,9 +390,8 @@
     }
 
     .tc-account {
-        --tc-grid: minmax(190px, 1.15fr) minmax(210px, 1.05fr) minmax(150px, .75fr) minmax(260px, 1.35fr) minmax(320px, 1.2fr);
+        --tc-grid: minmax(170px, 1.05fr) minmax(190px, .95fr) minmax(135px, .7fr) minmax(240px, 1.2fr) minmax(300px, .95fr);
     }
-
 
     /* Page-only shell fix: remove white gaps around the Tech Console. */
     body.tc-tech-page {
@@ -484,7 +501,7 @@
             <div class="tc-right">
                 <span class="tc-status"><span class="tc-status-dot"></span>{{ req.status }}</span>
                 <div class="tc-actions">
-                    <button type="button" onclick="showAccountDetail({{ req.id }})" class="tc-action">View Details</button>
+                    <button type="button" onclick="showAccountDetail({{ req.id }})" class="tc-action tc-detail">View Details</button>
 
                     {% if req.status == "Under-preview" %}
                         <button type="button" onclick="acctAction('resume', {{ req.id }}, this)" class="tc-action tc-primary">Resume</button>
@@ -496,7 +513,7 @@
                             <button type="button" onclick="acctAction('approve', {{ req.id }}, this)" class="tc-action tc-go">Approve</button>
                         {% endif %}
 
-                        <button type="button" onclick="acctAction('review', {{ req.id }}, this)" class="tc-action">Review</button>
+                        <button type="button" onclick="acctAction('review', {{ req.id }}, this)" class="tc-action tc-review-btn">Review</button>
                         <button type="button" onclick="openReturnModal('acct', {{ req.id }}, '{{ req.status }}', '{{ role }}')" class="tc-action tc-warn">Return</button>
 
                         {% if role == "supervisor" or role == "cio" %}

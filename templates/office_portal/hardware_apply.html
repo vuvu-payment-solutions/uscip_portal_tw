@@ -51,21 +51,55 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
+                    <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Department *</label>
+                    <select name="department" required
+                            class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                                focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                        <option value="" disabled
+                            {% if not resubmit_hw and not request.user.profile.department %}selected{% endif %}>
+                            Select department
+                        </option>
+
+                        <option value="IT"
+                            {% if resubmit_hw.department == "IT" or request.user.profile.department == "IT" %}selected{% endif %}>
+                            IT
+                        </option>
+
+                        <option value="CS"
+                            {% if resubmit_hw.department == "CS" or request.user.profile.department == "CS" %}selected{% endif %}>
+                            CS
+                        </option>
+
+                        <option value="Marketing"
+                            {% if resubmit_hw.department == "Marketing" or request.user.profile.department == "Marketing" %}selected{% endif %}>
+                            Marketing
+                        </option>
+
+                        <option value="Procurement"
+                            {% if resubmit_hw.department == "Procurement" or request.user.profile.department == "Procurement" %}selected{% endif %}>
+                            Procurement
+                        </option>
+                    </select>
+                </div>
+
+                <div>
                     <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Device Type *</label>
                     <input name="device_type"
                         value="{{ resubmit_hw.device_type|default:'' }}"
                         placeholder="e.g. Laptop, Monitor"
                         required
-                        class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                        class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                            focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
                 </div>
+            </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Device Name</label>
-                    <input name="device_name"
-                        value="{{ resubmit_hw.device_name|default:'' }}"
-                        placeholder="e.g. Dell Latitude 5450"
-                        class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
-                </div>
+            <div class="mt-4">
+                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Device Name</label>
+                <input name="device_name"
+                    value="{{ resubmit_hw.device_name|default:'' }}"
+                    placeholder="e.g. Dell Latitude 5450"
+                    class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                        focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
             </div>
 
             <div class="mt-4">

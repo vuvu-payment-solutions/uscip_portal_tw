@@ -64,11 +64,34 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Department *</label>
-                    <input type="text" name="department"
-                           value="{% if resubmit_app %}{{ resubmit_app.department }}{% endif %}"
-                           placeholder="Your department" required
-                           class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
-                                  focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                    <select name="department" required
+                            class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                                focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                        <option value="" disabled
+                            {% if not resubmit_app and not request.user.profile.department %}selected{% endif %}>
+                            Select department
+                        </option>
+
+                        <option value="IT"
+                            {% if resubmit_app.department == "IT" or request.user.profile.department == "IT" %}selected{% endif %}>
+                            IT
+                        </option>
+
+                        <option value="CS"
+                            {% if resubmit_app.department == "CS" or request.user.profile.department == "CS" %}selected{% endif %}>
+                            CS
+                        </option>
+
+                        <option value="Marketing"
+                            {% if resubmit_app.department == "Marketing" or request.user.profile.department == "Marketing" %}selected{% endif %}>
+                            Marketing
+                        </option>
+
+                        <option value="Procurement"
+                            {% if resubmit_app.department == "Procurement" or request.user.profile.department == "Procurement" %}selected{% endif %}>
+                            Procurement
+                        </option>
+                    </select>
                 </div>
             </div>
 

@@ -29,7 +29,7 @@
     <div class="gold-accent h-[3px]"></div>
 
     <main class="flex-1 flex items-center justify-center px-5 py-10">
-        <div class="w-full max-w-[500px]">
+        <div class="w-full max-w-2xl mx-auto">
 
             <div class="text-center mb-7">
                 <h1 class="font-display font-bold text-2xl text-[#0c1a2e] mb-1">
@@ -60,8 +60,8 @@
             <div class="mb-5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{{ error }}</div>
             {% endif %}
 
-            <div class="card-border p-[2px] rounded-[18px] shadow-lg">
-                <div class="bg-white rounded-2xl px-8 py-8">
+            <div class="card-border p-[2px] rounded-[18px] shadow-lg w-full overflow-hidden">
+                <div class="bg-white rounded-2xl px-4 sm:px-6 py-6 sm:py-8">
 
                     <!-- Username -->
                     <div class="mb-4">
@@ -97,12 +97,35 @@
 
                     <!-- Department -->
                     <div class="mb-4">
-                        <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Department</label>
-                        <input type="text" id="department"
-                               value="{% if resubmit_req %}{{ resubmit_req.department }}{% endif %}"
-                               placeholder="Department"
-                               class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
-                                      focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                        <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Department *</label>
+                        <select id="department" required
+                                class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                                    focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                            <option value="" disabled
+                                {% if not resubmit_req.department %}selected{% endif %}>
+                                Select department
+                            </option>
+
+                            <option value="IT"
+                                {% if resubmit_req.department == "IT" %}selected{% endif %}>
+                                IT
+                            </option>
+
+                            <option value="CS"
+                                {% if resubmit_req.department == "CS" %}selected{% endif %}>
+                                CS
+                            </option>
+
+                            <option value="Marketing"
+                                {% if resubmit_req.department == "Marketing" %}selected{% endif %}>
+                                Marketing
+                            </option>
+
+                            <option value="Procurement"
+                                {% if resubmit_req.department == "Procurement" %}selected{% endif %}>
+                                Procurement
+                            </option>
+                        </select>
                     </div>
 
                     <!-- Role -->
@@ -188,7 +211,7 @@ async function submitRegister() {
     const description    = document.getElementById('description').value.trim();
     const attachmentFile = document.getElementById('attachment').files[0];
 
-    if (!full_name || !email || (!RESUBMIT_TOKEN && !username)) {
+    if (!full_name || !email || !department || (!RESUBMIT_TOKEN && !username)) {
         msg.className = 'mb-4 px-3 py-2 rounded-lg text-sm font-medium bg-red-50 text-red-600 border border-red-200';
         msg.textContent = '請填寫所有必填欄位（*）';
         msg.classList.remove('hidden');
