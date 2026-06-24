@@ -1,138 +1,178 @@
 {% extends "base.html" %}
 
-{% block title %}BYOD Request{% endblock %}
+{% block title %}BYOD Request — USCIP Office Portal{% endblock %}
+{% block nav_byod %}active{% endblock %}
+{% block breadcrumb %}
+<span class="text-gray-400">Home</span>
+<span class="mx-1.5 text-gray-300">/</span>
+<a href="{% url 'byod_list' %}" class="text-gray-400 hover:text-[#c9a84c] transition-colors">BYOD Requests</a>
+<span class="mx-1.5 text-gray-300">/</span>
+<span class="text-gray-700 font-medium">New</span>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto mt-8 bg-white shadow rounded-lg p-6">
-    <div class="flex justify-between items-center mb-6">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-800">BYOD Request</h1>
-            <p class="text-sm text-gray-500 mt-1">
-                Register personal devices that need to access company resources.
-            </p>
-        </div>
-        <a href="{% url 'byod_list' %}"
-           class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
-            Back to List
-        </a>
+<div class="max-w-2xl mx-auto">
+
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-[#0c1a2e]">BYOD Request</h1>
+        <p class="text-sm text-gray-400 mt-1">
+            Register a personal device that needs access to company resources.
+        </p>
     </div>
 
-    <form method="post" enctype="multipart/form-data" class="space-y-5">
-        {% csrf_token %}
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#1a2d4a] to-[#2a4270] flex items-center justify-center flex-shrink-0">
+                <svg class="w-4.5 h-4.5 text-[#e8d48b]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M9 12h6M9 16h6M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"/>
+                </svg>
+            </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700">Department</label>
-                <select name="department" required class="mt-1 w-full border rounded px-3 py-2">
-                    <option value="" disabled {% if not request.user.profile.department %}selected{% endif %}>Select department</option>
-                    <option value="IT" {% if request.user.profile.department == "IT" %}selected{% endif %}>IT</option>
-                    <option value="CS" {% if request.user.profile.department == "CS" %}selected{% endif %}>CS</option>
-                    <option value="Marketing" {% if request.user.profile.department == "Marketing" %}selected{% endif %}>Marketing</option>
-                    <option value="Procurement" {% if request.user.profile.department == "Procurement" %}selected{% endif %}>Procurement</option>
-                </select>
+                <h2 class="font-bold text-[#0c1a2e]">BYOD Request Form</h2>
+                <p class="text-xs text-gray-400">Fields marked with * are required</p>
+            </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="px-6 py-5">
+            {% csrf_token %}
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Department *</label>
+                    <select name="department" required
+                            class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                                   focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                        <option value="" disabled {% if not request.user.profile.department %}selected{% endif %}>
+                            Select department
+                        </option>
+                        <option value="IT" {% if request.user.profile.department == "IT" %}selected{% endif %}>IT</option>
+                        <option value="CS" {% if request.user.profile.department == "CS" %}selected{% endif %}>CS</option>
+                        <option value="Marketing" {% if request.user.profile.department == "Marketing" %}selected{% endif %}>Marketing</option>
+                        <option value="Procurement" {% if request.user.profile.department == "Procurement" %}selected{% endif %}>Procurement</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Device Type *</label>
+                    <select name="device_type" required
+                            class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                                   focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                        <option value="">Please select</option>
+                        <option value="Laptop">Laptop</option>
+                        <option value="Tablet">Tablet</option>
+                        <option value="Smartphone">Smartphone</option>
+                        <option value="External Storage">External Storage</option>
+                        <option value="USB Drive">USB Drive</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Device Type</label>
-                <select name="device_type" required class="mt-1 w-full border rounded px-3 py-2">
-                    <option value="">Please select</option>
-                    <option value="Laptop">Laptop</option>
-                    <option value="Tablet">Tablet</option>
-                    <option value="Smartphone">Smartphone</option>
-                    <option value="External Storage">External Storage</option>
-                    <option value="USB Drive">USB Drive</option>
-                    <option value="Other">Other</option>
-                </select>
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Device Name</label>
+            <div class="mt-4">
+                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Device Name *</label>
                 <input type="text" name="device_name" required
-                       class="mt-1 w-full border rounded px-3 py-2"
-                       placeholder="e.g. Stanford's iPhone / Personal Laptop">
+                       placeholder="e.g. Personal Laptop, iPhone, iPad"
+                       class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                              focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Brand</label>
-                <input type="text" name="brand"
-                       class="mt-1 w-full border rounded px-3 py-2"
-                       placeholder="e.g. Apple, Lenovo, ASUS">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                <div>
+                    <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Brand</label>
+                    <input type="text" name="brand"
+                           placeholder="e.g. Apple, Lenovo, ASUS"
+                           class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                                  focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Model</label>
+                    <input type="text" name="model"
+                           placeholder="e.g. ThinkPad X1, iPhone 15"
+                           class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                                  focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                </div>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Model</label>
-                <input type="text" name="model"
-                       class="mt-1 w-full border rounded px-3 py-2"
-                       placeholder="e.g. iPhone 15, ThinkPad X1">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                <div>
+                    <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Serial Number</label>
+                    <input type="text" name="serial_number"
+                           class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                                  focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">MAC Address</label>
+                    <input type="text" name="mac_address"
+                           placeholder="e.g. AA:BB:CC:DD:EE:FF"
+                           class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                                  focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                </div>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Serial Number</label>
-                <input type="text" name="serial_number"
-                       class="mt-1 w-full border rounded px-3 py-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                <div>
+                    <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">OS Type</label>
+                    <input type="text" name="os_type"
+                           placeholder="e.g. Windows 11, iOS, Android, macOS"
+                           class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                                  focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Storage Capability</label>
+                    <select name="storage_capability"
+                            class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
+                                   focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
+                        <option value="Unknown">Unknown</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </select>
+                </div>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700">MAC Address</label>
-                <input type="text" name="mac_address"
-                       class="mt-1 w-full border rounded px-3 py-2"
-                       placeholder="e.g. AA:BB:CC:DD:EE:FF">
+            <div class="mt-4">
+                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Usage Purpose *</label>
+                <textarea name="usage_purpose" required rows="3"
+                          placeholder="Please describe why this device needs access to company resources."
+                          class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all resize-y
+                                 focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20"></textarea>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700">OS Type</label>
-                <input type="text" name="os_type"
-                       class="mt-1 w-full border rounded px-3 py-2"
-                       placeholder="e.g. Windows 11, iOS, Android, macOS">
+            <div class="mt-4">
+                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Security Check Note</label>
+                <textarea name="security_check_note" rows="3"
+                          placeholder="Optional. Security check notes, antivirus status, encryption status, etc."
+                          class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all resize-y
+                                 focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20"></textarea>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Storage Capability</label>
-                <select name="storage_capability" class="mt-1 w-full border rounded px-3 py-2">
-                    <option value="Unknown">Unknown</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                </select>
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Attachment</label>
-
-                <label class="mt-1 flex items-center gap-3 px-4 py-2.5 border border-gray-300 rounded cursor-pointer hover:border-[#c9a84c] transition-all w-fit">
+            <div class="mt-4">
+                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Attachment (Optional)</label>
+                <label class="flex items-center gap-3 px-4 py-2.5 border border-gray-200 rounded-lg cursor-pointer hover:border-[#c9a84c] transition-all w-fit">
                     <span class="px-3 py-1.5 bg-[#1a2d4a] text-white text-xs rounded-md">Choose File</span>
                     <span id="byod-file-name" class="text-sm text-gray-500">No file chosen</span>
 
                     <input type="file" name="file" class="hidden" onchange="updateByodFileName(this)">
                 </label>
+                <p class="text-xs text-gray-400 mt-1">Max 100 MB.</p>
             </div>
-        </div>
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Usage Purpose</label>
-            <textarea name="usage_purpose" required rows="4"
-                      class="mt-1 w-full border rounded px-3 py-2"
-                      placeholder="Please describe why this device needs to access company resources."></textarea>
-        </div>
-
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Security Check Note</label>
-            <textarea name="security_check_note" rows="3"
-                      class="mt-1 w-full border rounded px-3 py-2"
-                      placeholder="Optional. Security check notes, antivirus status, encryption status, etc."></textarea>
-        </div>
-
-        <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px;">
-            <a href="{% url 'byod_list' %}"
-            style="padding: 10px 18px; background: #e5e7eb; color: #111827; border-radius: 6px; text-decoration: none;">
-                Cancel
-            </a>
-
-            <button type="submit"
-                    style="padding: 10px 18px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                Submit BYOD Request
-            </button>
-        </div>
-    </form>
+            <div class="flex items-center gap-3 mt-6 pt-5 border-t border-gray-100">
+                <button type="submit"
+                        class="flex-1 py-3 text-white text-sm font-bold uppercase tracking-wider
+                               bg-gradient-to-r from-[#1a2d4a] to-[#2a4270] rounded-lg shadow-md
+                               hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer">
+                    Submit
+                </button>
+                <a href="{% url 'byod_list' %}"
+                   class="px-5 py-3 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-center">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script>

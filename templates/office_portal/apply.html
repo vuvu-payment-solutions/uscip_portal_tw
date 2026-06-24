@@ -125,48 +125,26 @@
             </div>
 
             <div class="mt-4">
-                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Service System Name</label>
-                <div class="grid grid-cols-2 gap-3">
-                    <label class="flex items-center gap-2 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:border-[#c9a84c] transition-all">
-                        <input type="checkbox" name="service_system" value="QBox" class="accent-[#1a2d4a]"
-                               {% if resubmit_app and 'QBox' in resubmit_app.service_system %}checked{% endif %}>
-                        <span class="text-sm text-[#1a2d4a]">QBox</span>
-                    </label>
-                    <label class="flex items-center gap-2 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:border-[#c9a84c] transition-all">
-                        <input type="checkbox" name="service_system" value="QCare" class="accent-[#1a2d4a]"
-                               {% if resubmit_app and 'QCare' in resubmit_app.service_system %}checked{% endif %}>
-                        <span class="text-sm text-[#1a2d4a]">QCare</span>
-                    </label>
-                    <label class="flex items-center gap-2 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:border-[#c9a84c] transition-all">
-                        <input type="checkbox" name="service_system" value="QCash" class="accent-[#1a2d4a]"
-                               {% if resubmit_app and 'QCash' in resubmit_app.service_system %}checked{% endif %}>
-                        <span class="text-sm text-[#1a2d4a]">QCash</span>
-                    </label>
-                    <label class="flex items-center gap-2 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:border-[#c9a84c] transition-all">
-                        <input type="checkbox" name="service_system" value="QHelp" class="accent-[#1a2d4a]"
-                               {% if resubmit_app and 'QHelp' in resubmit_app.service_system %}checked{% endif %}>
-                        <span class="text-sm text-[#1a2d4a]">QHelp</span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="mt-4">
                 <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Attachments (Optional)</label>
+
                 {% if resubmit_app and resubmit_app.attachment %}
                 <div class="mb-2 flex items-center gap-2 text-xs text-gray-500">
                     <svg class="w-3.5 h-3.5 text-[#2a4270]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
                     </svg>
-                    Current: <a href="{{ resubmit_app.attachment.url }}" target="_blank" class="text-[#2a4270] underline">View existing attachment</a>
+                    Current:
+                    <a href="{{ resubmit_app.attachment.url }}" target="_blank" class="text-[#2a4270] underline">View existing attachment</a>
                     — upload a new file to replace it
                 </div>
                 {% endif %}
-                <div class="relative">
-                    <input type="file" name="file"
-                           class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
-                                  file:text-xs file:font-semibold file:bg-[#0c1a2e]/5 file:text-[#1a2d4a]
-                                  hover:file:bg-[#c9a84c]/10 file:transition-colors file:cursor-pointer">
-                </div>
+
+                <label class="flex items-center gap-3 px-4 py-2.5 border border-gray-200 rounded-lg cursor-pointer hover:border-[#c9a84c] transition-all w-fit">
+                    <span class="px-3 py-1.5 bg-[#1a2d4a] text-white text-xs rounded-md">Choose File</span>
+                    <span id="application-file-name" class="text-sm text-gray-500">No file chosen</span>
+
+                    <input type="file" name="file" class="hidden" onchange="updateApplicationFileName(this)">
+                </label>
+
                 <p class="text-xs text-gray-400 mt-1">Max 100 MB.</p>
             </div>
 
@@ -204,6 +182,12 @@ function toggleOtherHint() {
     const hint = document.getElementById('otherHint');
     hint.classList.toggle('hidden', sel.value !== 'Other');
 }
+
+function updateApplicationFileName(input) {
+    const fileName = input.files.length > 0 ? input.files[0].name : "No file chosen";
+    document.getElementById("application-file-name").textContent = fileName;
+}
+
 toggleOtherHint();
 </script>
 {% endblock %}

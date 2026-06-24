@@ -1,6 +1,6 @@
 {% load static tailwind_tags %}
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -40,7 +40,7 @@
                 </p>
             </div>
 
-            <!-- Return Reason Banner（僅退件重送時顯示） -->
+            <!-- Return Reason Banner -->
             {% if resubmit_req %}
             <div class="mb-5 px-5 py-4 bg-orange-50 border border-orange-200 rounded-xl">
                 <div class="flex items-start gap-3">
@@ -61,7 +61,22 @@
             {% endif %}
 
             <div class="card-border p-[2px] rounded-[18px] shadow-lg w-full overflow-hidden">
-                <div class="bg-white rounded-2xl px-4 sm:px-6 py-6 sm:py-8">
+                <div class="bg-white rounded-2xl overflow-hidden">
+
+                    <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#1a2d4a] to-[#2a4270] flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4.5 h-4.5 text-[#e8d48b]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M12 12c2.21 0 4-1.79 4-4S14.21 4 12 4 8 5.79 8 8s1.79 4 4 4z"/>
+                                <path d="M4 20c0-4 3.5-7 8-7s8 3 8 7"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-[#0c1a2e]">Account Request Form</h2>
+                            <p class="text-xs text-gray-400">Fields marked with * are required</p>
+                        </div>
+                    </div>
+
+                    <div class="px-4 sm:px-6 py-6 sm:py-8">
 
                     <!-- Username -->
                     <div class="mb-4">
@@ -140,7 +155,7 @@
                         </select>
                     </div>
 
-                    <!-- Description（新增） -->
+                    <!-- Description -->
                     <div class="mb-4">
                         <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Description</label>
                         <textarea id="description" rows="3" placeholder="Purpose of account request, team, or additional information (optional)"
@@ -148,7 +163,7 @@
                                          focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">{% if resubmit_req %}{{ resubmit_req.description }}{% endif %}</textarea>
                     </div>
 
-                    <!-- Attachment（新增） -->
+                    <!-- Attachment -->
                     <div class="mb-5">
                         <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Attachment (Optional)</label>
                         {% if resubmit_req and resubmit_req.attachment %}
@@ -159,10 +174,12 @@
                             Current: <a href="{{ resubmit_req.attachment.url }}" target="_blank" class="text-[#2a4270] underline">View existing attachment</a>
                         </div>
                         {% endif %}
-                        <input type="file" id="attachment"
-                               class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
-                                      file:text-xs file:font-semibold file:bg-[#0c1a2e]/5 file:text-[#1a2d4a]
-                                      hover:file:bg-[#c9a84c]/10 file:transition-colors file:cursor-pointer">
+                        <label class="flex items-center gap-3 px-4 py-2.5 border border-gray-200 rounded-lg cursor-pointer hover:border-[#c9a84c] transition-all w-fit">
+                            <span class="px-3 py-1.5 bg-[#1a2d4a] text-white text-xs rounded-md">Choose File</span>
+                            <span id="account-file-name" class="text-sm text-gray-500">No file chosen</span>
+
+                            <input type="file" id="attachment" class="hidden" onchange="updateAccountFileName(this)">
+                        </label>
                         <p class="text-xs text-gray-400 mt-1">Max 100 MB.</p>
                     </div>
 
@@ -181,8 +198,9 @@
                         <a href="/office-portal/" class="text-[#2a4270] font-semibold hover:text-[#a88a2e] transition-colors">← Back to Login Page</a>
                     </p>
 
-                </div>
-            </div>
+                    </div> <!-- /form content -->
+                </div> <!-- /white card -->
+            </div> <!-- /card border -->
 
             <p class="text-center text-xs text-gray-400 mt-6">
                 &copy; 2026 <span class="text-[#a88a2e] font-semibold">Quilter International Corp.</span> All rights reserved.
@@ -191,12 +209,17 @@
     </main>
 
 <script>
-// Django template 把安全 resubmit token 注入 JS
+// Inject the signed account resubmit token into JavaScript.
 const RESUBMIT_TOKEN = {% if resubmit_token %}"{{ resubmit_token|escapejs }}"{% else %}null{% endif %};
 
 function getCookie(name) {
     const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
     return v ? v[2] : '';
+}
+
+function updateAccountFileName(input) {
+    const fileName = input.files.length > 0 ? input.files[0].name : "No file chosen";
+    document.getElementById("account-file-name").textContent = fileName;
 }
 
 async function submitRegister() {
@@ -213,16 +236,16 @@ async function submitRegister() {
 
     if (!full_name || !email || !department || (!RESUBMIT_TOKEN && !username)) {
         msg.className = 'mb-4 px-3 py-2 rounded-lg text-sm font-medium bg-red-50 text-red-600 border border-red-200';
-        msg.textContent = '請填寫所有必填欄位（*）';
+        msg.textContent = 'Please fill in all required fields marked with *.';
         msg.classList.remove('hidden');
         return;
     }
 
-    btn.textContent = '送出中...';
+    btn.textContent = 'Submitting...';
     btn.style.opacity = '0.7';
     btn.style.pointerEvents = 'none';
 
-    // 使用 FormData 支援附件上傳
+    // Use FormData to support file uploads.
     const formData = new FormData();
     formData.append('username',       username);
     formData.append('full_name',      full_name);
@@ -242,7 +265,7 @@ async function submitRegister() {
         const res = await fetch(url, {
             method: 'POST',
             headers: { 'X-CSRFToken': getCookie('csrftoken') },
-            // Content-Type は FormData を渡すと自動設定される（boundary 含む）
+            // Do not set Content-Type manually; the browser will add the multipart boundary.
             body: formData,
         });
         const data = await res.json();
@@ -250,7 +273,7 @@ async function submitRegister() {
         msg.classList.remove('hidden');
         if (res.ok) {
             msg.className = 'mb-4 px-3 py-2 rounded-lg text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200';
-            // 成功後幾秒跳轉
+            // Redirect after successful submission.
             setTimeout(() => { window.location.href = '/office-portal/'; }, 2000);
         } else {
             msg.className = 'mb-4 px-3 py-2 rounded-lg text-sm font-medium bg-red-50 text-red-600 border border-red-200';
@@ -259,10 +282,10 @@ async function submitRegister() {
     } catch (err) {
         msg.classList.remove('hidden');
         msg.className = 'mb-4 px-3 py-2 rounded-lg text-sm font-medium bg-red-50 text-red-600 border border-red-200';
-        msg.textContent = '連線錯誤，請稍後再試';
+        msg.textContent = 'Connection error. Please try again later.';
     }
 
-    btn.textContent = RESUBMIT_TOKEN ? 'Resubmit' : '送出申請';
+    btn.textContent = RESUBMIT_TOKEN ? 'Resubmit' : 'Submit Account Request';
     btn.style.opacity = '1';
     btn.style.pointerEvents = 'auto';
 }
