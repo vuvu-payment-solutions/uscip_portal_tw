@@ -6,404 +6,756 @@
 
 {% block content %}
 
-<!-- Notices -->
-{% if notices %}
-<div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
-    <div class="px-5 py-4 border-b border-gray-100">
-        <h2 class="font-bold text-[#0c1a2e]">📢 Announcements</h2>
-    </div>
-    <div class="divide-y divide-gray-100">
-        {% for n in notices %}
-        <div class="px-5 py-3">
-            <div class="flex items-center justify-between">
-                <span class="font-semibold text-sm text-[#0c1a2e]">{{ n.title }}</span>
-                <span class="text-xs text-gray-400">{{ n.created_at|date:"Y-m-d" }}</span>
-            </div>
-            <p class="text-sm text-gray-500 mt-1">{{ n.content|truncatewords:30 }}</p>
+<style>
+    .dash-console {
+        --dc-bg-0: #07101f;
+        --dc-bg-1: #0b1628;
+        --dc-panel-1: #121f34;
+        --dc-panel-2: #0f1a2d;
+        --dc-line: #223550;
+        --dc-line-strong: #315073;
+        --dc-text: #eaf2ff;
+        --dc-muted: #9fb0ca;
+        --dc-dim: #6f819d;
+        --dc-cyan: #35d5ea;
+        --dc-blue: #3b82f6;
+        --dc-gold: #c9a84c;
+        --dc-green: #34d399;
+        --dc-amber: #fbbf24;
+        --dc-red: #fb7185;
+        --dc-purple: #a78bfa;
+
+        min-height: calc(100vh - 155px);
+        margin: -24px;
+        padding: 24px;
+        color: var(--dc-text);
+        background:
+            radial-gradient(760px 320px at 82% -12%, rgba(59,130,246,.18), transparent 62%),
+            radial-gradient(560px 280px at 4% 0%, rgba(53,213,234,.10), transparent 58%),
+            linear-gradient(180deg, var(--dc-bg-1), var(--dc-bg-0));
+        position: relative;
+        overflow: hidden;
+        overflow-x: clip;
+        box-sizing: border-box;
+        max-width: calc(100% + 48px);
+    }
+
+    .dash-console::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: .40;
+        background-image:
+            linear-gradient(rgba(130,160,210,.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(130,160,210,.06) 1px, transparent 1px);
+        background-size: 42px 42px;
+        mask-image: radial-gradient(900px 520px at 50% 0%, #000 30%, transparent 82%);
+    }
+
+    .dash-console > * { position: relative; z-index: 1; }
+
+    .dc-panel {
+        border: 1px solid var(--dc-line);
+        border-radius: 16px;
+        background: linear-gradient(180deg, rgba(18,31,52,.94), rgba(15,26,45,.96));
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,.045),
+            0 18px 34px -26px rgba(0,0,0,.90);
+    }
+
+    .dc-hero {
+        min-height: 128px;
+        padding: 22px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        flex-wrap: wrap;
+        background:
+            linear-gradient(90deg, rgba(7,16,31,.98), rgba(12,28,50,.94)),
+            radial-gradient(620px 220px at 86% 0%, rgba(53,213,234,.18), transparent 62%);
+        overflow: hidden;
+    }
+
+    .dc-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--dc-cyan);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+        margin-bottom: 7px;
+    }
+
+    .dc-pulse {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--dc-cyan);
+        box-shadow: 0 0 0 0 rgba(53,213,234,.55);
+        animation: dcPulse 2.4s infinite;
+    }
+
+    @keyframes dcPulse {
+        0% { box-shadow: 0 0 0 0 rgba(53,213,234,.50); }
+        70% { box-shadow: 0 0 0 9px rgba(53,213,234,0); }
+        100% { box-shadow: 0 0 0 0 rgba(53,213,234,0); }
+    }
+
+    .dc-title {
+        color: var(--dc-text);
+        font-size: 26px;
+        line-height: 1.15;
+        font-weight: 950;
+        letter-spacing: -.03em;
+        margin: 0;
+    }
+
+    .dc-subtitle {
+        color: var(--dc-muted);
+        font-size: 13px;
+        margin-top: 7px;
+        line-height: 1.5;
+    }
+
+    .dc-role {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        margin-top: 11px;
+        padding: 5px 10px;
+        border: 1px solid rgba(201,168,76,.42);
+        border-radius: 9px;
+        color: #f7d974;
+        background: rgba(201,168,76,.10);
+        font-size: 12px;
+        font-weight: 900;
+    }
+
+    .dc-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+    .dc-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 10px 15px;
+        border-radius: 11px;
+        border: 1px solid rgba(53,213,234,.32);
+        color: var(--dc-text);
+        background: linear-gradient(180deg, rgba(19,36,60,.92), rgba(12,25,44,.92));
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 12px 24px -18px rgba(53,213,234,.65);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 850;
+        transition: transform .14s ease, filter .14s ease, border-color .14s ease;
+        white-space: nowrap;
+    }
+
+    .dc-action-btn:hover { transform: translateY(-1px); filter: brightness(1.10); border-color: rgba(53,213,234,.60); }
+
+    .dc-grid { display: grid; gap: 14px; }
+    .dc-summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 14px; }
+    .dc-recent-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .dc-compliance-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .dc-panel,
+    .dc-card {
+        min-width: 0;
+    }
+
+    .dc-card {
+        border: 1px solid var(--dc-line);
+        border-radius: 14px;
+        background: linear-gradient(180deg, rgba(18,31,52,.92), rgba(15,26,45,.95));
+        padding: 16px 18px;
+        min-height: 104px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.045), 0 18px 32px -26px rgba(0,0,0,.92);
+    }
+
+    .dc-card:hover { border-color: var(--dc-line-strong); }
+
+    .dc-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 13px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex: 0 0 auto;
+    }
+
+    .dc-icon.blue { color: #bfdbfe; background: rgba(59,130,246,.16); border: 1px solid rgba(59,130,246,.28); }
+    .dc-icon.cyan { color: #a5f3fc; background: rgba(53,213,234,.14); border: 1px solid rgba(53,213,234,.26); }
+    .dc-icon.purple { color: #ddd6fe; background: rgba(167,139,250,.16); border: 1px solid rgba(167,139,250,.26); }
+    .dc-icon.gold { color: #fde68a; background: rgba(201,168,76,.16); border: 1px solid rgba(201,168,76,.34); }
+    .dc-icon.green { color: #bbf7d0; background: rgba(52,211,153,.14); border: 1px solid rgba(52,211,153,.26); }
+
+    .dc-label {
+        color: var(--dc-dim);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .13em;
+        text-transform: uppercase;
+    }
+
+    .dc-number { color: var(--dc-text); font-size: 28px; line-height: 1; font-weight: 950; margin-top: 6px; }
+    .dc-link { color: #38bdf8; font-size: 12px; font-weight: 800; text-decoration: none; }
+    .dc-link:hover { color: var(--dc-cyan); text-decoration: underline; }
+
+    .dc-section { margin-top: 14px; }
+    .dc-section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 18px 12px;
+    }
+
+    .dc-section-title {
+        color: var(--dc-text);
+        font-size: 18px;
+        font-weight: 950;
+        letter-spacing: -.02em;
+        margin: 0;
+    }
+
+    .dc-section-note { color: var(--dc-dim); font-size: 12px; margin-top: 3px; }
+
+    .dc-table-wrap {
+        padding: 0 14px 14px;
+        max-width: 100%;
+        overflow-x: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #315073 #07101f;
+    }
+
+    .dc-table-wrap::-webkit-scrollbar { height: 8px; }
+    .dc-table-wrap::-webkit-scrollbar-track { background: #07101f; border-radius: 999px; }
+    .dc-table-wrap::-webkit-scrollbar-thumb { background: #315073; border-radius: 999px; }
+    .dc-table-wrap::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+    .dc-table { width: 100%; min-width: 980px; border-collapse: separate; border-spacing: 0 8px; }
+    .dc-table th {
+        padding: 0 12px 4px;
+        color: var(--dc-dim);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .13em;
+        text-align: left;
+        text-transform: uppercase;
+    }
+
+    .dc-table td {
+        padding: 12px;
+        background: linear-gradient(180deg, rgba(15,27,46,.88), rgba(11,22,39,.92));
+        border-top: 1px solid rgba(49,80,115,.55);
+        border-bottom: 1px solid rgba(49,80,115,.55);
+        color: var(--dc-muted);
+        font-size: 12px;
+        vertical-align: middle;
+    }
+
+    .dc-table td:first-child { border-left: 1px solid rgba(49,80,115,.55); border-radius: 10px 0 0 10px; }
+    .dc-table td:last-child { border-right: 1px solid rgba(49,80,115,.55); border-radius: 0 10px 10px 0; }
+
+    .dc-main-text { color: var(--dc-text); font-weight: 900; }
+    .dc-muted { color: var(--dc-muted); }
+    .dc-dim { color: var(--dc-dim); }
+
+    .dc-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 9px;
+        border-radius: 999px;
+        border: 1px solid rgba(251,191,36,.35);
+        color: #fde68a;
+        background: rgba(251,191,36,.10);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .04em;
+        white-space: nowrap;
+    }
+
+    .dc-pill.green { border-color: rgba(52,211,153,.35); color: #bbf7d0; background: rgba(52,211,153,.10); }
+    .dc-pill.blue { border-color: rgba(59,130,246,.35); color: #bfdbfe; background: rgba(59,130,246,.10); }
+    .dc-pill.red { border-color: rgba(251,113,133,.35); color: #fecdd3; background: rgba(251,113,133,.10); }
+    .dc-pill.gray { border-color: rgba(159,176,202,.25); color: var(--dc-muted); background: rgba(159,176,202,.07); }
+
+    .dc-row-actions { display: flex; align-items: center; justify-content: flex-end; gap: 7px; flex-wrap: wrap; }
+
+    .dc-mini-btn {
+        min-height: 30px;
+        padding: 6px 10px;
+        border-radius: 8px;
+        border: 1px solid var(--dc-line-strong);
+        background: linear-gradient(180deg, #1b2940, #14213a);
+        color: var(--dc-text);
+        font-size: 11px;
+        font-weight: 850;
+        cursor: pointer;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .dc-mini-btn:hover { filter: brightness(1.12); }
+    .dc-mini-btn.go { color: #03140e; border: none; background: linear-gradient(180deg, #4fe0a8, #059669); }
+    .dc-mini-btn.warn { color: #1c0e02; border: none; background: linear-gradient(180deg, #fdba74, #ea580c); }
+    .dc-mini-btn.danger { color: #fff; border: none; background: linear-gradient(180deg, #fb7185, #dc2626); }
+    .dc-mini-btn.review { color: #eaf2ff; border-color: rgba(96,165,250,.72); background: linear-gradient(180deg, #254a78, #18345a); }
+    .dc-mini-btn.done { color: #03140e; border: none; background: linear-gradient(180deg, #93c5fd, #3b82f6); }
+
+    .dc-empty {
+        padding: 22px 18px;
+        color: var(--dc-dim);
+        text-align: center;
+        border: 1px dashed rgba(111,129,157,.34);
+        border-radius: 12px;
+        background: rgba(7,16,31,.28);
+        font-size: 13px;
+    }
+
+    .dc-recent-list { margin-top: 12px; display: flex; flex-direction: column; gap: 9px; }
+    .dc-recent-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12px; }
+    .dc-recent-name { color: var(--dc-text); font-weight: 800; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dc-recent-date { color: var(--dc-dim); white-space: nowrap; font-size: 11px; }
+
+    .dc-announcement { padding: 0 14px 14px; }
+    .dc-notice-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px;
+        border: 1px solid rgba(49,80,115,.55);
+        border-radius: 12px;
+        background: linear-gradient(180deg, rgba(15,27,46,.82), rgba(11,22,39,.90));
+    }
+
+    .dc-it-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 9px;
+        border-radius: 8px;
+        border: 1px solid rgba(201,168,76,.40);
+        background: rgba(201,168,76,.10);
+        color: #f7d974;
+        font-size: 11px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .dc-modal-backdrop { position: fixed; inset: 0; z-index: 9999; display: none; }
+    .dc-modal-backdrop.show { display: block; }
+
+    @media (max-width: 1280px) {
+        .dc-summary-grid, .dc-compliance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .dc-recent-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 768px) {
+        .dash-console { margin: -16px; padding: 16px; }
+        .dc-summary-grid, .dc-compliance-grid { grid-template-columns: 1fr; }
+        .dc-hero { padding: 18px; }
+        .dc-title { font-size: 22px; }
+    }
+</style>
+
+<div class="dash-console">
+
+    <!-- 1. Header Panel -->
+    <section class="dc-panel dc-hero">
+        <div>
+            <div class="dc-eyebrow"><span class="dc-pulse"></span> Office Portal Command Center</div>
+            <h1 class="dc-title">Welcome back, <span style="color:var(--dc-cyan);">{% firstof user.get_full_name user.username %}</span></h1>
+            <p class="dc-subtitle">Review pending approvals, track recent requests, and monitor compliance status from one workspace.</p>
+            <div class="dc-role">Current Role · {{ role|default:"user" }}</div>
         </div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
+        <div class="dc-actions">
+            <a href="/office-portal/apply/" class="dc-action-btn">＋ New Service/API Request</a>
+            <a href="/office-portal/hardware/apply/" class="dc-action-btn">＋ New Hardware Request</a>
+            <a href="{% url 'byod_apply' %}" class="dc-action-btn">＋ BYOD Request</a>
+        </div>
+    </section>
 
-<!-- ════════════════════════════════════════════════════════
-     Pending Account Requests (Supervisor / CIO)
-     ════════════════════════════════════════════════════════ -->
-{% if pending_accounts %}
-<div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
-    <div class="px-5 py-4 border-b border-gray-100">
-        <h2 class="font-bold text-[#0c1a2e]">📋 Pending Account Requests</h2>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="bg-gray-50 text-left">
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Username</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Full Name</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Email</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Department</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Role</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Description</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Attachment</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Status</th>
-                    <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                {% for req in pending_accounts %}
-                <tr class="hover:bg-gray-50/50 transition-colors" id="acct-row-{{ req.id }}">
-                    <td class="px-4 py-3 font-medium text-[#1a2d4a]">{{ req.username }}</td>
-                    <td class="px-4 py-3 text-gray-700">{{ req.full_name }}</td>
-                    <td class="px-4 py-3 text-gray-600">{{ req.email }}</td>
-                    <td class="px-4 py-3 text-gray-600">{{ req.department|default:"-" }}</td>
-                    <td class="px-4 py-3 text-gray-600">{{ req.requested_role }}</td>
-                    <td class="px-4 py-3 text-gray-500 text-xs max-w-[160px]">
-                        {% if req.description %}
-                        <span class="line-clamp-2 cursor-pointer hover:text-[#2a4270] hover:underline decoration-dotted underline-offset-2 transition-colors"
-                              onclick="showDesc('{{ req.description|escapejs }}')"
-                              title="Click to expand">{{ req.description|truncatechars:80 }}</span>
-                        {% else %}-{% endif %}
-                    </td>
-                    <td class="px-4 py-3 text-center">
-                        {% if req.attachment %}
-                        <a href="{{ req.attachment.url }}" target="_blank"
-                           class="inline-flex items-center gap-1 text-xs font-semibold text-[#2a4270] hover:text-[#c9a84c] transition-colors">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
-                            </svg>
-                            View
-                        </a>
-                        {% else %}
-                        <span class="text-gray-300">—</span>
-                        {% endif %}
-                    </td>
-                    <td class="px-4 py-3 text-center">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700">
-                            {{ req.status }}
-                        </span>
-                        {% if req.status == 'Returned' %}
-                        <div class="mt-1.5 text-xs text-orange-600 text-left max-w-[220px]
-                                    whitespace-pre-wrap leading-relaxed
-                                    border-l-2 border-orange-400 pl-2">
+    <!-- 2. Summary Cards -->
+    <section class="dc-grid dc-summary-grid">
+        <div class="dc-card">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <div class="dc-label">My Pending Tasks</div>
+                    <div class="dc-number">{{ pending_task_count|default:"0" }}</div>
+                    <a href="#approval-queue" class="dc-link">View details →</a>
+                </div>
+                <div class="dc-icon blue">☑</div>
+            </div>
+        </div>
+        <div class="dc-card">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <div class="dc-label">My Applications</div>
+                    <div class="dc-number">{{ my_applications|length }}</div>
+                    <a href="{% url 'portal_application_list' %}" class="dc-link">View details →</a>
+                </div>
+                <div class="dc-icon cyan">▦</div>
+            </div>
+        </div>
+        <div class="dc-card">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <div class="dc-label">Hardware Requests</div>
+                    <div class="dc-number">{{ my_hardware_requests|length }}</div>
+                    <a href="{% url 'hardware_list' %}" class="dc-link">View details →</a>
+                </div>
+                <div class="dc-icon purple">▣</div>
+            </div>
+        </div>
+        {% if can_view_compliance %}
+        <div class="dc-card">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <div class="dc-label">Compliance Domains</div>
+                    <div class="dc-number">{{ control_domain_count|default:"0" }}</div>
+                    <a href="{% url 'compliance_home' %}" class="dc-link">View details →</a>
+                </div>
+                <div class="dc-icon gold">🛡</div>
+            </div>
+            <div class="dc-it-badge" style="margin-top:12px;">IT Department Only</div>
+        </div>
 
-                            {% if req.return_date %}
-                            <div style="font-size:10px; color:#9a3412;">
-                                📅 {{ req.return_date|date:"Y-m-d H:i" }}
+        {% endif %}
+    </section>
+
+    <!-- 3. Approval Queue -->
+    <section id="approval-queue" class="dc-panel dc-section">
+        <div class="dc-section-head">
+            <div>
+                <h2 class="dc-section-title">My Approval Queue</h2>
+                <p class="dc-section-note">Items that currently need your review or action.</p>
+            </div>
+            <span class="dc-pill">{{ pending_task_count|default:"0" }} task(s)</span>
+        </div>
+
+        {% if pending_accounts or pending_apps or pending_hardware %}
+        <div class="dc-table-wrap">
+            <table class="dc-table">
+                <thead>
+                    <tr>
+                        <th>Request Type</th>
+                        <th>Description</th>
+                        <th>Requested By</th>
+                        <th>Submitted On</th>
+                        <th>Status</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in pending_accounts %}
+                    <tr>
+                        <td>
+                            <div class="dc-main-text">Account Request</div>
+                            <div class="dc-dim">{{ req.username }}</div>
+                        </td>
+                        <td>
+                            <div class="dc-main-text">{{ req.full_name|default:"New user access" }}</div>
+                            <div class="dc-muted">{{ req.department|default:"-" }} · {{ req.requested_role|default:"user" }}</div>
+                        </td>
+                        <td>{{ req.email|default:"-" }}</td>
+                        <td>{{ req.created_at|date:"Y-m-d H:i" }}</td>
+                        <td><span class="dc-pill">{{ req.status }}</span></td>
+                        <td>
+                            <div class="dc-row-actions">
+                                <button class="dc-mini-btn go" onclick="acctAction('approve', {{ req.id }}, this)">Approve</button>
+                                <button class="dc-mini-btn warn" onclick="openReturnModal('acct', {{ req.id }}, '{{ req.status }}', '{{ role }}')">Return</button>
+                                <button class="dc-mini-btn danger" onclick="openReturnModal('acct', {{ req.id }}, '{{ req.status }}', '{{ role }}', true)">Reject</button>
+                                <button class="dc-mini-btn review" onclick="acctAction('review', {{ req.id }}, this)">Review</button>
                             </div>
-                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
 
-                            {% if req.display_reason %}
-                            <div>
-                                ↩ {{ req.display_reason|truncatechars:120 }}
+                    {% for app in pending_apps %}
+                    <tr>
+                        <td>
+                            <div class="dc-main-text">Service/API Application</div>
+                            <div class="dc-dim">{{ app.f_no }}</div>
+                        </td>
+                        <td>
+                            <div class="dc-main-text">{{ app.a_type|default:"Service Request" }}</div>
+                            <div class="dc-muted">{{ app.service_system|default:"-" }}</div>
+                        </td>
+                        <td>{{ app.a_name|default:"-" }}</td>
+                        <td>{{ app.created_at|date:"Y-m-d H:i" }}</td>
+                        <td><span class="dc-pill">{{ app.status }}</span></td>
+                        <td>
+                            <div class="dc-row-actions">
+                                {% if app.status == 'Work-in-progress' %}
+                                <button class="dc-mini-btn done" onclick="appAction('complete', {{ app.id }}, this)">Complete</button>
+                                {% elif app.status == 'Under-preview' %}
+                                <button class="dc-mini-btn done" onclick="appAction('resume', {{ app.id }}, this)">Resume</button>
+                                {% else %}
+                                <button class="dc-mini-btn go" onclick="appAction('approve', {{ app.id }}, this)">Approve</button>
+                                <button class="dc-mini-btn warn" onclick="openReturnModal('app', {{ app.id }}, '{{ app.status }}', '{{ role }}')">Return</button>
+                                <button class="dc-mini-btn danger" onclick="openReturnModal('app', {{ app.id }}, '{{ app.status }}', '{{ role }}', true)">Reject</button>
+                                <button class="dc-mini-btn review" onclick="appAction('preview', {{ app.id }}, this)">Review</button>
+                                {% endif %}
+                                <button class="dc-mini-btn" onclick="showAppDetail({{ app.id }})">Detail</button>
                             </div>
-                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
 
-                        </div>
-                        {% endif %}
-                    </td>
-                    <td class="px-4 py-3 text-center">
-                        <div style="display:flex; align-items:center; justify-content:center; gap:6px;">
-                            <button onclick="acctAction('approve', {{ req.id }}, this)"
-                                    style="padding:4px 10px; font-size:11px; font-weight:600; color:#fff; background:#059669; border:none; border-radius:5px; cursor:pointer;">
-                                Approve
-                            </button>
-                            <button onclick="openReturnModal('acct', {{ req.id }}, '{{ req.status }}', '{{ role }}')"
-                                    style="padding:4px 10px; font-size:11px; font-weight:600; color:#fff; background:#ea580c; border:none; border-radius:5px; cursor:pointer;">
-                                Return
-                            </button>
-                            <button onclick="openReturnModal('acct', {{ req.id }}, '{{ req.status }}', '{{ role }}', true)"
-                                    style="padding:4px 10px; font-size:11px; font-weight:600; color:#fff; background:#dc2626; border:none; border-radius:5px; cursor:pointer;">
-                                Reject
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-{% endif %}
-
-<!-- ════════════════════════════════════════════════════════
-     Recent Applications (all logged-in users)
-     ════════════════════════════════════════════════════════ -->
-<div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
-    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-        <h2 class="font-bold text-[#0c1a2e]">📄 Recent Applications</h2>
-        <a href="/office-portal/applications/"
-            class="text-xs font-semibold text-[#2a4270] hover:text-[#c9a84c]">
-            View All
-    </a>
-    </div>
-
-    <table class="w-full text-sm">
-        <thead class="bg-gray-50">
-            <tr>
-                <th class="px-4 py-3 text-left">App No</th>
-                <th class="px-4 py-3 text-left">Type</th>
-                <th class="px-4 py-3 text-left">Service</th>
-                <th class="px-4 py-3 text-center">Status</th>
-                <th class="px-4 py-3 text-center">Applied On</th>
-            </tr>
-        </thead>
-
-        <tbody>
-            {% for app in my_applications %}
-            <tr class="border-b border-gray-100">
-                <td class="px-4 py-3">{{ app.f_no }}</td>
-                <td class="px-4 py-3">{{ app.a_type }}</td>
-                <td class="px-4 py-3">{{ app.service_system|default:"-" }}</td>
-                <td class="px-4 py-3 text-center">
-                    <span class="px-2 py-1 text-xs rounded bg-gray-100">
-                        {{ app.status }}
-                    </span>
-                </td>
-                <td class="px-4 py-3 text-center">
-                    {{ app.created_at|date:"Y-m-d H:i" }}
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5" class="px-4 py-10 text-center text-gray-400">
-                    No applications found.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-<!-- ════════════════════════════════════════════════════════
-     Recent Hardware Requests (all logged-in users)
-     ════════════════════════════════════════════════════════ -->
-
-<div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
-    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-        <h2 class="font-bold text-[#0c1a2e]">🖥 Recent Hardware Requests</h2>
-            <a href="/office-portal/hardware/list/"
-            class="text-xs font-semibold text-[#2a4270] hover:text-[#c9a84c]">
-            View All
-    </a>
-    </div>
-
-    <table class="w-full text-sm">
-        <thead class="bg-gray-50">
-            <tr>
-                <th class="px-4 py-3 text-left">Device Type</th>
-                <th class="px-4 py-3 text-left">Device Name</th>
-                <th class="px-4 py-3 text-center">Qty</th>
-                <th class="px-4 py-3 text-center">Status</th>
-                <th class="px-4 py-3 text-center">Applied On</th>
-            </tr>
-        </thead>
-
-        <tbody>
-            {% for h in my_hardware_requests %}
-            <tr class="hover:bg-gray-50/50 transition-colors">
-                <td class="px-4 py-3">{{ h.device_type }}</td>
-                <td class="px-4 py-3">{{ h.device_name|default:"-" }}</td>
-                <td class="px-4 py-3 text-center">{{ h.quantity }}</td>
-                <td class="px-4 py-3 text-center">
-                    <span class="px-2 py-1 text-xs rounded bg-gray-100">
-                        {{ h.status }}
-                    </span>
-                </td>
-                <td class="px-4 py-3 text-center">
-                    {{ h.created_at|date:"Y-m-d H:i" }}
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5" class="px-4 py-10 text-center text-gray-400">
-                    No hardware requests found.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<!-- ════════════════════════════════════════════════════════
-     ISMS Compliance Dashboard
-     ════════════════════════════════════════════════════════ -->
-<div class="mb-6">
-    <h1 class="text-2xl font-bold text-[#0c1a2e]">ISMS Compliance Dashboard</h1>
-    <p class="text-sm text-gray-400 mt-1">ISO 27001:2022 — Control Domain Compliance Overview</p>
-</div>
-
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-    <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Control Domains</p>
-                <p class="text-3xl font-bold text-[#1a2d4a] mt-1">{{ domain_stats|length }}</p>
-            </div>
-            <div class="w-11 h-11 rounded-lg bg-[#0c1a2e]/5 flex items-center justify-center">
-                <svg class="w-5 h-5 text-[#1a2d4a]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-                    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-                </svg>
-            </div>
+                    {% for h in pending_hardware %}
+                    <tr>
+                        <td>
+                            <div class="dc-main-text">Hardware Application</div>
+                            <div class="dc-dim">HW-{{ h.id|stringformat:"04d" }}</div>
+                        </td>
+                        <td>
+                            <div class="dc-main-text">{{ h.device_type|default:"Device" }}</div>
+                            <div class="dc-muted">{{ h.device_name|default:"-" }} · Qty {{ h.quantity|default:"1" }}</div>
+                        </td>
+                        <td>{{ h.applicant.username|default:"-" }}</td>
+                        <td>{{ h.created_at|date:"Y-m-d H:i" }}</td>
+                        <td><span class="dc-pill">{{ h.status }}</span></td>
+                        <td>
+                            <div class="dc-row-actions">
+                                {% if h.status == 'Work-in-progress' %}
+                                <button class="dc-mini-btn done" onclick="hardwareAction('complete', {{ h.id }})">Complete</button>
+                                {% elif h.status == 'Under-preview' %}
+                                <button class="dc-mini-btn done" onclick="hardwareAction('resume', {{ h.id }})">Resume</button>
+                                {% else %}
+                                <button class="dc-mini-btn go" onclick="hardwareAction('approve', {{ h.id }})">Approve</button>
+                                <button class="dc-mini-btn warn" onclick="openReturnModal('hw', {{ h.id }}, '{{ h.status }}', '{{ role }}')">Return</button>
+                                <button class="dc-mini-btn danger" onclick="openReturnModal('hw', {{ h.id }}, '{{ h.status }}', '{{ role }}', true)">Reject</button>
+                                <button class="dc-mini-btn review" onclick="hardwareAction('preview', {{ h.id }})">Review</button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-    </div>
-    <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Controls</p>
-                <p class="text-3xl font-bold text-[#1a2d4a] mt-1">93</p>
-            </div>
-            <div class="w-11 h-11 rounded-lg bg-[#c9a84c]/10 flex items-center justify-center">
-                <svg class="w-5 h-5 text-[#c9a84c]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 5h6"/>
-                </svg>
-            </div>
+        {% else %}
+        <div class="px-4 pb-4"><div class="dc-empty">No approval tasks at this time.</div></div>
+        {% endif %}
+    </section>
+
+    <!-- 4. Recent Requests -->
+    <section class="dc-section">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="dc-section-title">My Recent Requests</h2>
         </div>
-    </div>
-    <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Compliant</p>
-                <p class="text-3xl font-bold text-emerald-600 mt-1">
-                    {% for d in domain_stats %}{{ d.compliant }}{% if not forloop.last %}+{% endif %}{% endfor %}
-                </p>
-            </div>
-            <div class="w-11 h-11 rounded-lg bg-emerald-50 flex items-center justify-center">
-                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-        <h2 class="font-bold text-[#0c1a2e]">Domain Details</h2>
-        <a href="/compliance/export/docx/"
-           class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#1a2d4a] bg-[#c9a84c]/10 hover:bg-[#c9a84c]/20 rounded-lg transition-colors">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-            </svg>
-            Export to Word
-        </a>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="bg-gray-50 text-left">
-                    <th class="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Domain</th>
-                    <th class="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Controls</th>
-                    <th class="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Compliant</th>
-                    <th class="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Rate</th>
-                    <th class="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Progress</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                {% for d in domain_stats %}
-                <tr class="hover:bg-gray-50/50 transition-colors">
-                    <td class="px-5 py-3.5 font-medium text-[#0c1a2e]">{{ d.domain.code }} {{ d.domain.name }}</td>
-                    <td class="px-5 py-3.5 text-center text-gray-600">{{ d.total }}</td>
-                    <td class="px-5 py-3.5 text-center text-gray-600">{{ d.compliant }}</td>
-                    <td class="px-5 py-3.5 text-center">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold
-                            {% if d.rate >= 80 %}bg-emerald-50 text-emerald-700
-                            {% elif d.rate >= 40 %}bg-amber-50 text-amber-700
-                            {% else %}bg-red-50 text-red-700{% endif %}">
-                            {{ d.rate }}%
-                        </span>
-                    </td>
-                    <td class="px-5 py-3.5">
-                        <div class="w-full bg-gray-200 rounded-full h-2 min-w-[120px]">
-                            <div class="h-2 rounded-full transition-all
-                                {% if d.rate >= 80 %}bg-emerald-500{% elif d.rate >= 40 %}bg-amber-500{% else %}bg-red-500{% endif %}"
-                                 style="width: {{ d.rate }}%;"></div>
-                        </div>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5" class="px-5 py-10 text-center text-gray-400">
-                        尚無資料，請先執行 import_iso.py
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="mt-6 flex flex-wrap gap-3">
-    <a href="/compliance/controls/"
-       class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#1a2d4a] bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-[#c9a84c] transition-all">
-        📋 View All Controls
-    </a>
-    {% if user.is_staff %}
-    <a href="/admin/"
-       class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#1a2d4a] bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-[#c9a84c] transition-all">
-        ⚙ Admin Panel
-    </a>
-    {% endif %}
-</div>
-
-<!-- ════════════════════════════════════════════════════════
-     Return / Reject Modal（Supervisor / CIO 退件用）
-     ════════════════════════════════════════════════════════ -->
-<div id="returnModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:9999;">
-    <div onclick="closeReturnModal()" style="position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5);"></div>
-    <div style="position:absolute; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; padding:1rem;">
-        <div style="background:#fff; border-radius:14px; box-shadow:0 25px 50px rgba(0,0,0,0.25); width:100%; max-width:460px; position:relative;">
-
-            <!-- Header -->
-            <div id="returnModalHeader" style="display:flex; align-items:center; justify-content:space-between; padding:16px 24px; border-bottom:1px solid #f3f4f6;">
-                <h3 style="font-size:15px; font-weight:700; color:#0c1a2e; margin:0;">↩ Return for Revision</h3>
-                <button onclick="closeReturnModal()" style="background:none; border:none; font-size:22px; color:#9ca3af; cursor:pointer; line-height:1;">&times;</button>
-            </div>
-
-            <!-- Body -->
-            <div style="padding:20px 24px;">
-
-                <!-- Reason -->
-                <label style="display:block; font-size:11px; font-weight:700; color:#1a2d4a; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">
-                    Reason <span style="color:#ef4444;">*</span>
-                </label>
-                <textarea id="returnReason" rows="4" placeholder="Explain what needs to be corrected or clarified…"
-                          style="width:100%; box-sizing:border-box; padding:10px 12px; font-size:13px; background:#f9fafb; border:1px solid #e5e7eb;
-                                 border-radius:8px; outline:none; resize:vertical; font-family:inherit;"
-                          onfocus="this.style.borderColor='#c9a84c'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
-
-                <!-- CIO-only: return destination -->
-                <div id="returnToSection" style="display:none; margin-top:16px;">
-                    <label style="display:block; font-size:11px; font-weight:700; color:#1a2d4a; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">
-                        Return To
-                    </label>
-                    <div style="display:flex; gap:10px;">
-                        <label style="flex:1; display:flex; align-items:center; gap:8px; padding:10px 12px; background:#f9fafb; border:1.5px solid #e5e7eb; border-radius:8px; cursor:pointer; font-size:13px; color:#374151;">
-                            <input type="radio" name="returnTo" value="applicant" checked style="accent-color:#1a2d4a;">
-                            Applicant
-                        </label>
-                        <label style="flex:1; display:flex; align-items:center; gap:8px; padding:10px 12px; background:#f9fafb; border:1.5px solid #e5e7eb; border-radius:8px; cursor:pointer; font-size:13px; color:#374151;">
-                            <input type="radio" name="returnTo" value="supervisor" style="accent-color:#1a2d4a;">
-                            Supervisor
-                        </label>
+        <div class="dc-grid dc-recent-grid">
+            <div class="dc-card">
+                <div class="flex items-center gap-3">
+                    <div class="dc-icon cyan">▦</div>
+                    <div>
+                        <div class="dc-main-text">Recent Applications</div>
+                        <a href="{% url 'portal_application_list' %}" class="dc-link">View all →</a>
                     </div>
                 </div>
-
-                <!-- Error msg -->
-                <div id="returnModalError" style="display:none; margin-top:12px; padding:8px 12px; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; font-size:12px; color:#dc2626;"></div>
-
+                <div class="dc-recent-list">
+                    {% for app in my_applications|slice:":3" %}
+                    <div class="dc-recent-item">
+                        <div class="min-w-0">
+                            <div class="dc-recent-name">{% firstof app.service_system app.a_type "Application" %}</div>
+                            <span class="dc-pill {% if app.status == 'Approved' %}green{% elif app.status == 'Rejected' %}red{% else %}blue{% endif %}">{{ app.status }}</span>
+                        </div>
+                        <div class="dc-recent-date">{{ app.created_at|date:"M d" }}</div>
+                    </div>
+                    {% empty %}
+                    <div class="dc-dim text-sm">No recent applications.</div>
+                    {% endfor %}
+                </div>
             </div>
 
-            <!-- Footer -->
-            <div style="display:flex; gap:10px; padding:12px 24px; border-top:1px solid #f3f4f6;">
-                <button onclick="submitReturn()" id="returnModalConfirm"
-                        style="flex:1; padding:10px; font-size:13px; font-weight:700; color:#fff; background:linear-gradient(135deg,#1a2d4a,#2a4270); border:none; border-radius:8px; cursor:pointer;">
-                    Confirm
-                </button>
-                <button onclick="closeReturnModal()"
-                        style="padding:10px 20px; font-size:13px; font-weight:600; color:#6b7280; background:#f3f4f6; border:none; border-radius:8px; cursor:pointer;">
-                    Cancel
-                </button>
+            <div class="dc-card">
+                <div class="flex items-center gap-3">
+                    <div class="dc-icon purple">▣</div>
+                    <div>
+                        <div class="dc-main-text">Recent Hardware Requests</div>
+                        <a href="{% url 'hardware_list' %}" class="dc-link">View all →</a>
+                    </div>
+                </div>
+                <div class="dc-recent-list">
+                    {% for h in my_hardware_requests|slice:":3" %}
+                    <div class="dc-recent-item">
+                        <div class="min-w-0">
+                            <div class="dc-recent-name">{% firstof h.device_name h.device_type "Hardware" %}</div>
+                            <span class="dc-pill {% if h.status == 'Request Completed' %}green{% elif h.status == 'Rejected' %}red{% else %}blue{% endif %}">{{ h.status }}</span>
+                        </div>
+                        <div class="dc-recent-date">{{ h.created_at|date:"M d" }}</div>
+                    </div>
+                    {% empty %}
+                    <div class="dc-dim text-sm">No recent hardware requests.</div>
+                    {% endfor %}
+                </div>
             </div>
+
+            <div class="dc-card" style="opacity:.86;">
+                <div class="flex items-center gap-3">
+                    <div class="dc-icon blue">▥</div>
+                    <div>
+                        <div class="dc-main-text">Recent BYOD Requests</div>
+                        <a href="{% url 'byod_list' %}" class="dc-link">View all →</a>
+                    </div>
+                </div>
+                <div class="dc-recent-list">
+                    {% for b in my_byod_requests|slice:":3" %}
+                    <div class="dc-recent-item">
+                        <div class="min-w-0">
+                            <div class="dc-recent-name">{% firstof b.device_name b.device_type "BYOD" %}</div>
+                            <span class="dc-pill blue">{{ b.status }}</span>
+                        </div>
+                        <div class="dc-recent-date">{{ b.created_at|date:"M d" }}</div>
+                    </div>
+                    {% empty %}
+                    <div class="dc-dim text-sm">No recent BYOD requests. BYOD activity will appear here.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. Announcements -->
+    <section class="dc-panel dc-section">
+        <div class="dc-section-head">
+            <div>
+                <h2 class="dc-section-title">Announcements</h2>
+                <p class="dc-section-note">Latest portal notices and maintenance information.</p>
+            </div>
+        </div>
+        <div class="dc-announcement">
+            {% for n in notices %}
+            <div class="dc-notice-row {% if not forloop.first %}mt-2{% endif %}">
+                <div class="flex items-start gap-3 min-w-0">
+                    <div class="dc-icon blue" style="width:38px;height:38px;">📣</div>
+                    <div class="min-w-0">
+                        <div class="dc-main-text">{{ n.title }}</div>
+                        <div class="dc-muted text-sm mt-1">{{ n.content|truncatewords:32 }}</div>
+                    </div>
+                </div>
+                <div class="dc-recent-date">{{ n.created_at|date:"Y-m-d" }}</div>
+            </div>
+            {% empty %}
+            <div class="dc-empty">No announcements.</div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- 6. Compliance Overview -->
+    {% if can_view_compliance %}
+    <section class="dc-panel dc-section">
+        <div class="dc-section-head">
+            <div class="flex items-center gap-3 flex-wrap">
+                <h2 class="dc-section-title">Compliance Overview</h2>
+                <span class="dc-it-badge">Visible to IT Department only</span>
+            </div>
+        </div>
+        <div class="dc-grid dc-compliance-grid px-4 pb-4">
+            <div class="dc-card" style="min-height:86px;">
+                <div class="flex items-center gap-3">
+                    <div class="dc-icon gold">🛡</div>
+                    <div>
+                        <div class="dc-label">Control Domains</div>
+                        <div class="dc-number">{{ control_domain_count|default:"0" }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="dc-card" style="min-height:86px;">
+                <div class="flex items-center gap-3">
+                    <div class="dc-icon blue">☷</div>
+                    <div>
+                        <div class="dc-label">Total Controls</div>
+                        <div class="dc-number">{{ control_total|default:"0" }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="dc-card" style="min-height:86px;">
+                <div class="flex items-center gap-3">
+                    <div class="dc-icon green">◔</div>
+                    <div>
+                        <div class="dc-label">Compliance Rate</div>
+                        <div class="dc-number">{{ compliance_rate|default:"0" }}%</div>
+                        <div class="dc-dim text-xs mt-1">{{ compliant_total|default:"0" }}/{{ control_total|default:"0" }} controls</div>
+                    </div>
+                </div>
+            </div>
+            <a href="{% url 'compliance_home' %}" class="dc-card flex items-center justify-center text-center" style="min-height:86px; border-color:rgba(201,168,76,.45); text-decoration:none;">
+                <div>
+                    <div style="color:#f7d974; font-weight:950;">View Compliance Dashboard</div>
+                    <div class="dc-dim text-xs mt-1">Open ISMS summary</div>
+                </div>
+            </a>
+        </div>
+    </section>
+    {% endif %}
+
+</div>
+
+<!-- Return / Reject Modal -->
+<div id="returnModal" class="dc-modal-backdrop">
+    <div onclick="closeReturnModal()" style="position:absolute; inset:0; background:rgba(0,0,0,.58);"></div>
+    <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:1rem;">
+        <div style="width:100%; max-width:470px; border:1px solid #315073; border-radius:16px; background:#0f1a2d; box-shadow:0 25px 60px rgba(0,0,0,.45); color:#eaf2ff;">
+            <div id="returnModalHeader" style="display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #223550;">
+                <h3 style="font-size:15px; font-weight:900; margin:0;">↩ Return for Revision</h3>
+                <button onclick="closeReturnModal()" style="background:none; border:none; font-size:24px; color:#9fb0ca; cursor:pointer; line-height:1;">&times;</button>
+            </div>
+            <div style="padding:18px 20px;">
+                <label style="display:block; font-size:11px; font-weight:900; color:#9fb0ca; text-transform:uppercase; letter-spacing:.12em; margin-bottom:7px;">Reason <span style="color:#fb7185;">*</span></label>
+                <textarea id="returnReason" rows="4" placeholder="Explain what needs to be corrected or clarified…" style="width:100%; box-sizing:border-box; padding:11px 12px; font-size:13px; color:#eaf2ff; background:#07101f; border:1px solid #315073; border-radius:10px; outline:none; resize:vertical; font-family:inherit;"></textarea>
+                <div id="returnToSection" style="display:none; margin-top:15px;">
+                    <label style="display:block; font-size:11px; font-weight:900; color:#9fb0ca; text-transform:uppercase; letter-spacing:.12em; margin-bottom:8px;">Return To</label>
+                    <div style="display:flex; gap:10px;">
+                        <label style="flex:1; display:flex; align-items:center; gap:8px; padding:10px 12px; background:#07101f; border:1px solid #315073; border-radius:10px; cursor:pointer; font-size:13px; color:#eaf2ff;"><input type="radio" name="returnTo" value="applicant" checked style="accent-color:#35d5ea;">Applicant</label>
+                        <label style="flex:1; display:flex; align-items:center; gap:8px; padding:10px 12px; background:#07101f; border:1px solid #315073; border-radius:10px; cursor:pointer; font-size:13px; color:#eaf2ff;"><input type="radio" name="returnTo" value="supervisor" style="accent-color:#35d5ea;">Supervisor</label>
+                    </div>
+                </div>
+                <div id="returnModalError" style="display:none; margin-top:12px; padding:8px 12px; background:rgba(251,113,133,.12); border:1px solid rgba(251,113,133,.38); border-radius:8px; font-size:12px; color:#fecdd3;"></div>
+            </div>
+            <div style="display:flex; gap:10px; padding:14px 20px; border-top:1px solid #223550;">
+                <button onclick="submitReturn()" id="returnModalConfirm" style="flex:1; padding:10px; font-size:13px; font-weight:900; color:#04101f; background:linear-gradient(180deg,#5aa2ff,#3b82f6); border:none; border-radius:10px; cursor:pointer;">Confirm</button>
+                <button onclick="closeReturnModal()" style="padding:10px 18px; font-size:13px; font-weight:800; color:#9fb0ca; background:#14213a; border:1px solid #315073; border-radius:10px; cursor:pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Description Modal -->
+<div id="descModal" class="dc-modal-backdrop">
+    <div onclick="closeDesc()" style="position:absolute; inset:0; background:rgba(0,0,0,.50);"></div>
+    <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:1rem;">
+        <div style="background:#0f1a2d; border:1px solid #315073; border-radius:16px; box-shadow:0 25px 50px rgba(0,0,0,.35); width:100%; max-width:500px; color:#eaf2ff;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid #223550;">
+                <h3 style="font-size:14px; font-weight:900; margin:0;">Description</h3>
+                <button onclick="closeDesc()" style="background:none; border:none; font-size:22px; color:#9fb0ca; cursor:pointer; line-height:1;">&times;</button>
+            </div>
+            <div id="descModalBody" style="padding:18px 20px; max-height:60vh; overflow-y:auto; font-size:13px; color:#dbeafe; line-height:1.7; white-space:pre-wrap;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Application Detail Modal -->
+<div id="appDetailModal" class="dc-modal-backdrop">
+    <div onclick="closeAppDetail()" style="position:absolute; inset:0; background:rgba(0,0,0,.55);"></div>
+    <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:1rem;">
+        <div style="background:#0f1a2d; border:1px solid #315073; border-radius:16px; box-shadow:0 25px 50px rgba(0,0,0,.35); width:100%; max-width:720px; color:#eaf2ff;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid #223550;">
+                <h3 style="font-size:14px; font-weight:900; margin:0;">Application Detail</h3>
+                <button onclick="closeAppDetail()" style="background:none; border:none; font-size:22px; color:#9fb0ca; cursor:pointer; line-height:1;">&times;</button>
+            </div>
+            <div id="appDetailBody" style="padding:18px 20px; max-height:70vh; overflow-y:auto;"></div>
         </div>
     </div>
 </div>
@@ -411,33 +763,16 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- Description Modal -->
-<div id="descModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:10000;">
-    <div onclick="closeDesc()" style="position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.45);"></div>
-    <div style="position:absolute; top:0; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; padding:1rem;">
-        <div style="background:#fff; border-radius:14px; box-shadow:0 25px 50px rgba(0,0,0,0.2); width:100%; max-width:480px; position:relative;">
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid #f3f4f6;">
-                <h3 style="font-size:14px; font-weight:700; color:#0c1a2e; margin:0;">📝 Description</h3>
-                <button onclick="closeDesc()" style="background:none; border:none; font-size:22px; color:#9ca3af; cursor:pointer; line-height:1;">&times;</button>
-            </div>
-            <div id="descModalBody" style="padding:18px 20px; max-height:60vh; overflow-y:auto; font-size:13px; color:#374151; line-height:1.7; white-space:pre-wrap;"></div>
-            <div style="padding:10px 20px; border-top:1px solid #f3f4f6; text-align:right;">
-                <button onclick="closeDesc()" style="padding:6px 16px; font-size:12px; font-weight:600; background:#f3f4f6; border:none; border-radius:8px; cursor:pointer;">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
 <script>
 function getCookie(name) {
     const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
     return v ? v[2] : '';
 }
 
-// ────────────────────────────────────────────────────────────
-// Account actions（Approve only — Return/Reject 走 modal）
-// ────────────────────────────────────────────────────────────
 async function acctAction(action, reqId, btn) {
     const url = `/office-portal/${action}-account/${reqId}/`;
+    const originalText = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Processing…'; btn.style.opacity = '0.7'; }
     try {
         const res = await fetch(url, {
             method: 'POST',
@@ -446,22 +781,21 @@ async function acctAction(action, reqId, btn) {
         });
         const data = await res.json();
         if (res.ok) {
-            const row = btn.closest('tr');
-            // Status badge is the 8th column (index 7)
-            const statusCell = row.querySelector('td:nth-child(8) span');
-            if (statusCell) statusCell.textContent = data.new_status;
-            row.querySelector('td:last-child').innerHTML = '<span style="color:#9ca3af;">Done</span>';
+            setTimeout(() => location.reload(), 450);
         } else {
-            alert(data.detail);
+            alert(data.detail || 'Operation failed.');
+            if (btn) { btn.disabled = false; btn.textContent = originalText; btn.style.opacity = '1'; }
         }
-    } catch (err) { alert('Connection error'); }
+    } catch (err) {
+        alert('Connection error. Please try again.');
+        if (btn) { btn.disabled = false; btn.textContent = originalText; btn.style.opacity = '1'; }
+    }
 }
 
-// ────────────────────────────────────────────────────────────
-// Service application actions（Approve / Review / Resume / Complete）
-// ────────────────────────────────────────────────────────────
 async function appAction(action, appId, btn) {
     const url = `/office-portal/${action}-application/${appId}/`;
+    const originalText = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Processing…'; btn.style.opacity = '0.7'; }
     try {
         const res = await fetch(url, {
             method: 'POST',
@@ -470,91 +804,99 @@ async function appAction(action, appId, btn) {
         });
         const data = await res.json();
         if (res.ok) {
-            setTimeout(() => location.reload(), 500);
+            setTimeout(() => location.reload(), 450);
         } else {
-            alert(data.detail);
+            alert(data.detail || 'Operation failed.');
+            if (btn) { btn.disabled = false; btn.textContent = originalText; btn.style.opacity = '1'; }
         }
-    } catch (err) { alert('Connection error'); }
+    } catch (err) {
+        alert('Connection error. Please try again.');
+        if (btn) { btn.disabled = false; btn.textContent = originalText; btn.style.opacity = '1'; }
+    }
 }
 
-// ────────────────────────────────────────────────────────────
-// Return / Reject Modal
-// ────────────────────────────────────────────────────────────
-let _returnCtx = {}; // 儲存當前 modal 的上下文
+async function hardwareAction(action, id) {
+    const res = await fetch(`/office-portal/hardware/action/${id}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `action=${encodeURIComponent(action)}`
+    });
+    const data = await res.json();
+    if (data.success) {
+        location.reload();
+    } else {
+        alert(data.detail || 'Operation failed.');
+    }
+}
 
-/**
- * @param {string} type        'app' | 'acct'
- * @param {number} id          Application.id or AccountRequest.id
- * @param {string} currentStatus  e.g. 'Pending Supervisor'
- * @param {string} role        'supervisor' | 'cio'
- * @param {boolean} forceReject  true = 直接 Reject（永久拒絕）
- */
+let _returnCtx = {};
+
 function openReturnModal(type, id, currentStatus, role, forceReject = false) {
     _returnCtx = { type, id, role, forceReject };
-
-    // Modal title
+    const modal = document.getElementById('returnModal');
     const header = document.getElementById('returnModalHeader').querySelector('h3');
     header.textContent = forceReject ? '🚫 Reject Permanently' : '↩ Return for Revision';
 
-    // Return-to 選項：只有 CIO 且不是永久拒絕時顯示
     const returnToSection = document.getElementById('returnToSection');
-    returnToSection.style.display = (role === 'cio' && !forceReject) ? 'block' : 'none';
+    returnToSection.style.display = (role === 'cio' && type !== 'hw' && !forceReject) ? 'block' : 'none';
 
-    // 預設 radio = applicant
-    const radios = document.querySelectorAll('input[name="returnTo"]');
-    radios.forEach(r => { r.checked = (r.value === 'applicant'); });
-
-    // 清空欄位
+    document.querySelectorAll('input[name="returnTo"]').forEach(r => { r.checked = (r.value === 'applicant'); });
     document.getElementById('returnReason').value = '';
     document.getElementById('returnModalError').style.display = 'none';
-    document.getElementById('returnReason').placeholder =
-        forceReject
-            ? 'Explain the reason for permanent rejection…'
-            : 'Explain what needs to be corrected or clarified…';
-
-    document.getElementById('returnModal').style.display = 'block';
+    document.getElementById('returnReason').placeholder = forceReject ? 'Explain the reason for permanent rejection…' : 'Explain what needs to be corrected or clarified…';
+    modal.classList.add('show');
     setTimeout(() => document.getElementById('returnReason').focus(), 100);
 }
 
 function closeReturnModal() {
-    document.getElementById('returnModal').style.display = 'none';
+    document.getElementById('returnModal').classList.remove('show');
     _returnCtx = {};
 }
 
 async function submitReturn() {
-    const { type, id, role, forceReject } = _returnCtx;
+    const { type, id, forceReject } = _returnCtx;
     const comment = document.getElementById('returnReason').value.trim();
-    const errEl   = document.getElementById('returnModalError');
-    const btn     = document.getElementById('returnModalConfirm');
+    const errEl = document.getElementById('returnModalError');
+    const btn = document.getElementById('returnModalConfirm');
 
     if (!comment) {
         errEl.textContent = 'Please provide a reason.';
         errEl.style.display = 'block';
         return;
     }
+
     errEl.style.display = 'none';
-
-    const returnTo = document.querySelector('input[name="returnTo"]:checked')?.value || 'applicant';
-    const action   = forceReject ? 'reject' : 'return';
-
-    const urlBase = type === 'app' ? 'reject-application' : 'reject-account';
-    const url = `/office-portal/${urlBase}/${id}/`;
-
     btn.textContent = '送出中…';
     btn.style.opacity = '0.7';
 
-    try {
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ comment, action, return_to: returnTo }),
-        });
-        const data = await res.json();
+    const action = forceReject ? 'reject' : 'return';
 
-        if (res.ok) {
+    try {
+        let res;
+        if (type === 'hw') {
+            res = await fetch(`/office-portal/hardware/action/${id}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `action=${encodeURIComponent(action)}&reason=${encodeURIComponent(comment)}`
+            });
+        } else {
+            const returnTo = document.querySelector('input[name="returnTo"]:checked')?.value || 'applicant';
+            const urlBase = type === 'app' ? 'reject-application' : 'reject-account';
+            res = await fetch(`/office-portal/${urlBase}/${id}/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' },
+                body: JSON.stringify({ comment, action, return_to: returnTo }),
+            });
+        }
+
+        const data = await res.json();
+        if (res.ok && (data.success !== false)) {
             closeReturnModal();
             setTimeout(() => location.reload(), 400);
         } else {
@@ -570,14 +912,11 @@ async function submitReturn() {
     btn.style.opacity = '1';
 }
 
-// ────────────────────────────────────────────────────────────
-// Application Detail Modal
-// ────────────────────────────────────────────────────────────
 async function showAppDetail(appId) {
     const modal = document.getElementById('appDetailModal');
     const body  = document.getElementById('appDetailBody');
-    body.innerHTML = '<p style="font-size:13px; color:#9ca3af;">Loading…</p>';
-    modal.style.display = 'block';
+    body.innerHTML = '<p style="font-size:13px; color:#9fb0ca;">Loading…</p>';
+    modal.classList.add('show');
 
     try {
         const res = await fetch(`/office-portal/api/application/${appId}/`);
@@ -585,109 +924,42 @@ async function showAppDetail(appId) {
         const d = await res.json();
 
         const row = (label, val) =>
-            `<div style="display:grid; grid-template-columns:1fr 2fr; gap:0 16px; padding:10px 0; border-bottom:1px solid #f9fafb;">
-                <div style="font-size:11px; font-weight:600; color:#9ca3af; text-transform:uppercase; letter-spacing:0.05em;">${label}</div>
-                <div style="font-size:13px; color:#1f2937;">${val || '—'}</div>
+            `<div style="display:grid; grid-template-columns:150px 1fr; gap:16px; padding:10px 0; border-bottom:1px solid #223550;">
+                <div style="font-size:11px; font-weight:900; color:#6f819d; text-transform:uppercase; letter-spacing:.10em;">${label}</div>
+                <div style="font-size:13px; color:#dbeafe; white-space:pre-wrap;">${val || '—'}</div>
             </div>`;
 
         let html =
-            row('App No.',     d.f_no) +
-            row('Applicant',   d.a_name) +
-            row('Department',  d.department) +
-            row('Type',        d.a_type) +
-            row('Service',     d.service_system) +
-            row('Purpose',     `<div style="white-space:pre-wrap;">${d.a_purpose}</div>`);
-
-        if (d.description) {
-            html += row('Description', `<div style="white-space:pre-wrap;">${d.description}</div>`);
-        }
-        if (d.return_reason) {
-            html += `<div style="display:grid; grid-template-columns:1fr 2fr; gap:0 16px; padding:10px 0; border-bottom:1px solid #f9fafb;">
-                <div style="font-size:11px; font-weight:600; color:#ea580c; text-transform:uppercase; letter-spacing:0.05em;">Return Reason</div>
-                <div style="font-size:13px; color:#ea580c; white-space:pre-wrap;">${d.return_reason}</div>
-            </div>`;
-        }
-
-        if (d.bookmark) {
-            html += `<div style="display:grid; grid-template-columns:1fr 2fr; gap:0 16px; padding:10px 0; border-bottom:1px solid #f9fafb;">
-                <div style="font-size:11px; font-weight:600; color:#7c3aed; text-transform:uppercase; letter-spacing:0.05em;">Review Note</div>
-                <div style="font-size:13px; color:#7c3aed; white-space:pre-wrap;">${d.bookmark}</div>
-            </div>`;
-        }
-        
-        html +=
-            row('Attachment',  d.attachment
-                ? `<a href="${d.attachment}" target="_blank" style="color:#2a4270; text-decoration:underline;">📎 View File</a>`
-                : '—') +
-            row('Status',      d.status) +
-            row('Submitted',   d.created_at) +
-            buildHistoryTimeline(d.history || []);
+            row('App No.', d.f_no) +
+            row('Applicant', d.a_name) +
+            row('Department', d.department) +
+            row('Type', d.a_type) +
+            row('Service', d.service_system) +
+            row('Purpose', d.a_purpose) +
+            row('Description', d.description) +
+            row('Return Reason', d.return_reason) +
+            row('Review Note', d.bookmark) +
+            row('Attachment', d.attachment ? `<a href="${d.attachment}" target="_blank" style="color:#35d5ea; text-decoration:underline;">View File</a>` : '—') +
+            row('Status', d.status) +
+            row('Submitted', d.created_at);
 
         body.innerHTML = html;
     } catch (err) {
-        body.innerHTML = '<p style="font-size:13px; color:#ef4444;">Failed to load details.</p>';
+        body.innerHTML = '<p style="font-size:13px; color:#fb7185;">Failed to load details.</p>';
     }
 }
 
-function buildHistoryTimeline(history) {
-    if (!history.length) return '';
-
-    const actionColors = {
-        'Approve':       { bg: '#ecfdf5', text: '#059669', dot: '#10b981' },
-        'Reject':        { bg: '#fef2f2', text: '#dc2626', dot: '#ef4444' },
-        'Return':        { bg: '#fff7ed', text: '#ea580c', dot: '#f97316' },
-        'Resubmit':      { bg: '#f0fdf4', text: '#16a34a', dot: '#22c55e' },
-        'Under-Preview': { bg: '#fefce8', text: '#ca8a04', dot: '#eab308' },
-        'Resume':        { bg: '#eff6ff', text: '#2563eb', dot: '#3b82f6' },
-        'Complete':      { bg: '#ecfdf5', text: '#059669', dot: '#10b981' },
-        'Submit':        { bg: '#f5f3ff', text: '#7c3aed', dot: '#8b5cf6' },
-        'Bookmark':      { bg: '#f9fafb', text: '#6b7280', dot: '#9ca3af' },
-    };
-
-    let html = `<div style="margin-top:16px; padding-top:16px; border-top:1px solid #e5e7eb;">
-        <div style="font-size:12px; font-weight:700; color:#0c1a2e; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px;">
-            📜 Approval History
-        </div>`;
-
-    history.forEach((h, i) => {
-        const c = actionColors[h.action] || { bg: '#f9fafb', text: '#6b7280', dot: '#9ca3af' };
-        const isLast = i === history.length - 1;
-        html += `
-        <div style="display:flex; gap:12px; position:relative;">
-            <div style="display:flex; flex-direction:column; align-items:center; width:16px;">
-                <div style="width:10px; height:10px; border-radius:50%; background:${c.dot}; margin-top:4px; flex-shrink:0;"></div>
-                ${!isLast ? '<div style="width:2px; flex:1; background:#e5e7eb; margin:4px 0;"></div>' : ''}
-            </div>
-            <div style="flex:1; padding-bottom:${isLast ? '0' : '12px'};">
-                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                    <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:9999px; background:${c.bg}; color:${c.text};">${h.action}</span>
-                    <span style="font-size:11px; color:#9ca3af;">${h.created_at}</span>
-                </div>
-                <div style="font-size:12px; color:#4b5563; margin-top:2px;">
-                    <strong>${h.actor}</strong>: ${h.from_status} → ${h.to_status}
-                </div>
-                ${h.comment ? `<div style="font-size:11px; color:#6b7280; margin-top:4px; padding:6px 10px; background:#f9fafb; border-radius:6px; white-space:pre-wrap;">${h.comment}</div>` : ''}
-            </div>
-        </div>`;
-    });
-
-    html += '</div>';
-    return html;
-}
-
 function closeAppDetail() {
-    document.getElementById('appDetailModal').style.display = 'none';
+    document.getElementById('appDetailModal').classList.remove('show');
 }
 
-// ────────────────────────────────────────────────────────────
-// Description Modal
-// ────────────────────────────────────────────────────────────
 function showDesc(text) {
     document.getElementById('descModalBody').textContent = text || '—';
-    document.getElementById('descModal').style.display = 'block';
+    document.getElementById('descModal').classList.add('show');
 }
+
 function closeDesc() {
-    document.getElementById('descModal').style.display = 'none';
+    document.getElementById('descModal').classList.remove('show');
 }
 </script>
 {% endblock %}

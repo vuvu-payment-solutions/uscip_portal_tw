@@ -29,6 +29,8 @@ Hardware Application 退件流程：
   Team Leader / Supervisor / Hardware Supervisor 可退件 → Returned
   申請人重新送出 Returned → 依 UserProfile.department 決定：IT → Pending Hardware Supervisor；其他部門 → Pending Team Leader
 """
+from functools import wraps
+
 import json
 import secrets
 
@@ -147,6 +149,24 @@ def _get_user_department(user) -> str:
     if not profile:
         return ""
     return _normalize_department(profile.department)
+
+
+def can_view_compliance(user) -> bool:
+    """Only IT Department users may view ISMS / Compliance features."""
+    if not getattr(user, "is_authenticated", False):
+        return False
+    return _is_it_department(_get_user_department(user))
+
+
+def compliance_required(view_func):
+    """Backend guard for Compliance / Controls pages. Do not rely on UI hiding only."""
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if not can_view_compliance(request.user):
+            messages.error(request, "You do not have permission to access Compliance features.")
+            return redirect("portal_dashboard")
+        return view_func(request, *args, **kwargs)
+    return _wrapped
 
 
 def _initial_account_status(department: str) -> str:
@@ -372,16 +392,30 @@ def portal_dashboard(request):
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else "user"
 
-    domains = ControlDomain.objects.prefetch_related('items__evidences').all()
+    compliance_allowed = can_view_compliance(request.user)
     domain_stats = []
-    for domain in domains:
-        items = list(domain.items.all())
-        total = len(items)
-        compliant = sum(1 for item in items if (ev := item.evidences.first()) and ev.status)
-        domain_stats.append({
-            "domain": domain, "total": total, "compliant": compliant,
-            "rate": round(compliant / total * 100, 1) if total else 0,
-        })
+    control_domain_count = 0
+    control_total = 0
+    compliant_total = 0
+    compliance_rate = 0
+
+    if compliance_allowed:
+        domains = ControlDomain.objects.prefetch_related('items__evidences').all()
+        for domain in domains:
+            items = list(domain.items.all())
+            total = len(items)
+            compliant = sum(1 for item in items if (ev := item.evidences.first()) and ev.status)
+            domain_stats.append({
+                "domain": domain,
+                "total": total,
+                "compliant": compliant,
+                "rate": round(compliant / total * 100, 1) if total else 0,
+            })
+
+        control_domain_count = len(domain_stats)
+        control_total = sum(d["total"] for d in domain_stats)
+        compliant_total = sum(d["compliant"] for d in domain_stats)
+        compliance_rate = round(compliant_total / control_total * 100, 1) if control_total else 0
 
     if profile and profile.must_change_pw:
         messages.warning(request, "Please change your password before continuing.")
@@ -389,7 +423,12 @@ def portal_dashboard(request):
 
     context = {
         "role": role,
+        "can_view_compliance": compliance_allowed,
         "domain_stats": domain_stats,
+        "control_domain_count": control_domain_count,
+        "control_total": control_total,
+        "compliant_total": compliant_total,
+        "compliance_rate": compliance_rate,
         "notices": Notice.objects.filter(is_active=True)[:5],
         "my_account_requests": AccountRequest.objects.filter(
             username=request.user.username
@@ -400,6 +439,12 @@ def portal_dashboard(request):
         "my_applications": Application.objects.filter(
             a_name=request.user.username
         ).order_by("-created_at")[:5],
+        "my_byod_requests": BYODRequest.objects.filter(
+            applicant=request.user
+        ).order_by("-created_at")[:5],
+        "pending_accounts": AccountRequest.objects.none(),
+        "pending_apps": Application.objects.none(),
+        "pending_hardware": HardwareRequest.objects.none(),
     }
 
     if role == "cio":
@@ -432,6 +477,12 @@ def portal_dashboard(request):
         context["pending_hardware"] = HardwareRequest.objects.filter(
             status="Pending Team Leader"
         )
+
+    context["pending_task_count"] = (
+        context["pending_accounts"].count() +
+        context["pending_apps"].count() +
+        context["pending_hardware"].count()
+    )
 
     for req in context["my_account_requests"]:
         req.display_reason = req.return_reason or req.comment or ""
@@ -2051,6 +2102,7 @@ def settings_home(request):
 # ─────────────────────────────────────────────
 
 @login_required
+@compliance_required
 def control_list(request):
     from .models import Domain
     domains = Domain.objects.prefetch_related('items').all()
@@ -2058,6 +2110,7 @@ def control_list(request):
 
 
 @login_required
+@compliance_required
 def compliance_dashboard(request):
     return render(request, 'compliance/dashboard.html')
 

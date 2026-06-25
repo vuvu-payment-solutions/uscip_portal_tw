@@ -1,35 +1,76 @@
 import io
-from django.contrib.auth.decorators import login_required, permission_required
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from docx import Document
-from .models import ControlDomain, ControlItem, ComplianceEvidence
+
+from .models import ControlDomain, ControlItem
+
 
 # =================================================================
-# ISMS 合規業務邏輯 (ISO 27001:2022)
+# ISMS Compliance Helpers
 # =================================================================
 
-@login_required
-def compliance_dashboard(request):
+IT_DEPARTMENT = "IT"
+
+
+def _normalize_department(department: str) -> str:
+    return (department or "").strip()
+
+
+def can_view_compliance(user) -> bool:
     """
-    ISMS 合規儀表板：計算各控制域的合規率並渲染 Dashboard (您的截圖頁面)
+    Only IT Department users may access Compliance / Controls / Export.
+    UI hiding is not enough; this is the backend guard.
     """
-    # 使用 prefetch_related 優化查詢，避免 N+1 問題
-    domains = ControlDomain.objects.prefetch_related('items__evidences').all()
-    
+    if not getattr(user, "is_authenticated", False):
+        return False
+
+    profile = getattr(user, "profile", None)
+    if not profile:
+        return False
+
+    return _normalize_department(profile.department).lower() == IT_DEPARTMENT.lower()
+
+
+def compliance_required(view_func):
+    def _wrapped(request, *args, **kwargs):
+        if not can_view_compliance(request.user):
+            messages.error(request, "You do not have permission to access Compliance features.")
+            return redirect("portal_dashboard")
+        return view_func(request, *args, **kwargs)
+    return _wrapped
+
+
+def get_compliance_summary():
+    """
+    Shared compliance summary for Compliance Dashboard.
+    Keeps template variables consistent:
+    - domain_stats
+    - control_domain_count
+    - control_total
+    - compliant_total
+    - compliance_rate
+    """
+    domains = ControlDomain.objects.prefetch_related("items__evidences").all()
+
     domain_stats = []
-    total_compliant_count = 0
-    
+    control_total = 0
+    compliant_total = 0
+
     for domain in domains:
         items = list(domain.items.all())
         total = len(items)
-        # 檢查該控制項是否有證據，且最新狀態為 True (合規)
         compliant = sum(
-            1 for item in items 
+            1 for item in items
             if (ev := item.evidences.first()) and ev.status
         )
-        total_compliant_count += compliant
-        
+
+        control_total += total
+        compliant_total += compliant
+
         domain_stats.append({
             "domain": domain,
             "total": total,
@@ -37,38 +78,61 @@ def compliance_dashboard(request):
             "rate": round(compliant / total * 100, 1) if total else 0,
         })
 
-    context = {
+    compliance_rate = round(compliant_total / control_total * 100, 1) if control_total else 0
+
+    return {
         "domain_stats": domain_stats,
-        "total_domains": domains.count(),
-        "total_controls": ControlItem.objects.count(),
-        "total_compliant": total_compliant_count,
+        "control_domain_count": len(domain_stats),
+        "control_total": control_total,
+        "compliant_total": compliant_total,
+        "compliance_rate": compliance_rate,
     }
+
+
+# =================================================================
+# ISMS Compliance Views
+# =================================================================
+
+@login_required
+@compliance_required
+def compliance_dashboard(request):
+    """
+    ISMS Compliance Dashboard.
+    IT Department only.
+    """
+    context = get_compliance_summary()
     return render(request, "compliance/dashboard.html", context)
 
+
 @login_required
+@compliance_required
 def control_list(request):
     """
-    列出所有 93 項控制項及其詳細狀態 (對應您的 control_list.html)
+    ISO 27001:2022 Annex A control list.
+    IT Department only.
     """
-    domains = ControlDomain.objects.prefetch_related('items__evidences').all()
+    domains = ControlDomain.objects.prefetch_related("items__evidences").all()
     return render(request, "compliance/control_list.html", {"domains": domains})
 
+
 @login_required
+@compliance_required
 def export_report_docx(request):
     """
-    匯出 ISO 27001 合規狀態 Word 報告
+    Export ISO 27001 compliance status Word report.
+    IT Department only.
     """
     doc = Document()
-    doc.add_heading('USCIP - ISO 27001:2022 Compliance Report', 0)
+    doc.add_heading("USCIP - ISO 27001:2022 Compliance Report", 0)
 
     table = doc.add_table(rows=1, cols=4)
-    table.style = 'Table Grid'
-    headers = ['控制項 ID', '標題', '風險等級', '合規狀態']
-    for i, h in enumerate(headers):
-        table.rows[0].cells[i].text = h
+    table.style = "Table Grid"
+    headers = ["控制項 ID", "標題", "風險等級", "合規狀態"]
 
-    # 抓取所有控制項進行匯出
-    for item in ControlItem.objects.select_related('domain').all():
+    for i, header in enumerate(headers):
+        table.rows[0].cells[i].text = header
+
+    for item in ControlItem.objects.select_related("domain").prefetch_related("evidences").all():
         latest_ev = item.evidences.first()
         row = table.add_row().cells
         row[0].text = item.item_code
@@ -76,13 +140,13 @@ def export_report_docx(request):
         row[2].text = item.get_risk_level_display()
         row[3].text = "Compliant" if latest_ev and latest_ev.status else "Pending"
 
-    f = io.BytesIO()
-    doc.save(f)
-    f.seek(0)
+    file_obj = io.BytesIO()
+    doc.save(file_obj)
+    file_obj.seek(0)
 
     response = HttpResponse(
-        f.getvalue(),
-        content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        file_obj.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     )
-    response['Content-Disposition'] = 'attachment; filename=USCIP_Compliance_Report.docx'
+    response["Content-Disposition"] = "attachment; filename=USCIP_Compliance_Report.docx"
     return response

@@ -8,7 +8,18 @@
     {% tailwind_css %}
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        html,
+        body {
+            width: 100%;
+            min-height: 100%;
+            margin: 0;
+            overflow-x: hidden;
+            background: #07101f;
+        }
+
         body { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif; }
+
+        *, *::before, *::after { box-sizing: border-box; }
 
         /* Sidebar base */
         .sidebar { transition: transform 0.3s ease; }
@@ -58,12 +69,51 @@
 
         /* Gold accent bar */
         .gold-accent { background: linear-gradient(90deg, #a88a2e, #c9a84c, #e8d48b, #c9a84c); }
+
+        footer,
+        .footer,
+        .app-footer {
+            background: linear-gradient(180deg, #07111f 0%, #050b14 100%) !important;
+            border-top: 1px solid #22324c !important;
+            color: #8fa3c1 !important;
+            box-shadow: 0 -18px 40px rgba(0,0,0,.18);
+        }
+
+        /* footer */
+        footer *,
+        .footer *,
+        .app-footer * {
+            color: #8fa3c1 !important;
+        }
+
+        footer strong,
+        .footer strong,
+        .app-footer strong,
+        footer a,
+        .footer a,
+        .app-footer a {
+            color: #d4af37 !important;
+        }
+
+        .main-content {
+            min-width: 0;
+            min-height: 0;
+            overflow: hidden;
+            background: #07101f;
+        }
+
+        main {
+            min-width: 0;
+            min-height: 0;
+            overflow-x: hidden;
+            background: #07101f;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-[#07101f] text-gray-200">
 
-<div class="flex h-screen overflow-hidden">
+<div class="flex h-screen overflow-hidden bg-[#07101f]">
 
     <!-- ========== MOBILE OVERLAY ========== -->
     <div id="sidebarOverlay"
@@ -138,13 +188,17 @@
 
             <a href="{% url 'byod_list' %}"
             class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-white/5 hover:text-white transition-all {% block nav_byod %}{% endblock %}">
-                <svg class="nav-icon w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                    <path d="M4 7h16M6 7v10a2 2 0 002 2h8a2 2 0 002-2V7"/>
-                    <path d="M9 11h6"/>
-                </svg>
+                    <svg class="nav-icon w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <rect x="3" y="6" width="12" height="8" rx="1.5"/>
+                        <path d="M2 17h14"/>
+                        <path d="M7 17h4"/>
+                        <rect x="17" y="4" width="4" height="13" rx="1"/>
+                        <path d="M18.5 14.5h1"/>
+                    </svg>
                 <span class="nav-text text-sm font-medium">BYOD Requests</span>
             </a>
 
+            {% if user.is_authenticated and user.profile.department|lower == "it" %}
             <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider px-3 mt-5 mb-2">ISMS</div>
 
             <a href="{% url 'compliance_home' %}"
@@ -152,7 +206,8 @@
                 <svg class="nav-icon w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                 </svg>
-                <span class="nav-text text-sm font-medium">Compliance</span>
+                <span class="nav-text text-sm font-medium flex-1">Compliance</span>
+                <span class="text-[9px] font-bold text-[#c9a84c] border border-[#c9a84c]/35 rounded px-1.5 py-0.5">IT</span>
             </a>
 
             <a href="{% url 'compliance_controls' %}"
@@ -160,8 +215,10 @@
                 <svg class="nav-icon w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
                 </svg>
-                <span class="nav-text text-sm font-medium">Controls</span>
+                <span class="nav-text text-sm font-medium flex-1">Controls</span>
+                <span class="text-[9px] font-bold text-[#c9a84c] border border-[#c9a84c]/35 rounded px-1.5 py-0.5">IT</span>
             </a>
+            {% endif %}
 
             <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider px-3 mt-5 mb-2">Account</div>
 
@@ -204,7 +261,7 @@
     </aside>
 
     <!-- ========== MAIN CONTENT ========== -->
-    <div class="main-content flex-1 flex flex-col min-w-0 bg-[#07101f] text-gray-200">
+    <div class="main-content flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden bg-[#07101f] text-gray-200">
 
         <!-- Top Bar -->
         <header class="sticky top-0 z-20 bg-white px-4 sm:px-6 h-[62.15px] flex items-center justify-between flex-shrink-0">
@@ -231,12 +288,12 @@
         <div class="gold-accent h-[3px] flex-shrink-0"></div>
 
         <!-- Page Content -->
-        <main class="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#07101f]">
+        <main class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6 bg-[#07101f]">
             {% block content %}{% endblock %}
         </main>
 
         <!-- Footer -->
-        <footer class="px-4 sm:px-6 py-3 text-center text-xs text-[#6f819d] border-t border-[#223550] bg-[#07101f] flex-shrink-0">
+        <footer class="portal-footer px-4 sm:px-6 py-3 text-center text-xs text-[#6f819d] border-t border-[#223550] bg-[#07101f] flex-shrink-0" style="background:#07101f !important; border-top:1px solid #223550 !important; color:#6f819d !important;">
             &copy; 2026 <span class="text-[#a88a2e] font-semibold">Quilter International Corp.</span> All rights reserved.
         </footer>
 

@@ -6,104 +6,305 @@
 
 {% block content %}
 
-<div class="max-w-lg mx-auto">
+<style>
+    .profile-console {
+        --pc-bg-0: #07101f;
+        --pc-bg-1: #0b1628;
+        --pc-line: #223550;
+        --pc-line-strong: #315073;
+        --pc-text: #eaf2ff;
+        --pc-muted: #9fb0ca;
+        --pc-dim: #6f819d;
+        --pc-cyan: #35d5ea;
+        --pc-blue: #3b82f6;
+        --pc-gold: #c9a84c;
+        --pc-green: #34d399;
+        --pc-red: #fb7185;
 
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-[#0c1a2e]">Edit Profile</h1>
-        <p class="text-sm text-gray-400 mt-1">Update your personal information</p>
-    </div>
+        min-height: calc(100vh - 155px);
+        margin: -24px;
+        padding: 24px;
+        color: var(--pc-text);
+        background:
+            radial-gradient(760px 320px at 82% -12%, rgba(59,130,246,.18), transparent 62%),
+            radial-gradient(560px 280px at 4% 0%, rgba(53,213,234,.10), transparent 58%),
+            linear-gradient(180deg, var(--pc-bg-1), var(--pc-bg-0));
+        position: relative;
+        overflow: hidden;
+    }
 
-    <!-- Messages -->
-    {% if messages %}
-    <div class="mb-4">
-        {% for m in messages %}
-        <div class="px-4 py-2.5 rounded-lg text-sm font-medium
-            {% if 'success' in m.tags %}bg-emerald-50 text-emerald-700 border border-emerald-200
-            {% else %}bg-red-50 text-red-600 border border-red-200{% endif %}">
-            {{ m }}
+    .profile-console::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: .40;
+        background-image:
+            linear-gradient(rgba(130,160,210,.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(130,160,210,.06) 1px, transparent 1px);
+        background-size: 42px 42px;
+        mask-image: radial-gradient(900px 520px at 50% 0%, #000 30%, transparent 82%);
+    }
+
+    .profile-console > * { position: relative; z-index: 1; }
+
+    .pc-shell { max-width: 640px; margin: 0 auto; }
+
+    .pc-hero,
+    .pc-card {
+        border: 1px solid var(--pc-line);
+        border-radius: 16px;
+        background: linear-gradient(180deg, rgba(18,31,52,.94), rgba(15,26,45,.96));
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,.045),
+            0 18px 34px -26px rgba(0,0,0,.90);
+    }
+
+    .pc-hero {
+        padding: 22px 24px;
+        margin-bottom: 14px;
+        background:
+            linear-gradient(90deg, rgba(7,16,31,.98), rgba(12,28,50,.94)),
+            radial-gradient(620px 220px at 86% 0%, rgba(53,213,234,.18), transparent 62%);
+    }
+
+    .pc-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--pc-cyan);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+        margin-bottom: 7px;
+    }
+
+    .pc-pulse {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--pc-cyan);
+        box-shadow: 0 0 0 0 rgba(53,213,234,.55);
+        animation: pcPulse 2.4s infinite;
+    }
+
+    @keyframes pcPulse {
+        0% { box-shadow: 0 0 0 0 rgba(53,213,234,.50); }
+        70% { box-shadow: 0 0 0 9px rgba(53,213,234,0); }
+        100% { box-shadow: 0 0 0 0 rgba(53,213,234,0); }
+    }
+
+    .pc-title {
+        margin: 0;
+        color: var(--pc-text);
+        font-size: 26px;
+        line-height: 1.15;
+        font-weight: 950;
+        letter-spacing: -.03em;
+    }
+
+    .pc-subtitle {
+        color: var(--pc-muted);
+        font-size: 13px;
+        margin-top: 7px;
+        line-height: 1.5;
+    }
+
+    .pc-message {
+        margin-bottom: 14px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .pc-message.success {
+        color: #bbf7d0;
+        background: rgba(52,211,153,.12);
+        border: 1px solid rgba(52,211,153,.35);
+    }
+
+    .pc-message.error {
+        color: #fecdd3;
+        background: rgba(251,113,133,.12);
+        border: 1px solid rgba(251,113,133,.35);
+    }
+
+    .pc-card-head {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        padding: 18px 22px;
+        border-bottom: 1px solid rgba(49,80,115,.58);
+        background: rgba(7,16,31,.30);
+    }
+
+    .pc-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 13px;
+        color: #f7d974;
+        background: rgba(201,168,76,.13);
+        border: 1px solid rgba(201,168,76,.38);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+    }
+
+    .pc-card-title { color: var(--pc-text); font-size: 17px; font-weight: 950; }
+    .pc-card-note { color: var(--pc-dim); font-size: 12px; margin-top: 3px; }
+
+    .pc-form { padding: 22px; }
+
+    .pc-field { margin-bottom: 16px; }
+    .pc-label {
+        display: block;
+        color: var(--pc-dim);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .13em;
+        text-transform: uppercase;
+        margin-bottom: 7px;
+    }
+
+    .pc-input {
+        width: 100%;
+        padding: 11px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--pc-line-strong);
+        color: var(--pc-text);
+        background: rgba(7,16,31,.74);
+        outline: none;
+        font-size: 13px;
+        transition: border-color .14s ease, box-shadow .14s ease, background .14s ease;
+    }
+
+    .pc-input:focus {
+        border-color: var(--pc-cyan);
+        box-shadow: 0 0 0 3px rgba(53,213,234,.16);
+        background: rgba(7,16,31,.92);
+    }
+
+    .pc-input[readonly] {
+        color: var(--pc-muted);
+        background: rgba(111,129,157,.10);
+        cursor: not-allowed;
+    }
+
+    .pc-help { color: var(--pc-dim); font-size: 11px; margin-top: 5px; }
+
+    .pc-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-top: 18px;
+        border-top: 1px solid rgba(49,80,115,.58);
+        flex-wrap: wrap;
+    }
+
+    .pc-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+        padding: 10px 15px;
+        border-radius: 10px;
+        border: 1px solid var(--pc-line-strong);
+        color: var(--pc-text);
+        background: linear-gradient(180deg, #1b2940, #14213a);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 900;
+        cursor: pointer;
+        transition: transform .14s ease, filter .14s ease;
+    }
+
+    .pc-btn:hover { transform: translateY(-1px); filter: brightness(1.10); }
+    .pc-btn.primary { flex: 1; color: #04101f; border: none; background: linear-gradient(180deg, #5aa2ff, #3b82f6); }
+    .pc-btn.gold { color: #f7d974; border-color: rgba(201,168,76,.38); background: rgba(201,168,76,.10); }
+
+    @media (max-width: 768px) {
+        .profile-console { margin: -16px; padding: 16px; }
+        .pc-title { font-size: 22px; }
+        .pc-form { padding: 18px; }
+    }
+</style>
+
+<div class="profile-console">
+    <div class="pc-shell">
+
+        <section class="pc-hero">
+            <div class="pc-eyebrow"><span class="pc-pulse"></span> Account Console</div>
+            <h1 class="pc-title">Edit Profile</h1>
+            <p class="pc-subtitle">Update your personal information and contact details.</p>
+        </section>
+
+        {% if messages %}
+        <div class="mb-4">
+            {% for m in messages %}
+            <div class="pc-message {% if 'success' in m.tags %}success{% else %}error{% endif %}">
+                {{ m }}
+            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
+        {% endif %}
+
+        <section class="pc-card">
+            <div class="pc-card-head">
+                <div class="pc-icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="pc-card-title">Personal Information</h2>
+                    <p class="pc-card-note">Fields marked with * are required</p>
+                </div>
+            </div>
+
+            <form method="POST" class="pc-form">
+                {% csrf_token %}
+
+                <div class="pc-field">
+                    <label class="pc-label">Username</label>
+                    <input type="text" value="{{ user.username }}" readonly class="pc-input">
+                    <p class="pc-help">Username cannot be changed</p>
+                </div>
+
+                <div class="pc-field">
+                    <label class="pc-label">Role</label>
+                    <input type="text" value="{{ profile.get_role_display }}" readonly class="pc-input">
+                    <p class="pc-help">Contact administrator to change role</p>
+                </div>
+
+                <div class="pc-field">
+                    <label class="pc-label">Full Name *</label>
+                    <input type="text" name="full_name" value="{{ profile.full_name }}" required class="pc-input">
+                </div>
+
+                <div class="pc-field">
+                    <label class="pc-label">Email *</label>
+                    <input type="email" name="email" value="{{ user.email }}" required class="pc-input">
+                </div>
+
+                <div class="pc-field">
+                    <label class="pc-label">Department</label>
+                    <input type="text" name="department" value="{{ profile.department }}" class="pc-input">
+                </div>
+
+                <div class="pc-actions">
+                    <button type="submit" class="pc-btn primary">Save Changes</button>
+                    <a href="/office-portal/change-password/" class="pc-btn gold">Change Password</a>
+                    <a href="/office-portal/dashboard/" class="pc-btn">Cancel</a>
+                </div>
+            </form>
+        </section>
+
     </div>
-    {% endif %}
-
-    <!-- Form Card -->
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-
-        <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-            <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#1a2d4a] to-[#2a4270] flex items-center justify-center flex-shrink-0">
-                <svg class="w-4.5 h-4.5 text-[#e8d48b]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                </svg>
-            </div>
-            <div>
-                <h2 class="font-bold text-[#0c1a2e]">Personal Information</h2>
-                <p class="text-xs text-gray-400">Fields marked with * are required</p>
-            </div>
-        </div>
-
-        <form method="POST" class="px-6 py-5">
-            {% csrf_token %}
-
-            <!-- Username (read-only) -->
-            <div class="mb-4">
-                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Username</label>
-                <input type="text" value="{{ user.username }}" readonly
-                       class="w-full px-3 py-2.5 text-sm bg-gray-100 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed">
-                <p class="text-xs text-gray-400 mt-1">Username cannot be changed</p>
-            </div>
-
-            <!-- Role (read-only) -->
-            <div class="mb-4">
-                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Role</label>
-                <input type="text" value="{{ profile.get_role_display }}" readonly
-                       class="w-full px-3 py-2.5 text-sm bg-gray-100 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed">
-                <p class="text-xs text-gray-400 mt-1">Contact administrator to change role</p>
-            </div>
-
-            <!-- Full Name -->
-            <div class="mb-4">
-                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Full Name *</label>
-                <input type="text" name="full_name" value="{{ profile.full_name }}" required
-                       class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
-                              focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
-            </div>
-
-            <!-- Email -->
-            <div class="mb-4">
-                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Email *</label>
-                <input type="email" name="email" value="{{ user.email }}" required
-                       class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
-                              focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
-            </div>
-
-            <!-- Department -->
-            <div class="mb-6">
-                <label class="block text-xs font-bold text-[#1a2d4a] uppercase tracking-wider mb-1.5">Department</label>
-                <input type="text" name="department" value="{{ profile.department }}"
-                       class="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all
-                              focus:bg-white focus:border-[#c9a84c] focus:ring-2 focus:ring-[#c9a84c]/20">
-            </div>
-
-            <!-- Actions -->
-            <div class="flex items-center gap-3 pt-5 border-t border-gray-100">
-                <button type="submit"
-                        class="flex-1 py-3 text-white text-sm font-bold uppercase tracking-wider
-                               bg-gradient-to-r from-[#1a2d4a] to-[#2a4270] rounded-lg shadow-md
-                               hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer">
-                    Save Changes
-                </button>
-                <a href="/office-portal/change-password/"
-                   class="px-5 py-3 text-sm font-medium text-[#1a2d4a] bg-[#c9a84c]/10 hover:bg-[#c9a84c]/20 rounded-lg transition-colors text-center">
-                    Change Password
-                </a>
-                <a href="/office-portal/dashboard/"
-                   class="px-5 py-3 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-center">
-                    Cancel
-                </a>
-            </div>
-        </form>
-    </div>
-
 </div>
 
 {% endblock %}
