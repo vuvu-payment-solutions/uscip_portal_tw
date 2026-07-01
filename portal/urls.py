@@ -45,6 +45,13 @@ urlpatterns = [
     path("hardware/resubmit/<int:req_id>/", views.resubmit_hardware, name="resubmit_hardware"),
     path("hardware/action/<int:req_id>/", views.hardware_action, name="hardware_action"),
     
+    # ── 軟體申請 ───────────────────────────────────
+    path("software/apply/", views.submit_software, name="software_apply"),
+    path("software/list/", views.software_list, name="software_list"),
+    path("software/detail/<int:req_id>/", views.software_detail_api, name="software_detail_api"),
+    path("software/resubmit/<int:req_id>/", views.resubmit_software, name="resubmit_software"),
+    path("software/action/<int:req_id>/", views.software_action, name="software_action"),    
+    
     # ── BYOD 自攜設備申請 ─────────────────────────────
     path("byod/apply/", views.submit_byod, name="byod_apply"),
     path("byod/list/", views.byod_list, name="byod_list"),

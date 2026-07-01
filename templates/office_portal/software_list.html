@@ -1,0 +1,1301 @@
+{% extends "base.html" %}
+
+{% block nav_software %}active{% endblock %}
+{% block title %}Software Applications — USCIP Office Portal{% endblock %}
+
+{% block content %}
+
+<style>
+    /* Software Applications - scoped Tech Console list layout
+       Keep this CSS inside software_list.html so it does not affect Account/Application pages. */
+    .sw-console {
+        --sw-bg-0: #07101f;
+        --sw-bg-1: #0b1628;
+        --sw-card-1: #121f34;
+        --sw-card-2: #0f1a2d;
+        --sw-line: #223550;
+        --sw-line-strong: #315073;
+        --sw-text: #eaf2ff;
+        --sw-muted: #9fb0ca;
+        --sw-dim: #6f819d;
+        --sw-accent: #3b82f6;
+        --sw-cyan: #35d5ea;
+        --sw-done: #34d399;
+        --sw-pending: #fbbf24;
+        --sw-review: #facc15;
+        --sw-working: #818cf8;
+        --sw-return: #fb923c;
+        --sw-reject: #fb7185;
+
+        color: var(--sw-text);
+        background:
+            radial-gradient(760px 320px at 82% -12%, rgba(59,130,246,.18), transparent 62%),
+            radial-gradient(560px 280px at 4% 0%, rgba(53,213,234,.10), transparent 58%),
+            linear-gradient(180deg, var(--sw-bg-1), var(--sw-bg-0));
+        border: 1px solid #1e3350;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, .18);
+        overflow: visible;
+        position: relative;
+    }
+
+    .sw-console::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: .42;
+        background-image:
+            linear-gradient(rgba(130, 160, 210, .06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(130, 160, 210, .06) 1px, transparent 1px);
+        background-size: 42px 42px;
+        mask-image: radial-gradient(900px 520px at 50% 0%, #000 30%, transparent 82%);
+    }
+
+    .sw-console > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    .sw-topbar {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 18px;
+        flex-wrap: wrap;
+    }
+
+    .sw-sticky-panel {
+        margin: -24px -24px 18px;
+        padding: 24px;
+        min-height: 128px;
+        box-sizing: border-box;
+        background:
+            linear-gradient(180deg, rgba(7,16,31,.99), rgba(7,16,31,.94)),
+            radial-gradient(620px 210px at 82% 0%, rgba(59,130,246,.16), transparent 62%);
+        border-bottom: 1px solid rgba(49,80,115,.72);
+        display: flex;
+        align-items: center;
+    }
+
+    .sw-search-sticky {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        margin: 0 -24px 16px;
+        padding: 10px 24px 12px;
+        background:
+            linear-gradient(180deg, rgba(7,16,31,.98), rgba(7,16,31,.94));
+        border-bottom: 1px solid rgba(49,80,115,.65);
+        backdrop-filter: blur(10px);
+    }
+
+    .sw-eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+        color: var(--sw-cyan);
+    }
+
+    .sw-pulse {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--sw-cyan);
+        box-shadow: 0 0 14px rgba(53, 213, 234, .9);
+    }
+
+    .sw-title {
+        margin: 0;
+        color: var(--sw-text);
+        font-size: 24px;
+        line-height: 1.15;
+        font-weight: 900;
+        letter-spacing: -.025em;
+    }
+
+    .sw-subtitle {
+        margin-top: 6px;
+        color: var(--sw-muted);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .sw-new-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 42px;
+        padding: 0 18px;
+        color: #04101f;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 800;
+        border-radius: 10px;
+        background: linear-gradient(180deg, #66a7ff, var(--sw-accent));
+        box-shadow: 0 14px 26px -14px rgba(59, 130, 246, .85), inset 0 1px 0 rgba(255,255,255,.45);
+        white-space: nowrap;
+    }
+
+    .sw-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 0 0 10px;
+    }
+
+    .sw-search-wrap {
+        flex: 1 1 360px;
+        min-width: 260px;
+        position: relative;
+    }
+
+    .sw-search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--sw-dim);
+        font-size: 14px;
+        pointer-events: none;
+    }
+
+    .sw-search-input {
+        width: 100%;
+        height: 42px;
+        padding: 0 14px 0 38px;
+        color: var(--sw-text);
+        background: linear-gradient(180deg, #0f1b2e, #0b1525);
+        border: 1px solid var(--sw-line);
+        border-radius: 10px;
+        outline: none;
+        font-size: 13px;
+        box-shadow: inset 0 2px 6px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
+    }
+
+    .sw-search-input::placeholder {
+        color: var(--sw-dim);
+    }
+
+    .sw-search-input:focus {
+        border-color: var(--sw-accent);
+        box-shadow: inset 0 2px 6px rgba(0,0,0,.35), 0 0 0 3px rgba(59,130,246,.22);
+    }
+
+    .sw-search-btn,
+    .sw-clear-btn {
+        height: 42px;
+        padding: 0 18px;
+        border-radius: 10px;
+        border: 1px solid var(--sw-line-strong);
+        color: var(--sw-text);
+        background: linear-gradient(180deg, #1b2b44, #132238);
+        font-size: 13px;
+        font-weight: 800;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .sw-clear-btn {
+        color: var(--sw-muted);
+        background: rgba(255,255,255,.04);
+    }
+
+    .sw-count {
+        margin: 2px 0 16px;
+        color: var(--sw-dim);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 11px;
+    }
+
+    .sw-count b {
+        color: var(--sw-cyan);
+    }
+
+    .sw-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .sw-card {
+        --sw-led: var(--sw-pending);
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(190px, 1.2fr) 68px minmax(190px, 1fr) minmax(190px, 1fr) 94px minmax(270px, .95fr);
+        align-items: center;
+        column-gap: 16px;
+        row-gap: 12px;
+        padding: 16px 18px 16px 24px;
+        background: linear-gradient(180deg, var(--sw-card-1), var(--sw-card-2));
+        border: 1px solid var(--sw-line);
+        border-radius: 13px;
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,.045),
+            inset 0 -12px 24px -22px rgba(0,0,0,.85),
+            0 18px 32px -26px rgba(0,0,0,.9);
+        transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease;
+    }
+
+    .sw-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--sw-line-strong);
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,.06),
+            0 24px 42px -28px rgba(0,0,0,.96),
+            0 0 0 1px rgba(59,130,246,.15),
+            0 0 26px -16px rgba(59,130,246,.7);
+    }
+
+    .sw-card::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 11px;
+        bottom: 11px;
+        width: 4px;
+        border-radius: 0 6px 6px 0;
+        background: var(--sw-led);
+        box-shadow: 0 0 14px -2px var(--sw-led), 0 0 28px -10px var(--sw-led);
+    }
+
+    .sw-card[data-status="done"] { --sw-led: var(--sw-done); }
+    .sw-card[data-status="pending"] { --sw-led: var(--sw-pending); }
+    .sw-card[data-status="review"] { --sw-led: var(--sw-review); }
+    .sw-card[data-status="working"] { --sw-led: var(--sw-working); }
+    .sw-card[data-status="return"] { --sw-led: var(--sw-return); }
+    .sw-card[data-status="reject"] { --sw-led: var(--sw-reject); }
+
+    .sw-software-type {
+        display: inline-flex;
+        align-items: center;
+        max-width: 100%;
+        margin-bottom: 7px;
+        padding: 3px 8px;
+        border-radius: 7px;
+        border: 1px solid rgba(53,213,234,.22);
+        background: rgba(53,213,234,.08);
+        color: var(--sw-cyan);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .sw-software-name {
+        color: var(--sw-text);
+        font-size: 16px;
+        font-weight: 800;
+        line-height: 1.35;
+        word-break: break-word;
+    }
+
+    .sw-field {
+        min-width: 0;
+        align-self: stretch;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .sw-field.center {
+        align-items: center;
+        text-align: center;
+    }
+
+    .sw-label {
+        margin-bottom: 5px;
+        color: var(--sw-dim);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: .13em;
+        text-transform: uppercase;
+    }
+
+    .sw-value {
+        color: var(--sw-muted);
+        font-size: 13px;
+        line-height: 1.45;
+        min-width: 0;
+    }
+
+    .sw-value.strong {
+        color: var(--sw-text);
+        font-size: 14px;
+        font-weight: 800;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    .sw-clamp {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        word-break: break-word;
+    }
+
+    .sw-attach-link {
+        color: #bcd8ff;
+        font-size: 12px;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .sw-attach-link:hover {
+        color: var(--sw-cyan);
+        text-decoration: underline;
+    }
+
+    .sw-att-none {
+        color: var(--sw-dim);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    .sw-right {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .sw-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        max-width: 100%;
+        padding: 6px 11px;
+        border-radius: 999px;
+        color: color-mix(in srgb, var(--sw-led) 78%, white 22%);
+        background: color-mix(in srgb, var(--sw-led) 13%, transparent);
+        border: 1px solid color-mix(in srgb, var(--sw-led) 34%, transparent);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 10.5px;
+        font-weight: 900;
+        letter-spacing: .035em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .sw-status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--sw-led);
+        box-shadow: 0 0 9px var(--sw-led);
+        flex: 0 0 auto;
+    }
+
+    .sw-actions {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 7px;
+    }
+
+    .sw-action {
+        min-width: 86px;
+        height: 34px;
+        padding: 0 11px;
+        border: 1px solid var(--sw-line-strong);
+        border-radius: 9px;
+        color: var(--sw-text);
+        background: linear-gradient(180deg, #1b2b44, #142338);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 6px 13px -10px rgba(0,0,0,.8);
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+        white-space: nowrap;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .sw-action:hover {
+        filter: brightness(1.12);
+        transform: translateY(-1px);
+    }
+
+    .sw-action.sw-primary {
+        color: #06101e;
+        border: none;
+        background: linear-gradient(180deg, #66a7ff, var(--sw-accent));
+    }
+
+    .sw-action.sw-go {
+        color: #04140e;
+        border: none;
+        background: linear-gradient(180deg, #55e2aa, #059669);
+    }
+
+    .sw-action.sw-warn {
+        color: #1c0e02;
+        border: none;
+        background: linear-gradient(180deg, #fdba74, #ea580c);
+    }
+
+    .sw-action.sw-danger {
+        color: #fff;
+        border: none;
+        background: linear-gradient(180deg, #fb7185, #dc2626);
+    }
+
+    .sw-reason {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: 142px 1fr;
+        gap: 12px;
+        align-items: start;
+        margin-top: 2px;
+        padding: 10px 13px;
+        border-radius: 9px;
+        background: color-mix(in srgb, var(--sw-led) 8%, #091527);
+        border: 1px solid color-mix(in srgb, var(--sw-led) 28%, transparent);
+    }
+
+    .sw-reason-label {
+        color: var(--sw-led);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .09em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .sw-reason-text {
+        color: var(--sw-muted);
+        font-size: 12.5px;
+        line-height: 1.55;
+        word-break: break-word;
+    }
+
+    .sw-empty {
+        padding: 36px 18px;
+        text-align: center;
+        color: var(--sw-muted);
+        border: 1px dashed var(--sw-line-strong);
+        border-radius: 12px;
+        background: rgba(255,255,255,.03);
+    }
+
+
+    /* Software pagination - scoped, no global footer/header override. */
+    .sw-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 22px;
+        padding-top: 18px;
+        border-top: 1px solid rgba(49, 80, 115, .72);
+    }
+
+    .sw-page-text {
+        color: var(--sw-muted);
+        font-size: 13px;
+        padding: 8px 12px;
+        border: 1px solid rgba(49, 80, 115, .72);
+        border-radius: 10px;
+        background: rgba(255,255,255,.035);
+    }
+
+    .sw-page-link {
+        min-width: 72px;
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 14px;
+        color: var(--sw-text);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 800;
+        border: 1px solid var(--sw-line-strong);
+        border-radius: 10px;
+        background: linear-gradient(180deg, #1b2b44, #132238);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 8px 18px -14px rgba(0,0,0,.9);
+    }
+
+    .sw-page-link:hover {
+        border-color: var(--sw-accent);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 0 22px -12px rgba(59,130,246,.9);
+    }
+
+    /* Standardize list page primary/search/action buttons */
+    .sw-new-btn,
+    .sw-search-btn,
+    .sw-clear-btn {
+        min-height: 42px;
+        height: 42px;
+        padding: 0 16px;
+        border-radius: 11px;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .sw-new-btn {
+        padding: 0 18px;
+        font-weight: 900;
+    }
+
+    .sw-action {
+        min-height: 33px;
+        height: 33px;
+        padding: 7px 12px;
+        border-radius: 9px;
+        font-size: 12px;
+        font-weight: 850;
+        line-height: 1;
+    }
+
+    @media (max-width: 1180px) {
+        .sw-card {
+            grid-template-columns: minmax(180px, 1.2fr) 64px minmax(180px, 1fr) minmax(230px, 1fr);
+        }
+        .sw-field.attachment {
+            display: none;
+        }
+        .sw-right {
+            grid-column: 1 / -1;
+            align-items: stretch;
+            padding-top: 12px;
+            border-top: 1px dashed var(--sw-line);
+        }
+        .sw-actions {
+            justify-content: flex-start;
+        }
+    }
+
+    @media (max-width: 720px) {
+        .sw-console {
+            padding: 18px;
+        }
+        .sw-card {
+            grid-template-columns: 1fr;
+        }
+        .sw-field.center {
+            align-items: flex-start;
+            text-align: left;
+        }
+        .sw-right {
+            grid-column: auto;
+        }
+        .sw-reason {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Software page only: make bottom area match Tech Console */
+    body.sw-tech-page {
+        background: #07111f;
+    }
+
+    /* Keep the global header/sidebar, only make footer fit this page */
+    body.sw-tech-page footer,
+    body.sw-tech-page .footer,
+    body.sw-tech-page .app-footer {
+        background: linear-gradient(180deg, #07111f 0%, #050b14 100%) !important;
+        border-top: 1px solid #22324c !important;
+        color: #8fa3c1 !important;
+        box-shadow: 0 -18px 40px rgba(0, 0, 0, 0.18);
+    }
+
+    /* Footer text/link color */
+    body.sw-tech-page footer *,
+    body.sw-tech-page .footer *,
+    body.sw-tech-page .app-footer * {
+        color: #8fa3c1 !important;
+    }
+
+    body.sw-tech-page footer strong,
+    body.sw-tech-page .footer strong,
+    body.sw-tech-page .app-footer strong,
+    body.sw-tech-page footer a,
+    body.sw-tech-page .footer a,
+    body.sw-tech-page .app-footer a {
+        color: #d4af37 !important;
+    }
+
+    /* Reduce the white gap under the console */
+    .sw-console {
+        margin-bottom: 0;
+        min-height: calc(100vh - 160px);
+    }
+</style>
+
+<div class="sw-console">
+    <div class="sw-sticky-panel">
+        <div class="sw-topbar">
+            <div>
+                <div class="sw-eyebrow"><span class="sw-pulse"></span>USCIP · Office Portal</div>
+                <h1 class="sw-title">Software Applications</h1>
+                <div class="sw-subtitle">Review and route software installation, license, upgrade, and open-source tool requests.</div>
+            </div>
+            <a href="/office-portal/software/apply/" class="sw-new-btn">+ New Software Request</a>
+        </div>
+    </div> 
+
+    <div class="sw-search-sticky">
+        <form method="get" class="sw-toolbar">
+            <div class="sw-search-wrap">
+                <span class="sw-search-icon">⌕</span>
+                <input type="text"
+                    name="search"
+                    value="{{ search }}"
+                    placeholder="Search software name, vendor, request type, license, status…"
+                    class="sw-search-input">
+            </div>
+            <button type="submit" class="sw-search-btn">Search</button>
+            {% if search %}
+            <a href="{% url 'software_list' %}" class="sw-clear-btn">Clear</a>
+            {% endif %}
+        </form>
+
+        <div class="sw-count">
+            {% if page_obj %}
+                Showing <b>{{ page_obj.start_index }}–{{ page_obj.end_index }}</b> of <b>{{ page_obj.paginator.count }}</b> request(s)
+            {% else %}
+                Showing <b>{{ items|length }}</b> request(s)
+            {% endif %}
+        </div>
+    </div>   
+
+    <div class="sw-stack">
+        {% for item in items %}
+        <article class="sw-card"
+                 data-status="{% if item.status == 'Request Completed' or item.status == 'Approved' %}done{% elif item.status == 'Rejected' %}reject{% elif item.status == 'Returned' %}return{% elif item.status == 'Under-preview' %}review{% elif item.status == 'Work-in-progress' %}working{% else %}pending{% endif %}">
+
+            <div class="sw-software">
+                <div class="sw-software-type">▣ {{ item.request_no|default:"Software" }}</div>
+                <div class="sw-software-name">{{ item.software_name|default:"-" }}</div>
+            </div>
+
+            <div class="sw-field center">
+                <div class="sw-label">Version</div>
+                <div class="sw-value strong">{{ item.software_version|default:"-" }}</div>
+            </div>
+
+            <div class="sw-field">
+                <div class="sw-label">Vendor</div>
+                <div class="sw-value sw-clamp" title="{{ item.vendor|default:'-' }}">{{ item.vendor|default:"-" }}</div>
+            </div>
+
+            <div class="sw-field">
+                <div class="sw-label">Purpose</div>
+                <div class="sw-value sw-clamp" title="{{ item.business_purpose|default:'-' }}">{{ item.business_purpose|default:"-" }}</div>
+            </div>
+
+            <div class="sw-field center attachment">
+                <div class="sw-label">Risk Flags</div>
+                <div class="sw-value">
+                    {% if item.internet_access_required %}Internet{% endif %}
+                    {% if item.internet_access_required and item.admin_privilege_required %} / {% endif %}
+                    {% if item.admin_privilege_required %}Admin{% endif %}
+                    {% if not item.internet_access_required and not item.admin_privilege_required %}
+                        <span class="sw-att-none">—</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="sw-right">
+                <span class="sw-status"><span class="sw-status-dot"></span>{{ item.status }}</span>
+                <div class="sw-actions">
+                    <button type="button" onclick="openSoftwareDetailModal({{ item.id }})" class="sw-action">View Details</button>
+
+                    {% if item.status == 'Pending Team Leader' and role == 'team_leader' %}
+                        <button type="button" onclick="doSoftware('approve', {{ item.id }})" class="sw-action sw-go">Forward</button>
+                        <button type="button" onclick="doSoftware('preview', {{ item.id }})" class="sw-action">Review</button>
+                        <button type="button" onclick="openSoftwareReturnModal({{ item.id }})" class="sw-action sw-warn">Return</button>
+
+                    {% elif item.status == 'Pending Supervisor' and role == 'supervisor' %}
+                        <button type="button" onclick="doSoftware('approve', {{ item.id }})" class="sw-action sw-go">Approve</button>
+                        <button type="button" onclick="doSoftware('preview', {{ item.id }})" class="sw-action">Review</button>
+                        <button type="button" onclick="openSoftwareReturnModal({{ item.id }})" class="sw-action sw-warn">Return</button>
+                        <button type="button" onclick="openSoftwareRejectModal({{ item.id }})" class="sw-action sw-danger">Reject</button>
+
+                    {% elif item.status == 'Pending CIO' and role == 'cio' %}
+                        <button type="button" onclick="doSoftware('approve', {{ item.id }})" class="sw-action sw-go">Approve</button>
+                        <button type="button" onclick="doSoftware('preview', {{ item.id }})" class="sw-action">Review</button>
+                        <button type="button" onclick="openSoftwareReturnModal({{ item.id }})" class="sw-action sw-warn">Return</button>
+                        <button type="button" onclick="openSoftwareRejectModal({{ item.id }})" class="sw-action sw-danger">Reject</button>
+
+                    {% elif item.status == 'Work-in-progress' and role == 'cio' %}
+                        <button type="button" onclick="doSoftware('complete', {{ item.id }})" class="sw-action sw-go">Complete</button>
+
+                    {% elif item.status == 'Under-preview' and item.preview_by == 'Pending Team Leader' and role == 'team_leader' %}
+                        <button type="button" onclick="doSoftware('resume', {{ item.id }})" class="sw-action sw-primary">Resume</button>
+
+                    {% elif item.status == 'Under-preview' and item.preview_by == 'Pending Supervisor' and role == 'supervisor' %}
+                        <button type="button" onclick="doSoftware('resume', {{ item.id }})" class="sw-action sw-primary">Resume</button>
+
+                    {% elif item.status == 'Under-preview' and item.preview_by == 'Pending CIO' and role == 'cio' %}
+                        <button type="button" onclick="doSoftware('resume', {{ item.id }})" class="sw-action sw-primary">Resume</button>
+
+                    {% elif item.status == 'Returned' and item.applicant == request.user %}
+                        <a href="{% url 'resubmit_software' item.id %}" class="sw-action sw-warn">Resubmit</a>
+                    {% endif %}
+
+                </div>
+            </div>
+
+            {% if item.status == 'Returned' %}
+            <div class="sw-reason">
+                <div class="sw-reason-label">↩ Returned</div>
+                <div class="sw-reason-text">
+                    {% if item.return_date %}{{ item.return_date|date:"Y-m-d H:i" }} · {% endif %}
+                    {{ item.return_reason|default:"No return reason recorded." }}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if item.status == 'Rejected' %}
+            <div class="sw-reason">
+                <div class="sw-reason-label">⛔ Rejected</div>
+                <div class="sw-reason-text">{{ item.return_reason|default:"No rejection reason recorded." }}</div>
+            </div>
+            {% endif %}
+
+        </article>
+        {% empty %}
+        <div class="sw-empty">No software requests found.</div>
+        {% endfor %}
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <div class="sw-pagination">
+        {% if page_obj.has_previous %}
+        <a href="?search={{ search }}&page=1" class="sw-page-link">First</a>
+        <a href="?search={{ search }}&page={{ page_obj.previous_page_number }}" class="sw-page-link">Previous</a>
+        {% endif %}
+
+        <span class="sw-page-text">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_next %}
+        <a href="?search={{ search }}&page={{ page_obj.next_page_number }}" class="sw-page-link">Next</a>
+        <a href="?search={{ search }}&page={{ page_obj.paginator.num_pages }}" class="sw-page-link">Last</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<div id="softwareReturnModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999;">
+    <div style="height:100%; display:flex; align-items:center; justify-content:center;">
+        <div style="background:white; width:420px; border-radius:12px; padding:20px;">
+            <h3 style="font-size:18px; font-weight:700; margin-bottom:12px;">↩ Return Software Request</h3>
+
+            <textarea id="softwareReturnReason"
+                      placeholder="Please enter return reason..."
+                      style="width:100%; min-height:120px; border:1px solid #ddd; border-radius:8px; padding:10px;"></textarea>
+
+            <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:10px;">
+                <button onclick="closeSoftwareReturnModal()" style="padding:8px 16px; border:none; border-radius:6px; background:#ddd;">
+                    Cancel
+                </button>
+                <button onclick="submitSoftwareReturn()" style="padding:8px 16px; border:none; border-radius:6px; background:#ea580c; color:white;">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="softwareRejectModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999;">
+    <div style="height:100%; display:flex; align-items:center; justify-content:center;">
+        <div style="background:white; width:420px; border-radius:12px; padding:20px;">
+            <h3 style="font-size:18px; font-weight:700; margin-bottom:12px;">⛔ Reject Software Request</h3>
+
+            <p style="font-size:13px; color:#6b7280; margin-bottom:10px;">
+                This action will permanently reject the software request. Please enter the rejection reason.
+            </p>
+
+            <textarea id="softwareRejectReason"
+                      placeholder="Please enter rejection reason..."
+                      style="width:100%; min-height:120px; border:1px solid #ddd; border-radius:8px; padding:10px;"></textarea>
+
+            <div style="margin-top:16px; display:flex; justify-content:flex-end; gap:10px;">
+                <button onclick="closeSoftwareRejectModal()" style="padding:8px 16px; border:none; border-radius:6px; background:#ddd;">
+                    Cancel
+                </button>
+                <button onclick="submitSoftwareReject()" style="padding:8px 16px; border:none; border-radius:6px; background:#dc2626; color:white;">
+                    Confirm Reject
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="softwareDetailModal"
+     style="display:none;
+            position:fixed;
+            inset:0;
+            background:rgba(15,23,42,.48);
+            z-index:9999;">
+
+    <div onclick="closeSoftwareDetailModal()"
+         style="position:absolute; inset:0;"></div>
+
+    <div style="
+        min-height:100%;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        padding:18px;
+        box-sizing:border-box;
+        position:relative;">
+
+        <div style="
+            background:white;
+            width:780px;
+            max-width:calc(100vw - 36px);
+            max-height:82vh;
+            overflow:auto;
+            border-radius:0;
+            border:1px solid #cbd5e1;
+            box-shadow:0 18px 42px rgba(15,23,42,.28);">
+
+            <div style="
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                padding:12px 16px;
+                border-bottom:1px solid #dbe6f2;
+                background:#f1f6fb;">
+
+                <div>
+                    <h3 style="
+                        font-size:16px;
+                        line-height:1.3;
+                        font-weight:800;
+                        color:#0c1a2e;
+                        margin:0;">
+                        📜 Software Details
+                    </h3>
+                    <div style="
+                        margin-top:2px;
+                        font-size:11px;
+                        color:#64748b;">
+                        Request information and approval timeline
+                    </div>
+                </div>
+
+                <button onclick="closeSoftwareDetailModal()"
+                        style="
+                            width:30px;
+                            height:30px;
+                            border:1px solid #cbd5e1;
+                            background:#ffffff;
+                            color:#475569;
+                            font-size:21px;
+                            line-height:1;
+                            cursor:pointer;">
+                    &times;
+                </button>
+            </div>
+
+            <div id="softwareDetailContent" style="padding:14px 16px 16px;">
+                Loading...
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+function getCookie(name) {
+    const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+    return v ? v[2] : '';
+}
+
+function escapeHtml(value) {
+    if (value === null || value === undefined) return "";
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+function closeSoftwareDetailModal() {
+    document.getElementById("softwareDetailModal").style.display = "none";
+}
+
+function renderSoftwareDetailField(label, value, options = {}) {
+    const displayValue = value === null || value === undefined || value === "" ? "—" : value;
+    const content = options.rawHtml ? displayValue : escapeHtml(displayValue);
+
+    return `
+        <div style="
+            border:1px solid #dbe6f2;
+            background:#ffffff;
+            padding:8px 10px;
+            min-height:52px;
+            box-sizing:border-box;">
+            <div style="
+                font-size:10px;
+                line-height:1.2;
+                font-weight:800;
+                color:#64748b;
+                text-transform:uppercase;
+                letter-spacing:.045em;
+                margin-bottom:5px;">
+                ${escapeHtml(label)}
+            </div>
+            <div style="
+                font-size:13px;
+                line-height:1.45;
+                font-weight:650;
+                color:#0f172a;
+                word-break:break-word;">
+                ${content}
+            </div>
+        </div>
+    `;
+}
+
+function renderSoftwareTextBlock(title, value) {
+    return `
+        <div style="margin-top:10px;">
+            <div style="
+                border:1px solid #dbe6f2;
+                background:#f8fbff;
+                padding:8px 10px;">
+                <div style="
+                    font-size:10px;
+                    font-weight:800;
+                    color:#64748b;
+                    text-transform:uppercase;
+                    letter-spacing:.045em;
+                    margin-bottom:5px;">
+                    ${escapeHtml(title)}
+                </div>
+                <div style="
+                    font-size:13px;
+                    line-height:1.55;
+                    color:#1e293b;
+                    white-space:pre-wrap;
+                    word-break:break-word;">
+                    ${escapeHtml(value || "—")}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+async function openSoftwareDetailModal(id) {
+    const modal = document.getElementById("softwareDetailModal");
+    const content = document.getElementById("softwareDetailContent");
+
+    modal.style.display = "block";
+    content.innerHTML = `
+        <div style="padding:18px; color:#64748b; font-size:13px;">
+            Loading...
+        </div>
+    `;
+
+    try {
+        const res = await fetch(`/office-portal/software/detail/${id}/`);
+        const data = await res.json();
+
+        if (!res.ok) {
+            content.innerHTML = `
+                <div style="
+                    margin:12px 0;
+                    padding:10px 12px;
+                    border:1px solid #fecaca;
+                    background:#fef2f2;
+                    color:#dc2626;
+                    font-size:13px;">
+                    ${escapeHtml(data.error || data.detail || "Failed to load detail.")}
+                </div>
+            `;
+            return;
+        }
+
+        const attachmentHtml = data.attachment
+            ? `<a href="${escapeHtml(data.attachment)}" target="_blank" style="color:#2563eb; font-weight:700; text-decoration:underline;">View Attachment</a>`
+            : "—";
+
+        let reasonHtml = "";
+        if ((data.status === "Returned" || data.status === "Rejected") && data.return_reason) {
+            const isRejected = data.status === "Rejected";
+            reasonHtml = `
+                <div style="
+                    margin-top:10px;
+                    border:1px solid ${isRejected ? "#fecaca" : "#fed7aa"};
+                    background:${isRejected ? "#fef2f2" : "#fff7ed"};
+                    padding:9px 10px;">
+                    <div style="
+                        font-size:10px;
+                        font-weight:800;
+                        color:${isRejected ? "#dc2626" : "#ea580c"};
+                        text-transform:uppercase;
+                        letter-spacing:.045em;
+                        margin-bottom:5px;">
+                        ${isRejected ? "Reject Reason" : "Return Reason"}
+                    </div>
+                    <div style="
+                        font-size:13px;
+                        color:${isRejected ? "#991b1b" : "#9a3412"};
+                        white-space:pre-wrap;
+                        word-break:break-word;">
+                        ${escapeHtml(data.return_reason)}
+                    </div>
+                </div>
+            `;
+        }
+
+        let historyHtml = "";
+        if (data.history?.length) {
+            historyHtml = data.history.map(item => `
+                <div style="
+                    display:grid;
+                    grid-template-columns:130px 1fr;
+                    gap:0;
+                    border:1px solid #dbe6f2;
+                    border-left:4px solid #3b82f6;
+                    background:#ffffff;
+                    margin-bottom:8px;">
+                    <div style="
+                        padding:8px 10px;
+                        background:#f1f6fb;
+                        border-right:1px solid #dbe6f2;
+                        font-size:11px;
+                        color:#475569;
+                        line-height:1.45;">
+                        <div style="font-weight:800; color:#1e293b;">
+                            ${escapeHtml(item.created_at || "—")}
+                        </div>
+                        <div style="margin-top:4px;">
+                            ${escapeHtml(item.actor || "—")}
+                        </div>
+                    </div>
+                    <div style="padding:8px 10px;">
+                        <div style="
+                            font-size:13px;
+                            font-weight:800;
+                            color:#0f172a;">
+                            ${escapeHtml(item.action || "—")}
+                        </div>
+                        ${
+                            item.comment
+                            ? `<div style="
+                                margin-top:5px;
+                                font-size:12px;
+                                line-height:1.5;
+                                color:#334155;
+                                white-space:pre-wrap;
+                                word-break:break-word;">
+                                ${escapeHtml(item.comment)}
+                               </div>`
+                            : `<div style="margin-top:5px; font-size:12px; color:#94a3b8;">No comment.</div>`
+                        }
+                    </div>
+                </div>
+            `).join("");
+        } else {
+            historyHtml = `
+                <div style="
+                    border:1px solid #dbe6f2;
+                    background:#f8fafc;
+                    padding:10px;
+                    font-size:13px;
+                    color:#64748b;">
+                    No history found.
+                </div>
+            `;
+        }
+
+        content.innerHTML = `
+            <div style="
+                display:grid;
+                grid-template-columns:repeat(4, minmax(0, 1fr));
+                gap:8px;
+                margin-bottom:10px;">
+                ${renderSoftwareDetailField("Applicant", data.applicant)}
+                ${renderSoftwareDetailField("Department", data.department)}
+                ${renderSoftwareDetailField("Request No", data.request_no)}
+                ${renderSoftwareDetailField("Software Name", data.software_name)}
+                ${renderSoftwareDetailField("Version", data.software_version)}
+                ${renderSoftwareDetailField("Vendor", data.vendor)}
+                ${renderSoftwareDetailField("Request Type", data.request_type)}
+                ${renderSoftwareDetailField("License Type", data.license_type)}
+                ${renderSoftwareDetailField("Data Level", data.data_level)}
+                ${renderSoftwareDetailField("Internet Access", data.internet_access_required ? "Yes" : "No")}
+                ${renderSoftwareDetailField("Admin Privilege", data.admin_privilege_required ? "Yes" : "No")}
+                ${renderSoftwareDetailField("Status", data.status)}
+                ${renderSoftwareDetailField("Created At", data.created_at)}
+                ${renderSoftwareDetailField("Attachment", attachmentHtml, { rawHtml: true })}
+            </div>
+
+            ${reasonHtml}
+
+            ${renderSoftwareTextBlock("Business Purpose", data.business_purpose)}
+            ${renderSoftwareTextBlock("Security Concern / Notes", data.security_concern)}
+
+            <div style="
+                margin-top:16px;
+                padding-top:12px;
+                border-top:1px solid #dbe6f2;">
+                <div style="
+                    display:flex;
+                    align-items:center;
+                    justify-content:space-between;
+                    margin-bottom:10px;">
+                    <h4 style="
+                        font-size:14px;
+                        font-weight:800;
+                        color:#0c1a2e;
+                        margin:0;">
+                        Approval Timeline
+                    </h4>
+                    <span style="
+                        font-size:11px;
+                        color:#64748b;
+                        background:#f1f5f9;
+                        border:1px solid #e2e8f0;
+                        padding:3px 8px;">
+                        ${data.history?.length || 0} record(s)
+                    </span>
+                </div>
+                ${historyHtml}
+            </div>
+        `;
+    } catch (err) {
+        content.innerHTML = `
+            <div style="
+                margin:12px 0;
+                padding:10px 12px;
+                border:1px solid #fecaca;
+                background:#fef2f2;
+                color:#dc2626;
+                font-size:13px;">
+                Failed to load history.
+            </div>
+        `;
+    }
+}
+
+
+async function doSoftware(action, id) {
+    const res = await fetch(`/office-portal/software/action/${id}/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: `action=${action}`
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+        location.reload();
+    } else {
+        alert(data.detail);
+    }
+}
+
+let currentSoftwareId = null;
+
+function openSoftwareReturnModal(id) {
+    currentSoftwareId = id;
+    document.getElementById("softwareReturnReason").value = "";
+    document.getElementById("softwareReturnModal").style.display = "block";
+}
+
+let currentSoftwareRejectId = null;
+
+function openSoftwareRejectModal(id) {
+    currentSoftwareRejectId = id;
+    document.getElementById("softwareRejectReason").value = "";
+    document.getElementById("softwareRejectModal").style.display = "block";
+}
+
+function closeSoftwareRejectModal() {
+    document.getElementById("softwareRejectModal").style.display = "none";
+}
+
+async function submitSoftwareReject() {
+    const reason = document.getElementById("softwareRejectReason").value.trim();
+
+    if (!reason) {
+        alert("Please enter rejection reason.");
+        return;
+    }
+
+    const res = await fetch(`/office-portal/software/action/${currentSoftwareRejectId}/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: `action=reject&reason=${encodeURIComponent(reason)}`
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+        location.reload();
+    } else {
+        alert(data.detail);
+    }
+}
+
+function closeSoftwareReturnModal() {
+    document.getElementById("softwareReturnModal").style.display = "none";
+}
+
+async function submitSoftwareReturn() {
+    const reason = document.getElementById("softwareReturnReason").value.trim();
+
+    if (!reason) {
+        alert("Please enter return reason.");
+        return;
+    }
+
+    const res = await fetch(`/office-portal/software/action/${currentSoftwareId}/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: `action=return&reason=${encodeURIComponent(reason)}`
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+        location.reload();
+    } else {
+        alert(data.detail);
+    }
+}
+
+document.body.classList.add("sw-tech-page");
+
+</script>
+
+{% endblock %}

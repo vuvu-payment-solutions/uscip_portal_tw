@@ -1,0 +1,705 @@
+{% extends "base.html" %}
+
+{% block title %}Software Application — USCIP Office Portal{% endblock %}
+{% block nav_software %}active{% endblock %}
+
+{% block breadcrumb %}
+<span class="text-gray-400">Home</span>
+<span class="mx-1.5 text-gray-500">/</span>
+<a href="/office-portal/software/list/" class="text-gray-400 hover:text-[#35d5ea] transition-colors">Software Applications</a>
+<span class="mx-1.5 text-gray-500">/</span>
+<span class="text-[#eaf2ff] font-medium">{% if resubmit_sw %}Resubmit{% else %}New{% endif %}</span>
+{% endblock %}
+
+{% block content %}
+
+<style>
+    html,
+    body {
+        background: #07101f !important;
+    }
+
+    body {
+        overflow-x: hidden;
+    }
+
+    footer {
+        background: #07101f !important;
+        border-top: 1px solid rgba(49,80,115,.72) !important;
+        color: #6f819d !important;
+    }
+
+    footer * {
+        color: #6f819d !important;
+    }
+
+    footer span,
+    footer .text-\[\#a88a2e\] {
+        color: #c9a84c !important;
+    }
+
+    .request-console {
+        --rc-bg-0: #07101f;
+        --rc-bg-1: #0b1628;
+        --rc-card: #121f34;
+        --rc-card-2: #0f1a2d;
+        --rc-line: #223550;
+        --rc-line-strong: #315073;
+        --rc-text: #eaf2ff;
+        --rc-muted: #9fb0ca;
+        --rc-dim: #6f819d;
+        --rc-cyan: #35d5ea;
+        --rc-gold: #c9a84c;
+        --rc-warn: #fb923c;
+
+        min-height: calc(100vh - 155px);
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        color: var(--rc-text);
+        background:
+            radial-gradient(760px 320px at 82% -12%, rgba(59,130,246,.18), transparent 62%),
+            radial-gradient(560px 280px at 4% 0%, rgba(53,213,234,.10), transparent 58%),
+            linear-gradient(180deg, var(--rc-bg-1), var(--rc-bg-0));
+        position: relative;
+        overflow-x: hidden;
+        overflow-y: visible;
+    }
+
+    .request-console::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: .42;
+        background-image:
+            linear-gradient(rgba(130,160,210,.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(130,160,210,.06) 1px, transparent 1px);
+        background-size: 42px 42px;
+        mask-image: radial-gradient(900px 520px at 50% 0%, #000 30%, transparent 82%);
+    }
+
+    .request-console > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    .request-header {
+        padding: 26px 28px 24px;
+        background:
+            linear-gradient(180deg, rgba(7,16,31,.99), rgba(7,16,31,.94)),
+            radial-gradient(620px 210px at 82% 0%, rgba(59,130,246,.16), transparent 62%);
+        border-bottom: 1px solid rgba(49,80,115,.72);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        flex-wrap: wrap;
+    }
+
+    .request-eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 7px;
+        color: var(--rc-cyan);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+    }
+
+    .request-pulse {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--rc-cyan);
+        box-shadow: 0 0 14px rgba(53,213,234,.9);
+    }
+
+    .request-title {
+        margin: 0;
+        color: var(--rc-text);
+        font-size: 28px;
+        line-height: 1.12;
+        font-weight: 900;
+        letter-spacing: -.025em;
+    }
+
+    .request-subtitle {
+        margin-top: 7px;
+        color: var(--rc-muted);
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .request-back-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 0 18px;
+        border-radius: 11px;
+        color: var(--rc-text);
+        background: linear-gradient(180deg, #1b2940, #14213a);
+        border: 1px solid var(--rc-line-strong);
+        box-shadow: 0 12px 24px rgba(15,23,42,.22);
+        font-size: 13px;
+        font-weight: 800;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: transform .12s ease, filter .12s ease;
+    }
+
+    .request-back-btn:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.08);
+    }
+
+    .request-body {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        padding: 28px 28px 72px;
+        overflow-x: hidden;
+    }
+
+    .request-shell {
+        width: min(100%, 980px);
+        max-width: 980px;
+        margin: 0 auto;
+        box-sizing: border-box;
+    }
+
+    .request-card {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        border: 1px solid var(--rc-line);
+        border-radius: 16px;
+        background:
+            linear-gradient(180deg, rgba(18,31,52,.96), rgba(15,26,45,.96));
+        box-shadow:
+            0 1px 0 rgba(255,255,255,.045) inset,
+            0 24px 44px -28px rgba(0,0,0,.95);
+        overflow: hidden;
+    }
+
+    .request-card-header {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        padding: 18px 22px;
+        border-bottom: 1px solid rgba(49,80,115,.62);
+        background: linear-gradient(180deg, rgba(20,35,58,.96), rgba(15,26,45,.92));
+    }
+
+    .request-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: linear-gradient(180deg, #1d3354, #162844);
+        border: 1px solid rgba(53,213,234,.25);
+        color: var(--rc-cyan);
+        box-shadow: 0 0 18px rgba(53,213,234,.12);
+    }
+
+    .request-card-title {
+        margin: 0;
+        color: var(--rc-text);
+        font-size: 17px;
+        font-weight: 900;
+    }
+
+    .request-card-note {
+        margin-top: 2px;
+        color: var(--rc-dim);
+        font-size: 12px;
+    }
+
+    .request-form {
+        padding: 22px;
+    }
+
+    .request-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .request-field {
+        min-width: 0;
+    }
+
+    .request-field.full {
+        grid-column: 1 / -1;
+    }
+
+    .request-label {
+        display: block;
+        margin-bottom: 7px;
+        color: #c8d8f4;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+    }
+
+    .request-input,
+    .request-select,
+    .request-textarea {
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 12px;
+        border-radius: 11px;
+        border: 1px solid var(--rc-line-strong);
+        color: var(--rc-text);
+        background: rgba(7,16,31,.72);
+        outline: none;
+        font-size: 14px;
+        line-height: 1.45;
+        transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+
+    .request-textarea {
+        min-height: 104px;
+        resize: vertical;
+    }
+
+    .request-input::placeholder,
+    .request-textarea::placeholder {
+        color: var(--rc-dim);
+    }
+
+    .request-input:focus,
+    .request-select:focus,
+    .request-textarea:focus {
+        border-color: var(--rc-cyan);
+        background: rgba(9,22,39,.92);
+        box-shadow: 0 0 0 3px rgba(53,213,234,.12);
+    }
+
+    .request-file-label {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        min-height: 44px;
+        padding: 8px 12px;
+        border-radius: 11px;
+        border: 1px solid var(--rc-line-strong);
+        background: rgba(7,16,31,.72);
+        cursor: pointer;
+        transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+
+    .request-file-label:hover {
+        border-color: var(--rc-cyan);
+        background: rgba(9,22,39,.92);
+    }
+
+    .request-file-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 7px 12px;
+        border-radius: 8px;
+        color: #06111f;
+        background: linear-gradient(180deg, #67e8f9, #22d3ee);
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .request-file-name {
+        color: var(--rc-muted);
+        font-size: 13px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .request-help {
+        margin-top: 6px;
+        color: var(--rc-dim);
+        font-size: 12px;
+    }
+
+    .request-check-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        grid-column: 1 / -1;
+    }
+
+    .request-check-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 11px;
+        min-height: 58px;
+        padding: 13px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--rc-line-strong);
+        background: rgba(7,16,31,.58);
+    }
+
+    .request-check-card input {
+        margin-top: 3px;
+        accent-color: #35d5ea;
+    }
+
+    .request-check-title {
+        color: var(--rc-text);
+        font-size: 13px;
+        font-weight: 900;
+    }
+
+    .request-check-note {
+        margin-top: 3px;
+        color: var(--rc-dim);
+        font-size: 12px;
+        line-height: 1.35;
+    }
+
+    @media (max-width: 760px) {
+        .request-check-row {
+            grid-template-columns: 1fr;
+        }
+    }    
+
+    .request-warning {
+        margin-bottom: 18px;
+        padding: 14px 16px;
+        border: 1px solid rgba(251,146,60,.45);
+        border-radius: 13px;
+        color: #fed7aa;
+        background: rgba(251,146,60,.12);
+    }
+
+    .request-warning-title {
+        color: #fdba74;
+        font-size: 13px;
+        font-weight: 900;
+        margin-bottom: 4px;
+    }
+
+    .request-warning-text {
+        color: #fed7aa;
+        font-size: 13px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+    }
+
+    .request-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(49,80,115,.58);
+    }
+
+    .request-submit {
+        flex: 1;
+        min-height: 46px;
+        border: none;
+        border-radius: 11px;
+        color: #04130e;
+        background: linear-gradient(180deg, #5eead4, #10b981);
+        box-shadow: 0 14px 28px rgba(16,185,129,.20);
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: transform .12s ease, filter .12s ease;
+    }
+
+    .request-submit:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.06);
+    }
+
+    .request-cancel {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 46px;
+        padding: 0 18px;
+        border-radius: 11px;
+        color: var(--rc-muted);
+        background: rgba(15,26,45,.82);
+        border: 1px solid var(--rc-line-strong);
+        font-size: 13px;
+        font-weight: 800;
+        text-decoration: none;
+        transition: transform .12s ease, filter .12s ease;
+    }
+
+    .request-cancel:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.08);
+    }
+
+    @media (max-width: 760px) {
+        .request-console {
+            margin: 0;
+        }
+
+        .request-header {
+            padding: 20px;
+        }
+
+        .request-title {
+            font-size: 24px;
+        }
+
+        .request-body {
+            padding: 18px 18px 72px;
+        }
+
+        .request-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .request-form {
+            padding: 18px;
+        }
+
+        .request-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .request-submit,
+        .request-cancel {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="request-console">
+    <div class="request-header">
+        <div>
+            <p class="request-eyebrow"><span class="request-pulse"></span>USCIP · SOFTWARE ACCESS</p>
+            <h1 class="request-title">
+                {% if resubmit_sw %}Resubmit Software Request{% else %}Software Application{% endif %}
+            </h1>
+            <div class="request-subtitle">
+                Fill out the form below to submit a Software Request.
+            </div>
+        </div>
+
+        <a href="/office-portal/software/list/" class="request-back-btn">
+            Back to List
+        </a>
+    </div>
+
+    <div class="request-body">
+        <div class="request-shell">
+            <div class="request-card">
+                <div class="request-card-header">
+                    <div class="request-icon">
+                        <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M4 7h16M6 7v10a2 2 0 002 2h8a2 2 0 002-2V7"/>
+                            <path d="M9 11h6"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="request-card-title">Software Request Form</h2>
+                        <div class="request-card-note">Fields marked with * are required</div>
+                    </div>
+                </div>
+
+                <form method="post"
+                      enctype="multipart/form-data"
+                      action="{% if resubmit_sw %}{% url 'resubmit_software' resubmit_sw.id %}{% else %}{% url 'software_apply' %}{% endif %}"
+                      class="request-form">
+                    {% csrf_token %}
+
+                    {% if resubmit_sw and resubmit_sw.return_reason %}
+                    <div class="request-warning">
+                        <div class="request-warning-title">Return Reason</div>
+                        <div class="request-warning-text">{{ resubmit_sw.return_reason }}</div>
+                    </div>
+                    {% endif %}
+
+                    <div class="request-grid">
+                        <div class="request-field">
+                            <label class="request-label">Department *</label>
+                            <select name="department" required class="request-select">
+                                <option value="" disabled
+                                    {% if not resubmit_sw and not request.user.profile.department %}selected{% endif %}>
+                                    Select department
+                                </option>
+                                <option value="IT"
+                                    {% if resubmit_sw.department == "IT" or request.user.profile.department == "IT" %}selected{% endif %}>
+                                    IT
+                                </option>
+                                <option value="CS"
+                                    {% if resubmit_sw.department == "CS" or request.user.profile.department == "CS" %}selected{% endif %}>
+                                    CS
+                                </option>
+                                <option value="Marketing"
+                                    {% if resubmit_sw.department == "Marketing" or request.user.profile.department == "Marketing" %}selected{% endif %}>
+                                    Marketing
+                                </option>
+                                <option value="Procurement"
+                                    {% if resubmit_sw.department == "Procurement" or request.user.profile.department == "Procurement" %}selected{% endif %}>
+                                    Procurement
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="request-field">
+                            <label class="request-label">Software Name *</label>
+                            <input name="software_name"
+                                value="{{ resubmit_sw.software_name|default:'' }}"
+                                placeholder="e.g. Visual Studio Code, Python, Power BI"
+                                required
+                                class="request-input">
+                        </div>
+
+                        <div class="request-field">
+                            <label class="request-label">Software Version</label>
+                            <input name="software_version"
+                                value="{{ resubmit_sw.software_version|default:'' }}"
+                                placeholder="e.g. 1.92.0, 2024 LTSC"
+                                class="request-input">
+                        </div>
+
+                        <div class="request-field">
+                            <label class="request-label">Vendor / Publisher</label>
+                            <input name="vendor"
+                                value="{{ resubmit_sw.vendor|default:'' }}"
+                                placeholder="e.g. Microsoft, Adobe, OpenJS Foundation"
+                                class="request-input">
+                        </div>
+
+                        <div class="request-field">
+                            <label class="request-label">Target Device / Asset</label>
+                            <input name="target_device"
+                                value="{{ resubmit_sw.target_device|default:'' }}"
+                                placeholder="e.g. Laptop name, asset tag, or user device"
+                                class="request-input">
+                        </div>
+
+                        <div class="request-field">
+                            <label class="request-label">Request Type *</label>
+                            <select name="request_type" required class="request-select">
+                                <option value="New Installation">New Installation</option>
+                                <option value="Version Upgrade">Version Upgrade</option>
+                                <option value="License Renewal">License Renewal</option>
+                                <option value="Trial Software">Trial Software</option>
+                                <option value="Open Source Tool">Open Source Tool</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="request-field">
+                            <label class="request-label">License Type *</label>
+                            <select name="license_type" required class="request-select">
+                                <option value="Unknown">Unknown</option>
+                                <option value="Freeware">Freeware</option>
+                                <option value="Open Source">Open Source</option>
+                                <option value="Commercial">Commercial</option>
+                                <option value="Subscription">Subscription</option>
+                                <option value="Trial">Trial</option>
+                            </select>
+                        </div>
+
+                        <div class="request-field">
+                            <label class="request-label">Data Level *</label>
+                            <select name="data_level" required class="request-select">
+                                <option value="Internal">Internal</option>
+                                <option value="Public">Public</option>
+                                <option value="Confidential">Confidential</option>
+                                <option value="Personal Data">Personal Data</option>
+                                <option value="Sensitive">Sensitive</option>
+                            </select>
+                        </div>
+
+                        <div class="request-check-row">
+                            <label class="request-check-card">
+                                <input type="checkbox"
+                                    name="internet_access_required"
+                                    {% if resubmit_sw.internet_access_required %}checked{% endif %}>
+                                <span>
+                                    <span class="request-check-title">Internet Access Required</span>
+                                    <span class="request-check-note">
+                                        Check this if the software needs external network, cloud service, update server, or vendor portal access.
+                                    </span>
+                                </span>
+                            </label>
+
+                            <label class="request-check-card">
+                                <input type="checkbox"
+                                    name="admin_privilege_required"
+                                    {% if resubmit_sw.admin_privilege_required %}checked{% endif %}>
+                                <span>
+                                    <span class="request-check-title">Admin Privilege Required</span>
+                                    <span class="request-check-note">
+                                        Check this if installation, update, or operation requires local admin or elevated privilege.
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div class="request-field full">
+                            <label class="request-label">Business Purpose *</label>
+                            <textarea name="business_purpose"
+                                    placeholder="Please explain the business need, user scenario, and expected usage."
+                                    required
+                                    rows="3"
+                                    class="request-textarea">{{ resubmit_sw.business_purpose|default:'' }}</textarea>
+                        </div>
+
+                        <div class="request-field full">
+                            <label class="request-label">Security Concern / Notes</label>
+                            <textarea name="security_concern"
+                                    placeholder="Known risks, vendor URL, open-source license notes, admin privilege requirement, or network access requirement."
+                                    rows="3"
+                                    class="request-textarea">{{ resubmit_sw.security_concern|default:'' }}</textarea>
+                        </div>
+
+                        <div class="request-field full">
+                            <label class="request-label">Attachments (Optional)</label>
+                            <label class="request-file-label">
+                                <span class="request-file-btn">Choose File</span>
+                                <span id="software-file-name" class="request-file-name">No file chosen</span>
+                                <input type="file" name="file" class="hidden" onchange="updateSoftwareFileName(this)">
+                            </label>
+                            <div class="request-help">Max 100 MB. You may attach quotation, license terms, security notes, or approval evidence.</div>
+                        </div>
+                    </div>
+
+                    <div class="request-actions">
+                        <button type="submit" class="request-submit">
+                            {% if resubmit_sw %}Resubmit Software Request{% else %}Submit Software Request{% endif %}
+                        </button>
+                        <a href="/office-portal/software/list/" class="request-cancel">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateSoftwareFileName(input) {
+    const fileName = input.files.length > 0 ? input.files[0].name : "No file chosen";
+    document.getElementById("software-file-name").textContent = fileName;
+}
+</script>
+
+{% endblock %}

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import AccountRequest, Application, Notice, UserProfile, BYODRequest
+from .models import AccountRequest, Application, Notice, UserProfile, BYODRequest, SoftwareRequest, SoftwareApprovalHistory
 
 
 @admin.register(UserProfile)
@@ -79,3 +79,73 @@ class BYODRequestAdmin(admin.ModelAdmin):
         "approved_at",
         "retired_at",
     )
+    
+
+@admin.register(SoftwareRequest)
+class SoftwareRequestAdmin(admin.ModelAdmin):
+    list_display = (
+        "request_no",
+        "software_name",
+        "software_version",
+        "vendor",
+        "applicant",
+        "department",
+        "request_type",
+        "license_type",
+        "data_level",
+        "status",
+        "created_at",
+    )
+    list_filter = (
+        "status",
+        "request_type",
+        "license_type",
+        "data_level",
+        "internet_access_required",
+        "admin_privilege_required",
+    )
+    search_fields = (
+        "request_no",
+        "software_name",
+        "software_version",
+        "vendor",
+        "applicant__username",
+        "department",
+        "business_purpose",
+    )
+    readonly_fields = (
+        "request_no",
+        "created_at",
+        "updated_at",
+    )
+    ordering = ("-created_at",)
+    list_per_page = 50
+
+
+@admin.register(SoftwareApprovalHistory)
+class SoftwareApprovalHistoryAdmin(admin.ModelAdmin):
+    list_display = (
+        "software_request",
+        "action",
+        "from_status",
+        "to_status",
+        "actor",
+        "actor_role",
+        "created_at",
+    )
+    list_filter = (
+        "action",
+        "actor_role",
+        "created_at",
+    )
+    search_fields = (
+        "software_request__request_no",
+        "software_request__software_name",
+        "actor__username",
+        "comment",
+    )
+    readonly_fields = (
+        "created_at",
+    )
+    ordering = ("-created_at",)
+    list_per_page = 50
