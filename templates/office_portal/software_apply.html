@@ -6,7 +6,7 @@
 {% block breadcrumb %}
 <span class="text-gray-400">Home</span>
 <span class="mx-1.5 text-gray-500">/</span>
-<a href="/office-portal/software/list/" class="text-gray-400 hover:text-[#35d5ea] transition-colors">Software Applications</a>
+<a href="{% url 'software_list' %}" class="text-gray-400 hover:text-[#35d5ea] transition-colors">Software Applications</a>
 <span class="mx-1.5 text-gray-500">/</span>
 <span class="text-[#eaf2ff] font-medium">{% if resubmit_sw %}Resubmit{% else %}New{% endif %}</span>
 {% endblock %}
@@ -498,7 +498,7 @@
             </div>
         </div>
 
-        <a href="/office-portal/software/list/" class="request-back-btn">
+        <a href="{% url 'software_list' %}" class="request-back-btn">
             Back to List
         </a>
     </div>
@@ -535,28 +535,40 @@
                     <div class="request-grid">
                         <div class="request-field">
                             <label class="request-label">Department *</label>
-                            <select name="department" required class="request-select">
+                            <select
+                                name="department"
+                                required
+                                class="request-select"
+                                {% if resubmit_sw %}disabled{% endif %}
+                            >
                                 <option value="" disabled
                                     {% if not resubmit_sw and not request.user.profile.department %}selected{% endif %}>
                                     Select department
                                 </option>
                                 <option value="IT"
-                                    {% if resubmit_sw.department == "IT" or request.user.profile.department == "IT" %}selected{% endif %}>
+                                    {% if resubmit_sw %}{% if resubmit_sw.department == "IT" %}selected{% endif %}{% elif request.user.profile.department == "IT" %}selected{% endif %}>
                                     IT
                                 </option>
                                 <option value="CS"
-                                    {% if resubmit_sw.department == "CS" or request.user.profile.department == "CS" %}selected{% endif %}>
+                                    {% if resubmit_sw %}{% if resubmit_sw.department == "CS" %}selected{% endif %}{% elif request.user.profile.department == "CS" %}selected{% endif %}>
                                     CS
                                 </option>
                                 <option value="Marketing"
-                                    {% if resubmit_sw.department == "Marketing" or request.user.profile.department == "Marketing" %}selected{% endif %}>
+                                    {% if resubmit_sw %}{% if resubmit_sw.department == "Marketing" %}selected{% endif %}{% elif request.user.profile.department == "Marketing" %}selected{% endif %}>
                                     Marketing
                                 </option>
                                 <option value="Procurement"
-                                    {% if resubmit_sw.department == "Procurement" or request.user.profile.department == "Procurement" %}selected{% endif %}>
+                                    {% if resubmit_sw %}{% if resubmit_sw.department == "Procurement" %}selected{% endif %}{% elif request.user.profile.department == "Procurement" %}selected{% endif %}>
                                     Procurement
                                 </option>
                             </select>
+                            {% if resubmit_sw %}
+                            <input
+                                type="hidden"
+                                name="department"
+                                value="{{ resubmit_sw.department }}"
+                            >
+                            {% endif %}
                         </div>
 
                         <div class="request-field">
@@ -595,35 +607,35 @@
                         <div class="request-field">
                             <label class="request-label">Request Type *</label>
                             <select name="request_type" required class="request-select">
-                                <option value="New Installation">New Installation</option>
-                                <option value="Version Upgrade">Version Upgrade</option>
-                                <option value="License Renewal">License Renewal</option>
-                                <option value="Trial Software">Trial Software</option>
-                                <option value="Open Source Tool">Open Source Tool</option>
-                                <option value="Other">Other</option>
+                                <option value="New Installation" {% if not resubmit_sw or resubmit_sw.request_type == "New Installation" %}selected{% endif %}>New Installation</option>
+                                <option value="Version Upgrade" {% if resubmit_sw.request_type == "Version Upgrade" %}selected{% endif %}>Version Upgrade</option>
+                                <option value="License Renewal" {% if resubmit_sw.request_type == "License Renewal" %}selected{% endif %}>License Renewal</option>
+                                <option value="Trial Software" {% if resubmit_sw.request_type == "Trial Software" %}selected{% endif %}>Trial Software</option>
+                                <option value="Open Source Tool" {% if resubmit_sw.request_type == "Open Source Tool" %}selected{% endif %}>Open Source Tool</option>
+                                <option value="Other" {% if resubmit_sw.request_type == "Other" %}selected{% endif %}>Other</option>
                             </select>
                         </div>
 
                         <div class="request-field">
                             <label class="request-label">License Type *</label>
                             <select name="license_type" required class="request-select">
-                                <option value="Unknown">Unknown</option>
-                                <option value="Freeware">Freeware</option>
-                                <option value="Open Source">Open Source</option>
-                                <option value="Commercial">Commercial</option>
-                                <option value="Subscription">Subscription</option>
-                                <option value="Trial">Trial</option>
+                                <option value="Unknown" {% if not resubmit_sw or resubmit_sw.license_type == "Unknown" %}selected{% endif %}>Unknown</option>
+                                <option value="Freeware" {% if resubmit_sw.license_type == "Freeware" %}selected{% endif %}>Freeware</option>
+                                <option value="Open Source" {% if resubmit_sw.license_type == "Open Source" %}selected{% endif %}>Open Source</option>
+                                <option value="Commercial" {% if resubmit_sw.license_type == "Commercial" %}selected{% endif %}>Commercial</option>
+                                <option value="Subscription" {% if resubmit_sw.license_type == "Subscription" %}selected{% endif %}>Subscription</option>
+                                <option value="Trial" {% if resubmit_sw.license_type == "Trial" %}selected{% endif %}>Trial</option>
                             </select>
                         </div>
 
                         <div class="request-field">
                             <label class="request-label">Data Level *</label>
                             <select name="data_level" required class="request-select">
-                                <option value="Internal">Internal</option>
-                                <option value="Public">Public</option>
-                                <option value="Confidential">Confidential</option>
-                                <option value="Personal Data">Personal Data</option>
-                                <option value="Sensitive">Sensitive</option>
+                                <option value="Internal" {% if not resubmit_sw or resubmit_sw.data_level == "Internal" %}selected{% endif %}>Internal</option>
+                                <option value="Public" {% if resubmit_sw.data_level == "Public" %}selected{% endif %}>Public</option>
+                                <option value="Confidential" {% if resubmit_sw.data_level == "Confidential" %}selected{% endif %}>Confidential</option>
+                                <option value="Personal Data" {% if resubmit_sw.data_level == "Personal Data" %}selected{% endif %}>Personal Data</option>
+                                <option value="Sensitive" {% if resubmit_sw.data_level == "Sensitive" %}selected{% endif %}>Sensitive</option>
                             </select>
                         </div>
 
@@ -685,7 +697,7 @@
                         <button type="submit" class="request-submit">
                             {% if resubmit_sw %}Resubmit Software Request{% else %}Submit Software Request{% endif %}
                         </button>
-                        <a href="/office-portal/software/list/" class="request-cancel">
+                        <a href="{% url 'software_list' %}" class="request-cancel">
                             Cancel
                         </a>
                     </div>

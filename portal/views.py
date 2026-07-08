@@ -51,6 +51,12 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import ensure_csrf_cookie
 
+from django.views.decorators.http import (
+    require_POST,
+    require_GET,
+    require_http_methods,
+)
+
 from .models import (
     AccountRequest,
     Application,
@@ -2183,6 +2189,7 @@ def software_detail_api(request, req_id):
 
 
 @login_required
+@require_http_methods(["GET", "POST"])
 def resubmit_software(request, req_id):
     item = get_object_or_404(SoftwareRequest, pk=req_id)
 
@@ -2200,8 +2207,8 @@ def resubmit_software(request, req_id):
             "resubmit_sw": item,
         })
 
-    department = request.POST.get("department") or item.department
-    department = _normalize_department(department)
+    # Department is fixed after the original submission.
+    department = _normalize_department(item.department)
 
     if not _is_valid_department(department):
         messages.error(request, "請選擇有效的部門：IT、CS、Marketing、Procurement。")
