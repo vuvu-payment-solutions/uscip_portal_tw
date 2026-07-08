@@ -501,3 +501,187 @@ class BYODRequest(models.Model):
 
     def __str__(self):
         return f"{self.request_no or 'BYOD'} - {self.device_name} - {self.applicant.username}"
+    
+    
+class SoftwareRequest(models.Model):
+    STATUS_CHOICES = [
+        ("Pending Team Leader", "Pending Team Leader"),
+        ("Pending Supervisor", "Pending Supervisor"),
+        ("Pending CIO", "Pending CIO"),
+        ("Under-preview", "Under-preview"),
+        ("Work-in-progress", "Work-in-progress"),
+        ("Request Completed", "Request Completed"),
+        ("Rejected", "Rejected"),
+        ("Returned", "Returned"),
+    ]
+
+    REQUEST_TYPE_CHOICES = [
+        ("New Installation", "New Installation"),
+        ("Version Upgrade", "Version Upgrade"),
+        ("License Renewal", "License Renewal"),
+        ("Trial Software", "Trial Software"),
+        ("Open Source Tool", "Open Source Tool"),
+        ("Other", "Other"),
+    ]
+
+    LICENSE_TYPE_CHOICES = [
+        ("Freeware", "Freeware"),
+        ("Open Source", "Open Source"),
+        ("Commercial", "Commercial"),
+        ("Subscription", "Subscription"),
+        ("Trial", "Trial"),
+        ("Unknown", "Unknown"),
+    ]
+
+    DATA_LEVEL_CHOICES = [
+        ("Public", "Public"),
+        ("Internal", "Internal"),
+        ("Confidential", "Confidential"),
+        ("Personal Data", "Personal Data"),
+        ("Sensitive", "Sensitive"),
+    ]
+
+    request_no = models.CharField(max_length=50, unique=True, blank=True)
+
+    applicant = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="software_requests"
+    )
+
+    department = models.CharField(max_length=50, blank=True)
+
+    software_name = models.CharField(max_length=150)
+    software_version = models.CharField(max_length=100, blank=True)
+    vendor = models.CharField(max_length=150, blank=True)
+
+    request_type = models.CharField(
+        max_length=50,
+        choices=REQUEST_TYPE_CHOICES,
+        default="New Installation"
+    )
+
+    license_type = models.CharField(
+        max_length=50,
+        choices=LICENSE_TYPE_CHOICES,
+        default="Unknown"
+    )
+
+    target_device = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name="Target Device / Asset"
+    )
+
+    business_purpose = models.TextField()
+    data_level = models.CharField(
+        max_length=50,
+        choices=DATA_LEVEL_CHOICES,
+        default="Internal"
+    )
+
+    internet_access_required = models.BooleanField(default=False)
+    admin_privilege_required = models.BooleanField(default=False)
+    security_concern = models.TextField(blank=True)
+
+    attachment = models.FileField(
+        upload_to="software_requests/",
+        blank=True,
+        null=True
+    )
+
+    status = models.CharField(
+        max_length=50,
+        choices=STATUS_CHOICES,
+        default="Pending Team Leader"
+    )
+
+    preview_by = models.CharField(max_length=50, blank=True, default="")
+    return_reason = models.TextField(blank=True)
+    return_date = models.DateTimeField(null=True, blank=True)
+    bookmark = models.TextField(blank=True, default="")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "軟體申請"
+        verbose_name_plural = "軟體申請列表"
+
+    def save(self, *args, **kwargs):
+        if not self.request_no:
+            last = SoftwareRequest.objects.order_by("-id").first()
+            next_id = (last.id + 1) if last else 1
+            self.request_no = f"SW-{str(next_id).zfill(4)}"
+        super().save(*args, **kwargs)
+
+    @property
+    def progress(self):
+        mapping = {
+            "Pending Team Leader": 10,
+            "Under-preview": 15,
+            "Pending Supervisor": 25,
+            "Pending CIO": 50,
+            "Work-in-progress": 75,
+            "Request Completed": 100,
+            "Rejected": 0,
+            "Returned": 10,
+        }
+        return mapping.get(self.status, 0)
+
+    @property
+    def progress_color(self):
+        mapping = {
+            "Pending Team Leader": "bg-yellow-300",
+            "Under-preview": "bg-yellow-400",
+            "Pending Supervisor": "bg-blue-400",
+            "Pending CIO": "bg-blue-500",
+            "Work-in-progress": "bg-indigo-500",
+            "Request Completed": "bg-emerald-500",
+            "Rejected": "bg-red-500",
+            "Returned": "bg-orange-400",
+        }
+        return mapping.get(self.status, "bg-gray-400")
+
+    def __str__(self):
+        return f"{self.request_no} - {self.software_name} [{self.status}]"
+
+
+class SoftwareApprovalHistory(models.Model):
+    ACTION_CHOICES = [
+        ("submit", "Submit"),
+        ("approve", "Approve"),
+        ("reject", "Reject"),
+        ("return", "Return"),
+        ("resubmit", "Resubmit"),
+        ("preview", "Under-Preview"),
+        ("resume", "Resume"),
+        ("complete", "Complete"),
+        ("bookmark", "Bookmark"),
+    ]
+
+    software_request = models.ForeignKey(
+        SoftwareRequest,
+        on_delete=models.CASCADE,
+        related_name="approval_history"
+    )
+
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    from_status = models.CharField(max_length=50, blank=True, default="")
+    to_status = models.CharField(max_length=50, blank=True, default="")
+    actor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    actor_role = models.CharField(max_length=30, blank=True, default="")
+    comment = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "軟體申請審核歷程"
+        verbose_name_plural = "軟體申請審核歷程列表"
+
+    def __str__(self):
+        return (
+            f"{self.software_request.request_no} | {self.action} "
+            f"by {self.actor} ({self.from_status} → {self.to_status})"
+        )

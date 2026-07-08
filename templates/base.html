@@ -186,6 +186,15 @@
                 <span class="nav-text text-sm font-medium">Hardware Applications</span>
             </a>
 
+            <a href="{% url 'software_list' %}"
+            class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-white/5 hover:text-white transition-all {% block nav_software %}{% endblock %}">
+                <svg class="nav-icon w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 5h6"/>
+                    <path d="M9 12h6M9 16h6"/>
+                </svg>
+                <span class="nav-text text-sm font-medium">Software Applications</span>
+            </a>
+
             <a href="{% url 'byod_list' %}"
             class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-300 hover:bg-white/5 hover:text-white transition-all {% block nav_byod %}{% endblock %}">
                     <svg class="nav-icon w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">

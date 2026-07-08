@@ -51,6 +51,12 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import ensure_csrf_cookie
 
+from django.views.decorators.http import (
+    require_POST,
+    require_GET,
+    require_http_methods,
+)
+
 from .models import (
     AccountRequest,
     Application,
@@ -61,6 +67,8 @@ from .models import (
     HardwareRequest, 
     HardwareApprovalHistory,
     BYODRequest,
+    SoftwareRequest,
+    SoftwareApprovalHistory,    
 )
 
 from .services.notify import (
@@ -104,6 +112,35 @@ def _log_hardware_history(hardware_request, action, from_status, to_status, user
         actor_role=role,
         comment=comment,
     )
+
+
+def _log_software_history(software_request, action, from_status, to_status, user, role, comment=""):
+    SoftwareApprovalHistory.objects.create(
+        software_request=software_request,
+        action=action,
+        from_status=from_status,
+        to_status=to_status,
+        actor=user,
+        actor_role=role,
+        comment=comment,
+    )
+
+
+def _initial_software_status(department: str) -> str:
+    department = _normalize_department(department)
+    if _is_it_department(department):
+        return "Pending Supervisor"
+    return "Pending Team Leader"
+
+
+def _required_role_for_software_status(status: str) -> str:
+    mapping = {
+        "Pending Team Leader": "Team Leader",
+        "Pending Supervisor": "Supervisor",
+        "Pending CIO": "CIO",
+        "Work-in-progress": "CIO",
+    }
+    return mapping.get(status, "Supervisor")
 
 
 def _get_applicant_email(username: str) -> str:
@@ -1967,9 +2004,404 @@ def hardware_list(request):
         "search": search,
         "role": role,
     })
+    
 
 # ─────────────────────────────────────────────
-# 6. BYOD 自攜設備申請
+# 6. Software Applications 軟體申請作業
+# ─────────────────────────────────────────────
+
+@login_required
+def submit_software(request):
+    if request.method == "GET":
+        return render(request, "office_portal/software_apply.html")
+
+    profile = getattr(request.user, "profile", None)
+    role = profile.role if profile else "user"
+
+    department = request.POST.get("department") or _get_user_department(request.user)
+    department = _normalize_department(department)
+
+    if not _is_valid_department(department):
+        messages.error(request, "請選擇有效的部門：IT、CS、Marketing、Procurement。")
+        return redirect("software_apply")
+
+    software_name = (request.POST.get("software_name") or "").strip()
+    business_purpose = (request.POST.get("business_purpose") or "").strip()
+
+    if not software_name or not business_purpose:
+        messages.error(request, "Software Name and Business Purpose are required.")
+        return redirect("software_apply")
+
+    item = SoftwareRequest.objects.create(
+        applicant=request.user,
+        department=department,
+        software_name=software_name,
+        software_version=(request.POST.get("software_version") or "").strip(),
+        vendor=(request.POST.get("vendor") or "").strip(),
+        request_type=request.POST.get("request_type") or "New Installation",
+        license_type=request.POST.get("license_type") or "Unknown",
+        target_device=(request.POST.get("target_device") or "").strip(),
+        business_purpose=business_purpose,
+        data_level=request.POST.get("data_level") or "Internal",
+        internet_access_required=request.POST.get("internet_access_required") == "on",
+        admin_privilege_required=request.POST.get("admin_privilege_required") == "on",
+        security_concern=(request.POST.get("security_concern") or "").strip(),
+        attachment=request.FILES.get("file"),
+        status=_initial_software_status(department),
+    )
+
+    _log_software_history(
+        item,
+        "submit",
+        "",
+        item.status,
+        request.user,
+        role,
+        "Applicant submitted software request",
+    )
+
+    next_required_role = _required_role_for_software_status(item.status)
+
+    try:
+        teams_pending_approval(
+            request_type="Software Application",
+            request_no=item.request_no,
+            applicant=request.user.username,
+            required_role=next_required_role,
+            current_status=item.status,
+            action_path="/office-portal/software/list/",
+            detail=f"{item.software_name} / {item.department} / {item.request_type}",
+        )
+    except Exception:
+        pass
+
+    messages.success(request, f"Software request submitted. Waiting for {next_required_role} review.")
+    return redirect("software_list")
+
+
+@login_required
+def software_list(request):
+    profile = getattr(request.user, "profile", None)
+    role = profile.role if profile else "user"
+
+    search = request.GET.get("search", "").strip()
+
+    if role == "team_leader":
+        items = SoftwareRequest.objects.filter(
+            Q(status="Pending Team Leader") |
+            Q(status="Under-preview", preview_by="Pending Team Leader")
+        )
+
+    elif role == "supervisor":
+        items = SoftwareRequest.objects.filter(
+            Q(status="Pending Supervisor") |
+            Q(status="Under-preview", preview_by="Pending Supervisor")
+        )
+
+    elif role == "cio":
+        items = SoftwareRequest.objects.filter(
+            Q(status="Pending CIO") |
+            Q(status="Under-preview", preview_by="Pending CIO") |
+            Q(status="Work-in-progress") |
+            Q(status="Request Completed")
+        )
+
+    elif role == "admin":
+        items = SoftwareRequest.objects.all()
+
+    else:
+        items = SoftwareRequest.objects.filter(applicant=request.user)
+
+    if search:
+        items = items.filter(
+            Q(request_no__icontains=search) |
+            Q(software_name__icontains=search) |
+            Q(software_version__icontains=search) |
+            Q(vendor__icontains=search) |
+            Q(department__icontains=search) |
+            Q(request_type__icontains=search) |
+            Q(license_type__icontains=search) |
+            Q(data_level__icontains=search) |
+            Q(status__icontains=search) |
+            Q(business_purpose__icontains=search)
+        )
+
+    paginator = Paginator(items.order_by("-created_at"), 20)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "office_portal/software_list.html", {
+        "items": page_obj,
+        "page_obj": page_obj,
+        "search": search,
+        "role": role,
+    })
+
+
+@login_required
+def software_detail_api(request, req_id):
+    item = get_object_or_404(SoftwareRequest, pk=req_id)
+
+    profile = getattr(request.user, "profile", None)
+    role = profile.role if profile else "user"
+
+    if item.applicant != request.user and role not in ["team_leader", "supervisor", "cio", "admin"]:
+        return JsonResponse({"detail": "Permission denied."}, status=403)
+
+    history = SoftwareApprovalHistory.objects.filter(
+        software_request=item
+    ).order_by("created_at")
+
+    return JsonResponse({
+        "request_no": item.request_no,
+        "applicant": item.applicant.username,
+        "department": item.department,
+        "software_name": item.software_name,
+        "software_version": item.software_version,
+        "vendor": item.vendor,
+        "request_type": item.request_type,
+        "license_type": item.license_type,
+        "target_device": item.target_device,
+        "business_purpose": item.business_purpose,
+        "data_level": item.data_level,
+        "internet_access_required": item.internet_access_required,
+        "admin_privilege_required": item.admin_privilege_required,
+        "security_concern": item.security_concern,
+        "status": item.status,
+        "preview_by": item.preview_by,
+        "return_reason": item.return_reason,
+        "return_date": item.return_date.strftime("%Y-%m-%d %H:%M") if item.return_date else "",
+        "created_at": item.created_at.strftime("%Y-%m-%d %H:%M") if item.created_at else "",
+        "attachment": item.attachment.url if item.attachment else "",
+        "history": [
+            {
+                "created_at": h.created_at.strftime("%Y-%m-%d %H:%M") if h.created_at else "",
+                "actor": h.actor.username if h.actor else "",
+                "actor_role": h.actor_role,
+                "action": h.action,
+                "from_status": h.from_status,
+                "to_status": h.to_status,
+                "comment": h.comment,
+            }
+            for h in history
+        ],
+    })
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def resubmit_software(request, req_id):
+    item = get_object_or_404(SoftwareRequest, pk=req_id)
+
+    profile = getattr(request.user, "profile", None)
+    role = profile.role if profile else "user"
+
+    if item.applicant != request.user:
+        return JsonResponse({"success": False, "detail": "You cannot resubmit another user's software request."}, status=403)
+
+    if item.status != "Returned":
+        return JsonResponse({"success": False, "detail": f"Current status {item.status} cannot be resubmitted."}, status=400)
+
+    if request.method == "GET":
+        return render(request, "office_portal/software_apply.html", {
+            "resubmit_sw": item,
+        })
+
+    # Department is fixed after the original submission.
+    department = _normalize_department(item.department)
+
+    if not _is_valid_department(department):
+        messages.error(request, "請選擇有效的部門：IT、CS、Marketing、Procurement。")
+        return redirect("software_list")
+
+    old_status = item.status
+
+    item.department = department
+    item.software_name = (request.POST.get("software_name") or item.software_name).strip()
+    item.software_version = (request.POST.get("software_version") or "").strip()
+    item.vendor = (request.POST.get("vendor") or "").strip()
+    item.request_type = request.POST.get("request_type") or item.request_type
+    item.license_type = request.POST.get("license_type") or item.license_type
+    item.target_device = (request.POST.get("target_device") or "").strip()
+    item.business_purpose = (request.POST.get("business_purpose") or item.business_purpose).strip()
+    item.data_level = request.POST.get("data_level") or item.data_level
+    item.internet_access_required = request.POST.get("internet_access_required") == "on"
+    item.admin_privilege_required = request.POST.get("admin_privilege_required") == "on"
+    item.security_concern = (request.POST.get("security_concern") or "").strip()
+
+    new_attachment = request.FILES.get("file")
+    if new_attachment:
+        item.attachment = new_attachment
+
+    item.status = _initial_software_status(department)
+    item.preview_by = ""
+    item.return_reason = ""
+    item.return_date = None
+    item.save()
+
+    _log_software_history(
+        item,
+        "resubmit",
+        old_status,
+        item.status,
+        request.user,
+        role,
+        "Applicant resubmitted software request after revision",
+    )
+
+    next_required_role = _required_role_for_software_status(item.status)
+
+    try:
+        teams_pending_approval(
+            request_type="Software Application",
+            request_no=item.request_no,
+            applicant=request.user.username,
+            required_role=next_required_role,
+            current_status=item.status,
+            action_path="/office-portal/software/list/",
+            detail=f"{item.software_name} / {item.department} / {item.request_type}",
+        )
+    except Exception:
+        pass
+
+    messages.success(request, f"Software request resubmitted. Waiting for {next_required_role} review.")
+    return redirect("software_list")
+
+
+@login_required
+@require_POST
+def software_action(request, req_id):
+    profile = getattr(request.user, "profile", None)
+    role = profile.role if profile else "user"
+
+    item = get_object_or_404(SoftwareRequest, pk=req_id)
+    action = request.POST.get("action")
+    old_status = item.status
+
+    if action == "approve":
+        if role == "team_leader" and item.status == "Pending Team Leader":
+            item.status = "Pending Supervisor"
+
+        elif role == "supervisor" and item.status == "Pending Supervisor":
+            item.status = "Pending CIO"
+
+        elif role == "cio" and item.status == "Pending CIO":
+            item.status = "Work-in-progress"
+
+        else:
+            return JsonResponse({"success": False, "detail": "Invalid role or status."}, status=403)
+
+    elif action == "preview":
+        if role == "team_leader" and item.status == "Pending Team Leader":
+            item.preview_by = "Pending Team Leader"
+
+        elif role == "supervisor" and item.status == "Pending Supervisor":
+            item.preview_by = "Pending Supervisor"
+
+        elif role == "cio" and item.status == "Pending CIO":
+            item.preview_by = "Pending CIO"
+
+        else:
+            return JsonResponse({"success": False, "detail": "Invalid role or status."}, status=403)
+
+        item.status = "Under-preview"
+
+    elif action == "resume":
+        if item.status != "Under-preview":
+            return JsonResponse({"success": False, "detail": "Only Under-preview requests can be resumed."}, status=400)
+
+        if item.preview_by == "Pending Team Leader" and role == "team_leader":
+            item.status = "Pending Team Leader"
+
+        elif item.preview_by == "Pending Supervisor" and role == "supervisor":
+            item.status = "Pending Supervisor"
+
+        elif item.preview_by == "Pending CIO" and role == "cio":
+            item.status = "Pending CIO"
+
+        else:
+            return JsonResponse({"success": False, "detail": "You cannot resume this request."}, status=403)
+
+        item.preview_by = ""
+
+    elif action == "return":
+        if not (
+            (role == "team_leader" and item.status == "Pending Team Leader") or
+            (role == "supervisor" and item.status == "Pending Supervisor") or
+            (role == "cio" and item.status == "Pending CIO")
+        ):
+            return JsonResponse({"success": False, "detail": "You cannot return this request."}, status=403)
+
+        reason = (request.POST.get("reason") or request.POST.get("comment") or "").strip()
+        if not reason:
+            return JsonResponse({"success": False, "detail": "Return reason is required."}, status=400)
+
+        item.status = "Returned"
+        item.preview_by = ""
+        item.return_reason = reason
+        item.return_date = timezone.now()
+
+    elif action == "reject":
+        if not (
+            (role == "supervisor" and item.status == "Pending Supervisor") or
+            (role == "cio" and item.status == "Pending CIO")
+        ):
+            return JsonResponse({"success": False, "detail": "You cannot reject this request."}, status=403)
+
+        reason = (request.POST.get("reason") or request.POST.get("comment") or "").strip()
+        if not reason:
+            return JsonResponse({"success": False, "detail": "Reject reason is required."}, status=400)
+
+        item.status = "Rejected"
+        item.preview_by = ""
+        item.return_reason = reason
+
+    elif action == "complete":
+        if role == "cio" and item.status == "Work-in-progress":
+            item.status = "Request Completed"
+        else:
+            return JsonResponse({"success": False, "detail": "You cannot complete this request."}, status=403)
+
+    else:
+        return JsonResponse({"success": False, "detail": "Unknown action."}, status=400)
+
+    item.save()
+
+    comment = request.POST.get("reason", "") or request.POST.get("comment", "")
+
+    _log_software_history(
+        item,
+        action,
+        old_status,
+        item.status,
+        request.user,
+        role,
+        comment,
+    )
+
+    if action == "approve":
+        next_required_role = _required_role_for_software_status(item.status)
+
+        try:
+            teams_pending_approval(
+                request_type="Software Application",
+                request_no=item.request_no,
+                applicant=item.applicant.username,
+                required_role=next_required_role,
+                current_status=item.status,
+                action_path="/office-portal/software/list/",
+                detail=f"{item.software_name} / {item.department} / {item.request_type}",
+            )
+        except Exception:
+            pass
+
+    return JsonResponse({
+        "success": True,
+        "new_status": item.status,
+    })    
+
+# ─────────────────────────────────────────────
+# 7. BYOD 自攜設備申請
 # ─────────────────────────────────────────────
 
 @login_required
@@ -2053,7 +2485,7 @@ def submit_byod(request):
     return redirect("byod_list")
 
 # ─────────────────────────────────────────────
-# 7. 公告管理
+# 8. 公告管理
 # ─────────────────────────────────────────────
 
 @require_GET
@@ -2087,7 +2519,7 @@ def create_notice(request):
 
 
 # ─────────────────────────────────────────────
-# 7. 帳號設定
+# 8. 帳號設定
 # ─────────────────────────────────────────────
 
 @login_required
@@ -2098,7 +2530,7 @@ def settings_home(request):
 
 
 # ─────────────────────────────────────────────
-# 8. ISMS 合規管理
+# 9. ISMS 合規管理
 # ─────────────────────────────────────────────
 
 @login_required
