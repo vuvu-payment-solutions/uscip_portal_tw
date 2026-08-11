@@ -32,6 +32,7 @@ Hardware Application 退件流程：
 from functools import wraps
 
 import json
+from multiprocessing import context
 import secrets
 
 from compliance.models import ControlDomain
@@ -236,6 +237,14 @@ def _required_role_for_status(status: str) -> str:
         "Work-in-progress": "Hardware Supervisor",
     }
     return mapping.get(status, "Supervisor")
+
+
+def _has_hardware_supervisor_permission(profile) -> bool:
+    """Check whether the user may act at the final Hardware Supervisor stage."""
+    return bool(profile and (
+        profile.role == "hardware_supervisor"
+        or profile.is_hardware_supervisor
+    ))
 
 
 def _invalid_department_response():
@@ -491,20 +500,24 @@ def portal_dashboard(request):
             Q(status="Work-in-progress") |
             Q(status="Under-preview", preview_by="Pending CIO")
         )
-    elif role == "hardware_supervisor":
-        context["pending_hardware"] = HardwareRequest.objects.filter(
-            Q(status="Pending Hardware Supervisor") |
-            Q(status="Work-in-progress")
-        )
     elif role == "supervisor":
         context["pending_accounts"] = AccountRequest.objects.filter(status="Pending Supervisor")
         context["pending_apps"] = Application.objects.filter(
             Q(status="Pending Supervisor") |
             Q(status="Under-preview", preview_by="Pending Supervisor")
         )
+        hardware_statuses = Q(status="Pending Supervisor")
+
+        if _has_hardware_supervisor_permission(profile):
+            hardware_statuses |= Q(status="Pending Hardware Supervisor")
+            hardware_statuses |= Q(status="Work-in-progress")
+
+        context["pending_hardware"] = HardwareRequest.objects.filter(hardware_statuses)
+    elif _has_hardware_supervisor_permission(profile):
         context["pending_hardware"] = HardwareRequest.objects.filter(
-            status="Pending Supervisor"
-        )
+            Q(status="Pending Hardware Supervisor") |
+            Q(status="Work-in-progress")
+    )
     elif role == "team_leader":
         context["pending_accounts"] = AccountRequest.objects.filter(status="Pending Team Leader")
         context["pending_apps"] = Application.objects.filter(
@@ -1806,11 +1819,13 @@ def resubmit_hardware(request, req_id):
 def hardware_action(request, req_id):
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else "user"
+    is_hardware_supervisor = _has_hardware_supervisor_permission(profile)
 
     item = get_object_or_404(HardwareRequest, pk=req_id)
     action = request.POST.get("action")
 
     old_status = item.status
+    old_preview_by = item.preview_by
 
     # ------------------------
     # Approve
@@ -1823,7 +1838,7 @@ def hardware_action(request, req_id):
         elif role == "supervisor" and item.status == "Pending Supervisor":
             item.status = "Pending Hardware Supervisor"
 
-        elif role == "hardware_supervisor" and item.status == "Pending Hardware Supervisor":
+        elif is_hardware_supervisor and item.status == "Pending Hardware Supervisor":
             item.status = "Work-in-progress"
 
         else:
@@ -1840,7 +1855,7 @@ def hardware_action(request, req_id):
         elif role == "supervisor" and item.status == "Pending Supervisor":
             item.preview_by = "Pending Supervisor"
 
-        elif role == "hardware_supervisor" and item.status == "Pending Hardware Supervisor":
+        elif is_hardware_supervisor and item.status == "Pending Hardware Supervisor":
             item.preview_by = "Pending Hardware Supervisor"
 
         else:
@@ -1859,7 +1874,7 @@ def hardware_action(request, req_id):
         elif item.preview_by == "Pending Supervisor" and role == "supervisor":
             item.status = "Pending Supervisor"
 
-        elif item.preview_by == "Pending Hardware Supervisor" and role == "hardware_supervisor":
+        elif item.preview_by == "Pending Hardware Supervisor" and is_hardware_supervisor:
             item.status = "Pending Hardware Supervisor"
 
         else:
@@ -1875,7 +1890,7 @@ def hardware_action(request, req_id):
         if not (
             (role == "team_leader" and item.status == "Pending Team Leader") or
             (role == "supervisor" and item.status == "Pending Supervisor") or
-            (role == "hardware_supervisor" and item.status == "Pending Hardware Supervisor")
+            (is_hardware_supervisor and item.status == "Pending Hardware Supervisor")
         ):
             return JsonResponse({"success": False, "detail": "不可退件"}, status=403)
 
@@ -1890,7 +1905,7 @@ def hardware_action(request, req_id):
 
         if not (
             (role == "supervisor" and item.status == "Pending Supervisor") or
-            (role == "hardware_supervisor" and item.status == "Pending Hardware Supervisor")
+            (is_hardware_supervisor and item.status == "Pending Hardware Supervisor")
         ):
             return JsonResponse({"success": False, "detail": "不可拒絕"}, status=403)
 
@@ -1909,7 +1924,7 @@ def hardware_action(request, req_id):
     # ------------------------
     elif action == "complete":
 
-        if role == "hardware_supervisor" and item.status == "Work-in-progress":
+        if is_hardware_supervisor and item.status == "Work-in-progress":
             item.status = "Request Completed"
         else:
             return JsonResponse({"success": False, "detail": "不可完成"}, status=403)
@@ -1921,13 +1936,21 @@ def hardware_action(request, req_id):
 
     comment = request.POST.get("reason", "") or request.POST.get("comment", "")
 
+    actor_role = role
+
+    if old_status == "Pending Hardware Supervisor" or (
+        old_status == "Under-preview"
+        and old_preview_by == "Pending Hardware Supervisor"
+    ) or old_status == "Work-in-progress":
+        actor_role = "hardware_supervisor"
+
     _log_hardware_history(
         item,
         action,
         old_status,
         item.status,
         request.user,
-        role,
+        actor_role,
         comment
     )
 
@@ -1962,10 +1985,11 @@ def hardware_action(request, req_id):
 def hardware_list(request):
     profile = getattr(request.user, 'profile', None)
     role = profile.role if profile else "user"
+    is_hardware_supervisor = _has_hardware_supervisor_permission(profile)
 
     search = request.GET.get("search", "").strip()
 
-    if role in ("team_leader", "supervisor", "hardware_supervisor"):
+    if role in ("team_leader", "supervisor") or is_hardware_supervisor:
         items = HardwareRequest.objects.filter(
             Q(status="Pending Team Leader") |
             Q(status="Pending Supervisor") |
@@ -2003,6 +2027,7 @@ def hardware_list(request):
         "page_obj": page_obj,
         "search": search,
         "role": role,
+        "is_hardware_supervisor": is_hardware_supervisor,
     })
     
 

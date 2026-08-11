@@ -736,13 +736,13 @@
                         <button type="button" onclick="openHWReturnModal({{ item.id }})" class="hw-action hw-warn">Return</button>
                         <button type="button" onclick="openHWRejectModal({{ item.id }})" class="hw-action hw-danger">Reject</button>
 
-                    {% elif item.status == 'Pending Hardware Supervisor' and role == 'hardware_supervisor' %}
+                    {% elif item.status == 'Pending Hardware Supervisor' and is_hardware_supervisor %}
                         <button type="button" onclick="doHW('approve', {{ item.id }})" class="hw-action hw-go">Approve</button>
                         <button type="button" onclick="doHW('preview', {{ item.id }})" class="hw-action">Review</button>
                         <button type="button" onclick="openHWReturnModal({{ item.id }})" class="hw-action hw-warn">Return</button>
                         <button type="button" onclick="openHWRejectModal({{ item.id }})" class="hw-action hw-danger">Reject</button>
 
-                    {% elif item.status == 'Work-in-progress' and role == 'hardware_supervisor' %}
+                    {% elif item.status == 'Work-in-progress' and is_hardware_supervisor %}
                         <button type="button" onclick="doHW('complete', {{ item.id }})" class="hw-action hw-go">Complete</button>
 
                     {% elif item.status == 'Under-preview' and role == 'team_leader' %}
@@ -751,7 +751,7 @@
                     {% elif item.status == 'Under-preview' and role == 'supervisor' %}
                         <button type="button" onclick="doHW('resume', {{ item.id }})" class="hw-action hw-primary">Resume</button>
 
-                    {% elif item.status == 'Under-preview' and role == 'hardware_supervisor' %}
+                    {% elif item.status == 'Under-preview' and item.preview_by == 'Pending Hardware Supervisor' and is_hardware_supervisor %}
                         <button type="button" onclick="doHW('resume', {{ item.id }})" class="hw-action hw-primary">Resume</button>
 
                     {% elif item.status == 'Returned' and item.applicant == request.user %}

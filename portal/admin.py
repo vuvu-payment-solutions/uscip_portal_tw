@@ -4,8 +4,8 @@ from .models import AccountRequest, Application, Notice, UserProfile, BYODReques
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display  = ("user", "role", "department", "full_name")
-    list_filter   = ("role",)
+    list_display  = ("user", "role", "is_hardware_supervisor", "department", "full_name")
+    list_filter   = ("role", "is_hardware_supervisor")
     search_fields = ("user__username", "full_name", "department")
 
 

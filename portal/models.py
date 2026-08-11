@@ -13,6 +13,14 @@ class UserProfile(models.Model):
     ]
     user       = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     role       = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
+    # Primary role remains the existing role used by Account / Software /
+    # Application / BYOD.  This optional capability lets a Supervisor also
+    # perform the final Hardware Supervisor stage without changing that role.
+    is_hardware_supervisor = models.BooleanField(
+        default=False,
+        verbose_name='Hardware Supervisor Permission',
+        help_text='Allows this user to approve and complete hardware requests at the Hardware Supervisor stage.',
+    )
     full_name  = models.CharField(max_length=50, blank=True)
     department = models.CharField(max_length=50, blank=True)
     must_change_pw = models.BooleanField(default=True, verbose_name='Must change password')
