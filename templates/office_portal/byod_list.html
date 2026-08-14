@@ -391,7 +391,7 @@
         font-weight: 900;
     }
 
-    @media (max-width: 1180px) {
+    @media (max-width: 1440px) {
         .byod-card {
             grid-template-columns: 1fr 1fr;
             align-items: stretch;
@@ -418,6 +418,14 @@
         align-items: center;
         gap: 18px;
         flex-wrap: wrap;
+    }
+
+    @media (max-width: 420px) {
+        .byod-console { padding: 14px; }
+        .byod-header { margin: -14px -14px 14px; padding: 18px 14px; }
+        .byod-search-panel { margin: 0 -14px 12px; padding: 10px 14px; }
+        .byod-search-form { flex-wrap: wrap; }
+        .byod-search-input, .byod-search-btn, .byod-clear-btn, .byod-new-btn { width: 100%; }
     }
 
         .byod-new-btn {

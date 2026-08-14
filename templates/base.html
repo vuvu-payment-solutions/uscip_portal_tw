@@ -22,10 +22,37 @@
         *, *::before, *::after { box-sizing: border-box; }
 
         /* Sidebar base */
-        .sidebar { transition: transform 0.3s ease; }
+        .sidebar {
+            transition: transform 0.3s ease;
+        }
+
+        /*
+        * P0-1：修正手機版側欄被 List 頁 sticky 搜尋列蓋住
+        *
+        * 問題原因：
+        * Account／Applications／Hardware／Software List 的搜尋列使用 z-index: 40；
+        * 原本 sidebar 也使用 Tailwind 的 z-40。
+        * 兩者同層時，後方主內容的搜尋列可能覆蓋側欄選單。
+        *
+        * 修正方式：
+        * - 一般內容／sticky 搜尋列：40 以下
+        * - 手機遮罩：90
+        * - 側欄：100
+        * - 各頁明細／退件 Modal：既有 9999+，保持在最上層
+        *
+        * 這裡使用 ID selector，覆蓋既有 Tailwind z-30 / z-40，
+        * 不需要重新編譯 tailwind_css。
+        */
+        #sidebarOverlay {
+            z-index: 90 !important;
+        }
+
+        #sidebar {
+            z-index: 100 !important;
+        }
 
         /* Mobile: sidebar hidden by default, slides in from left */
-        @media (max-width: 1023px) {
+        @media (max-width: 1535px) {
             .sidebar {
                 transform: translateX(-100%);
             }
@@ -38,7 +65,7 @@
         }
 
         /* Desktop: sidebar always visible */
-        @media (min-width: 1024px) {
+        @media (min-width: 1536px) {
             .sidebar {
                 transform: translateX(0);
             }
@@ -56,6 +83,13 @@
         .sidebar-overlay.active {
             opacity: 1;
             pointer-events: auto;
+        }
+
+        /* Keep responsive navigation independent of a Tailwind rebuild. */
+        @media (min-width: 1536px) {
+            .sidebar-mobile-only {
+                display: none !important;
+            }
         }
 
         /* Scrollbar styling */
@@ -117,7 +151,7 @@
 
     <!-- ========== MOBILE OVERLAY ========== -->
     <div id="sidebarOverlay"
-         class="sidebar-overlay fixed inset-0 z-30 bg-black/50 lg:hidden"
+         class="sidebar-overlay sidebar-mobile-only fixed inset-0 z-30 bg-black/50"
          onclick="closeSidebar()"></div>
 
     <!-- ========== SIDEBAR ========== -->
@@ -253,7 +287,7 @@
                 </div>
                 <!-- Close sidebar (mobile) -->
                 <button onclick="closeSidebar()" title="Close menu"
-                        class="lg:hidden p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
+                        class="sidebar-mobile-only p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -277,7 +311,7 @@
 
             <div class="flex items-center gap-3">
                 <!-- Hamburger: visible on mobile only -->
-                <button onclick="toggleSidebar()" class="p-1.5 rounded-lg hover:bg-gray-100 transition-colors lg:hidden">
+                <button onclick="toggleSidebar()" class="sidebar-mobile-only p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
                     <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path d="M4 6h16M4 12h16M4 18h16"/>
                     </svg>
@@ -328,7 +362,7 @@ function closeSidebar() {
 // Close sidebar when clicking a nav link (mobile only)
 document.querySelectorAll('.nav-item').forEach(function(link) {
     link.addEventListener('click', function() {
-        if (window.innerWidth < 1024) {
+        if (window.innerWidth < 1536) {
             closeSidebar();
         }
     });
@@ -336,7 +370,7 @@ document.querySelectorAll('.nav-item').forEach(function(link) {
 
 // Close sidebar on window resize to desktop
 window.addEventListener('resize', function() {
-    if (window.innerWidth >= 1024) {
+    if (window.innerWidth >= 1536) {
         closeSidebar();
     }
 });

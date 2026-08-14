@@ -643,10 +643,11 @@
         background: linear-gradient(180deg, #433878, #2f2b5f);
     }
 
-    @media (max-width: 1180px) {
+    @media (max-width: 1440px) {
         .tc-card { grid-template-columns: 1fr 1fr; align-items: stretch; }
         .tc-right { grid-column: 1 / -1; align-items: flex-start; padding-top: 10px; border-top: 1px dashed rgba(159,176,202,.20); }
         .tc-actions, .tc-progress { justify-content: flex-start; }
+        .tc-actions { min-width: 0; max-width: 100%; flex-wrap: wrap; }
     }
 
     @media (max-width: 640px) {
@@ -667,6 +668,14 @@
         .tc-card { grid-template-columns: 1fr; }
         .tc-right { align-items: stretch; }
         .tc-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 420px) {
+        .tc-console { padding: 14px; }
+        .tc-header-panel { margin: -14px -14px 14px; padding: 18px 14px; }
+        .tc-search-sticky { margin: 0 -14px 12px; padding: 10px 14px; }
+        .tc-card { padding: 14px 14px 14px 20px; }
+        .tc-actions, .tc-action { width: 100%; }
     }
 </style>
 

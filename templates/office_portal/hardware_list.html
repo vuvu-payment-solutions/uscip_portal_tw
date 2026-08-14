@@ -572,7 +572,7 @@
         line-height: 1;
     }
 
-    @media (max-width: 1180px) {
+    @media (max-width: 1440px) {
         .hw-card {
             grid-template-columns: minmax(180px, 1.2fr) 64px minmax(180px, 1fr) minmax(230px, 1fr);
         }
@@ -607,6 +607,16 @@
         .hw-reason {
             grid-template-columns: 1fr;
         }
+    }
+
+    @media (max-width: 420px) {
+        .hw-console { padding: 14px; }
+        .hw-sticky-panel { margin: -14px -14px 14px; padding: 18px 14px; }
+        .hw-search-sticky { margin: 0 -14px 12px; padding: 10px 14px; }
+        .hw-search-wrap { min-width: 0; flex-basis: 100%; }
+        .hw-card { padding: 14px 14px 14px 20px; }
+        .hw-actions, .hw-action { width: 100%; }
+        #hwReturnModal > div > div, #hwRejectModal > div > div { width: calc(100vw - 28px) !important; }
     }
 
     /* Hardware page only: make bottom area match Tech Console */

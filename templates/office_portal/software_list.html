@@ -572,7 +572,7 @@
         line-height: 1;
     }
 
-    @media (max-width: 1180px) {
+    @media (max-width: 1440px) {
         .sw-card {
             grid-template-columns: minmax(180px, 1.2fr) 64px minmax(180px, 1fr) minmax(230px, 1fr);
         }
@@ -607,6 +607,16 @@
         .sw-reason {
             grid-template-columns: 1fr;
         }
+    }
+
+    @media (max-width: 420px) {
+        .sw-console { padding: 14px; }
+        .sw-sticky-panel { margin: -14px -14px 14px; padding: 18px 14px; }
+        .sw-search-sticky { margin: 0 -14px 12px; padding: 10px 14px; }
+        .sw-search-wrap { min-width: 0; flex-basis: 100%; }
+        .sw-card { padding: 14px 14px 14px 20px; }
+        .sw-actions, .sw-action { width: 100%; }
+        #softwareReturnModal > div > div, #softwareRejectModal > div > div { width: calc(100vw - 28px) !important; }
     }
 
     /* Software page only: make bottom area match Tech Console */

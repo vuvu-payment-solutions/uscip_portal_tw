@@ -476,10 +476,10 @@
         line-height: 1;
     }
     
-    @media (max-width: 1180px) {
+    @media (max-width: 1440px) {
         .tc-card { grid-template-columns: 1fr 1fr; align-items: stretch; }
         .tc-right { grid-column: 1 / -1; align-items: flex-start; padding-top: 10px; border-top: 1px dashed rgba(159,176,202,.20); }
-        .tc-actions { justify-content: flex-start; }
+        .tc-actions { justify-content: flex-start; min-width: 0; max-width: 100%; flex-wrap: wrap; }
     }
 
     @media (max-width: 640px) {
@@ -501,6 +501,14 @@
         .tc-right { align-items: stretch; }
         .tc-actions { justify-content: flex-start; }
     }
+
+    @media (max-width: 420px) {
+        .tc-console { padding: 14px; }
+        .tc-header-panel { margin: -14px -14px 14px; padding: 18px 14px; }
+        .tc-search-sticky { margin: 0 -14px 12px; padding: 10px 14px; }
+        .tc-card { padding: 14px 14px 14px 20px; }
+        .tc-actions, .tc-action { width: 100%; }
+    }
 </style>
 
 <div class="tc-console tc-account">
@@ -516,12 +524,13 @@
 
     <div class="tc-search-sticky">
         <div class="tc-count">
-            Showing <b>{{ pending_accounts|length }}</b> pending account request(s)
+            {# P0-3：已核准／退件／拒絕紀錄也保留在本頁，因此不能再寫 pending。 #}
+            Showing <b>{{ account_requests|length }}</b> account request(s)
         </div>
     </div>
 
     <div class="tc-stack">
-        {% for req in pending_accounts %}
+        {% for req in account_requests %}
         <article id="acct-row-{{ req.id }}" class="tc-card"
                  data-status="{% if req.status == 'Request Completed' or req.status == 'Approved' %}done{% elif req.status == 'Rejected' %}reject{% elif req.status == 'Returned' %}return{% elif req.status == 'Under-preview' %}review{% elif req.status == 'Work-in-progress' %}working{% else %}pending{% endif %}">
 

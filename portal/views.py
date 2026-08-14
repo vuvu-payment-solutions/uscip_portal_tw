@@ -560,51 +560,56 @@ def portal_dashboard(request):
 @login_required
 def account_list(request):
     """
-    Account 獨立頁籤：
-    - 所有已登入使用者可查看自己的 Account Request
-    - Team Leader / Supervisor / CIO 可查看目前待自己審核的案件
+    Account List：
+    - 所有審核角色都可查看全部帳號申請紀錄。
+    - 只有目前輪到登入者審核的案件，才可操作 Forward／Approve／Review／Return／Reject。
+    - 已核准、退件、拒絕案件保留在清單，供日後追查。
     """
     profile = getattr(request.user, "profile", None)
     role = profile.role if profile else "user"
-    
+
     allowed_roles = ("team_leader", "supervisor", "cio")
     if role not in allowed_roles:
         messages.error(request, "You do not have permission to access Account Requests.")
         return redirect("portal_dashboard")
-    
+
     if profile and profile.must_change_pw:
         messages.warning(request, "Please change your password before continuing.")
         return redirect("portal_change_password")
 
-    pending_accounts = AccountRequest.objects.none()
+    # P0-3：原本依角色只撈「待自己審核」的案件，
+    # 核准後狀態變為 Approved，因此會從 Account List 消失。
+    # 改為保留全部申請紀錄，最新案件排最前面。
+    account_requests = AccountRequest.objects.all().order_by("-created_at")
 
-    if role == "team_leader":
-        pending_accounts = AccountRequest.objects.filter(
-            Q(status="Pending Team Leader") |
-            Q(status="Under-preview", preview_by="Pending Team Leader")
-        ).order_by("-created_at")
-
-    elif role == "supervisor":
-        pending_accounts = AccountRequest.objects.filter(
-            Q(status="Pending Supervisor") |
-            Q(status="Under-preview", preview_by="Pending Supervisor")
-        ).order_by("-created_at")
-
-    elif role == "cio":
-        pending_accounts = AccountRequest.objects.filter(
-            Q(status="Pending CIO") |
-            Q(status="Under-preview", preview_by="Pending CIO")
-        ).order_by("-created_at")
-
-    for req in pending_accounts:
+    for req in account_requests:
         req.display_reason = req.return_reason or req.comment or ""
 
-    context = {
-        "role": role,
-        "pending_accounts": pending_accounts,
-    }
+        # 只有案件正好輪到目前登入角色時，才允許審核操作。
+        req.can_approve = (
+            (role == "team_leader" and req.status == "Pending Team Leader") or
+            (role == "supervisor" and req.status == "Pending Supervisor") or
+            (role == "cio" and req.status == "Pending CIO")
+        )
 
-    return render(request, "office_portal/account_list.html", context)
+        # Under-preview 只能由原本按 Review 的同一層主管 Resume。
+        req.can_resume = (
+            req.status == "Under-preview" and
+            (
+                (role == "team_leader" and req.preview_by == "Pending Team Leader") or
+                (role == "supervisor" and req.preview_by == "Pending Supervisor") or
+                (role == "cio" and req.preview_by == "Pending CIO")
+            )
+        )
+
+        # Return / Reject 也只能在自己正在審核的階段執行。
+        req.can_return = req.can_approve
+        req.can_reject = req.can_approve and role in ("supervisor", "cio")
+
+    return render(request, "office_portal/account_list.html", {
+        "role": role,
+        "account_requests": account_requests,
+    })
 
 
 # ─────────────────────────────────────────────
