@@ -567,25 +567,57 @@
             <div class="tc-right">
                 <span class="tc-status"><span class="tc-status-dot"></span>{{ req.status }}</span>
                 <div class="tc-actions">
-                    <button type="button" onclick="showAccountDetail({{ req.id }})" class="tc-action tc-detail">View Details</button>
+                    {# 所有案件都可以查看明細。 #}
+                    <button type="button"
+                            onclick="showAccountDetail({{ req.id }})"
+                            class="tc-action tc-detail">
+                        View Details
+                    </button>
 
-                    {% if req.status == "Under-preview" %}
-                        <button type="button" onclick="acctAction('resume', {{ req.id }}, this)" class="tc-action tc-primary">Resume</button>
-                    {% else %}
+                    {# 只有設為 Under-preview 的原審核角色才能 Resume。 #}
+                    {% if req.can_resume %}
+                        <button type="button"
+                                onclick="acctAction('resume', {{ req.id }}, this)"
+                                class="tc-action tc-primary">
+                            Resume
+                        </button>
+
+                    {# 只有目前正輪到登入者審核的案件才可操作。 #}
+                    {% elif req.can_approve %}
 
                         {% if role == "team_leader" or role == "supervisor" %}
-                            <button type="button" onclick="acctAction('approve', {{ req.id }}, this)" class="tc-action tc-go">Forward</button>
+                            <button type="button"
+                                    onclick="acctAction('approve', {{ req.id }}, this)"
+                                    class="tc-action tc-go">
+                                Forward
+                            </button>
                         {% elif role == "cio" %}
-                            <button type="button" onclick="acctAction('approve', {{ req.id }}, this)" class="tc-action tc-go">Approve</button>
+                            <button type="button"
+                                    onclick="acctAction('approve', {{ req.id }}, this)"
+                                    class="tc-action tc-go">
+                                Approve
+                            </button>
                         {% endif %}
 
-                        <button type="button" onclick="acctAction('review', {{ req.id }}, this)" class="tc-action tc-review-btn">Review</button>
-                        <button type="button" onclick="openReturnModal('acct', {{ req.id }}, '{{ req.status }}', '{{ role }}')" class="tc-action tc-warn">Return</button>
+                        <button type="button"
+                                onclick="acctAction('review', {{ req.id }}, this)"
+                                class="tc-action tc-review-btn">
+                            Review
+                        </button>
 
-                        {% if role == "supervisor" or role == "cio" %}
-                            <button type="button" onclick="openReturnModal('acct', {{ req.id }}, '{{ req.status }}', '{{ role }}', true)" class="tc-action tc-danger">Reject</button>
+                        <button type="button"
+                                onclick="openReturnModal('acct', {{ req.id }}, '{{ req.status }}', '{{ role }}')"
+                                class="tc-action tc-warn">
+                            Return
+                        </button>
+
+                        {% if req.can_reject %}
+                            <button type="button"
+                                    onclick="openReturnModal('acct', {{ req.id }}, '{{ req.status }}', '{{ role }}', true)"
+                                    class="tc-action tc-danger">
+                                Reject
+                            </button>
                         {% endif %}
-
                     {% endif %}
                 </div>
             </div>
